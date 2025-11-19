@@ -130,7 +130,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const [cellData, setCellData] = useState<Map<string, string>>(new Map())
   const [variablePage, setVariablePage] = useState(0)
   const [rootConceptPage, setRootConceptPage] = useState(0)
-  const [childrenPages, setChildrenPages] = useState<Map<string, number>>(new Map())
   const [rangeStart, setRangeStart] = useState<string>("")
   const [rangeEnd, setRangeEnd] = useState<string>("")
   const [openStartCombobox, setOpenStartCombobox] = useState(false)
@@ -144,7 +143,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
   const VARIABLES_PER_PAGE = 6
   const ROOT_CONCEPTS_PER_PAGE = 10
-  const CHILDREN_PER_PAGE = 10
 
   const totalVariables = 28
   const totalVariablePages = Math.ceil(totalVariables / VARIABLES_PER_PAGE)
@@ -254,15 +252,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     }))
   }
 
-  const getChildrenPage = (parentId: string): number => {
-    return childrenPages.get(parentId) || 0
-  }
-
-  const setChildrenPage = (parentId: string, page: number) => {
-    const newPages = new Map(childrenPages)
-    newPages.set(parentId, page)
-    setChildrenPages(newPages)
-  }
 
   const getPaginatedRootConcepts = (): ConceptNode[] => {
     const start = rootConceptPage * ROOT_CONCEPTS_PER_PAGE
@@ -277,14 +266,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       nodes.forEach((node) => {
         result.push(node)
         if (expandedNodes.has(node.id) && node.children) {
-          if (node.children.length > CHILDREN_PER_PAGE) {
-            const currentPage = getChildrenPage(node.id)
-            const start = currentPage * CHILDREN_PER_PAGE
-            const paginatedChildren = node.children.slice(start, start + CHILDREN_PER_PAGE)
-            traverse(paginatedChildren)
-          } else {
-            traverse(node.children)
-          }
+          traverse(node.children)
         }
       })
     }
@@ -744,8 +726,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 <div className="divide-y">
                   {flatConcepts.map((concept, index) => {
                     const isParent = isParentConcept(concept.id)
-                    const { totalChildren } = getNodeInfo(concept.id)
-                    const showPagination = shouldShowChildrenPagination(concept, index)
                     const isEditing = isRowEditing(concept.id)
 
                     return (
@@ -864,75 +844,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                             )
                           })}
                         </div>
-
-                        {showPagination && (
-                          <div className="flex border-b bg-accent/10">
-                            <div className="w-32 shrink-0 border-r bg-card" />
-                            <div className="w-80 shrink-0 border-r bg-card p-2">
-                              {(() => {
-                                const findParent = (nodes: ConceptNode[], targetId: string): ConceptNode | null => {
-                                  for (const node of nodes) {
-                                    if (node.children) {
-                                      for (const child of node.children) {
-                                        if (child.id === targetId) return node
-                                      }
-                                      const found = findParent(node.children, targetId, node)
-                                      if (found) return found
-                                    }
-                                  }
-                                  return null
-                                }
-
-                                const parent = findParent(mockConcepts, concept.id)
-                                const parentTotalChildren = parent?.children?.length || 0
-                                const parentId = parent?.id || concept.id
-
-                                return (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        setChildrenPage(parentId, Math.max(0, getChildrenPage(parentId) - 1))
-                                      }
-                                      disabled={getChildrenPage(parentId) === 0}
-                                      className="h-7 text-xs"
-                                    >
-                                      Anterior
-                                    </Button>
-                                    <span className="text-xs text-muted-foreground">
-                                      {getChildrenPage(parentId) + 1} /{" "}
-                                      {Math.ceil(parentTotalChildren / CHILDREN_PER_PAGE)}
-                                    </span>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        setChildrenPage(
-                                          parentId,
-                                          Math.min(
-                                            Math.ceil(parentTotalChildren / CHILDREN_PER_PAGE) - 1,
-                                            getChildrenPage(parentId) + 1,
-                                          ),
-                                        )
-                                      }
-                                      disabled={
-                                        getChildrenPage(parentId) >=
-                                        Math.ceil(parentTotalChildren / CHILDREN_PER_PAGE) - 1
-                                      }
-                                      className="h-7 text-xs"
-                                    >
-                                      Siguiente
-                                    </Button>
-                                  </>
-                                )
-                              })()}
-                            </div>
-                            {currentVariables.map((variable) => (
-                              <div key={variable.id} className="w-32 shrink-0 border-r last:border-r-0" />
-                            ))}
-                          </div>
-                        )}
                       </div>
                     )
                   })}
