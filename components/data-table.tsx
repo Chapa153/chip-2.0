@@ -59,22 +59,22 @@ const atributosExtensiblesMock: Record<string, AtributoExtensible[]> = {
 const generateMockConcepts = (): ConceptNode[] => {
   const concepts: ConceptNode[] = []
   
-  // Generar 500 conceptos raíz, cada uno con hijos
-  for (let i = 1; i <= 500; i++) {
-    const childrenCount = Math.floor(Math.random() * 30) + 20 // 20-50 hijos por concepto
+  // Generar 50 conceptos raíz, cada uno con 10-30 hijos (750 registros aprox)
+  for (let i = 1; i <= 50; i++) {
+    const childrenCount = Math.floor(Math.random() * 20) + 10
     const children: ConceptNode[] = []
     
     for (let j = 1; j <= childrenCount; j++) {
       children.push({
         id: `${i}.${j}`,
-        label: `Concepto ${i}.${j}`,
+        label: `Subcuenta ${i}.${j}`,
         level: 1,
       })
     }
     
     concepts.push({
       id: `${i}`,
-      label: `Concepto ${i}`,
+      label: `Cuenta ${i}`,
       level: 0,
       children,
     })
@@ -410,6 +410,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     }
 
     const node = findNode(mockConcepts, nodeId)
+
     const totalChildren = node?.children?.length || 0
     return { node, totalChildren }
   }
@@ -481,7 +482,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }, [rangeStart, rangeEnd, getAllConceptsFlat])
 
   const handleAplicarRango = () => {
-    if (getRangeSize > 10000) {
+    // Simular que si se selecciona el rango completo o más de 30 conceptos, tiene más de 10,000 registros
+    const shouldShowAlert = getRangeSize > 30 || (rangeStart === "1" && rangeEnd === getAllConceptsFlat[getAllConceptsFlat.length - 1]?.id)
+    
+    if (shouldShowAlert) {
       setShowLargeRangeAlert(true)
     }
   }
@@ -521,22 +525,22 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 <PopoverContent className="w-[300px] p-0">
                   <Command>
                     <CommandInput placeholder="Buscar concepto..." />
-                    <CommandList>
+                    <CommandList className="max-h-[300px]">
                       <CommandEmpty>No se encontraron conceptos.</CommandEmpty>
                       <CommandGroup>
-                        {getAllConceptsFlat.map((concept) => (
+                        {getAllConceptsFlat.slice(0, 200).map((concept) => (
                           <CommandItem
                             key={concept.id}
-                            value={concept.id}
-                            onSelect={(currentValue) => {
-                              setRangeStart(currentValue)
+                            value={`${concept.id} ${concept.label}`}
+                            onSelect={() => {
+                              setRangeStart(concept.id)
                               setOpenStartCombobox(false)
                             }}
                           >
                             <Check
                               className={cn("mr-2 h-4 w-4", rangeStart === concept.id ? "opacity-100" : "opacity-0")}
                             />
-                            {concept.label}
+                            <span className="truncate">{concept.label} ({concept.id})</span>
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -565,22 +569,22 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 <PopoverContent className="w-[300px] p-0">
                   <Command>
                     <CommandInput placeholder="Buscar concepto..." />
-                    <CommandList>
+                    <CommandList className="max-h-[300px]">
                       <CommandEmpty>No se encontraron conceptos.</CommandEmpty>
                       <CommandGroup>
-                        {getAvailableEndConcepts.map((concept) => (
+                        {getAvailableEndConcepts.slice(0, 200).map((concept) => (
                           <CommandItem
                             key={concept.id}
-                            value={concept.id}
-                            onSelect={(currentValue) => {
-                              setRangeEnd(currentValue)
+                            value={`${concept.id} ${concept.label}`}
+                            onSelect={() => {
+                              setRangeEnd(concept.id)
                               setOpenEndCombobox(false)
                             }}
                           >
                             <Check
                               className={cn("mr-2 h-4 w-4", rangeEnd === concept.id ? "opacity-100" : "opacity-0")}
                             />
-                            {concept.label}
+                            <span className="truncate">{concept.label} ({concept.id})</span>
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -610,9 +614,9 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                     Rango grande detectado
                   </h4>
                   <p className="text-sm text-yellow-700">
-                    El rango seleccionado contiene {getRangeSize.toLocaleString()} registros (más de 10,000). 
-                    La paginación se configurará automáticamente a 100 filas por página y los conceptos padres 
-                    se mostrarán colapsados para mejorar el rendimiento.
+                    El rango seleccionado contiene más de 10,000 registros potenciales. 
+                    La paginación se ha configurado automáticamente a 100 filas por página y los conceptos padres 
+                    se mostrarán colapsados para optimizar el rendimiento y reducir el consumo de recursos.
                   </p>
                 </div>
                 <Button 
