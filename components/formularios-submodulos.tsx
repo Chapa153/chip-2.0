@@ -1,45 +1,68 @@
 "use client"
-import { FileText, History } from 'lucide-react'
+import { FileText, History, FolderOpen } from 'lucide-react'
 
 interface FormulariosSubmodulosProps {
   onModuleSelect: (moduleId: string) => void
 }
 
 export default function FormulariosSubmodulos({ onModuleSelect }: FormulariosSubmodulosProps) {
-  const submodulos = [
+  const subsecciones = [
     {
-      id: "gestion-formularios",
-      title: "Gestión de Formularios",
-      description: "Carga y validación de formularios de reportes",
-      icon: FileText,
-      color: "from-indigo-50 to-indigo-100 dark:from-indigo-950 dark:to-indigo-900",
+      id: "formulario-section",
+      title: "Formulario",
+      description: "Gestión y carga de formularios de reportes",
+      icon: FolderOpen,
+      color: "from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900",
+      submenu: [
+        { id: "gestion-formularios", label: "Gestión de Formularios", icon: FileText }
+      ]
     },
     {
-      id: "historico-envios",
-      title: "Histórico de Envíos",
-      description: "Consulte el historial de formularios transmitidos",
-      icon: History,
+      id: "consultas-section",
+      title: "Consultas",
+      description: "Consulta de información y reportes históricos",
+      icon: FolderOpen,
       color: "from-teal-50 to-teal-100 dark:from-teal-950 dark:to-teal-900",
+      submenu: [
+        { id: "historico-envios", label: "Histórico de Envíos", icon: History }
+      ]
     },
   ]
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {submodulos.map((modulo) => {
-          const Icon = modulo.icon
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {subsecciones.map((seccion) => {
+          const Icon = seccion.icon
           return (
-            <button
-              key={modulo.id}
-              onClick={() => onModuleSelect(modulo.id)}
-              className={`group bg-gradient-to-br ${modulo.color} rounded-lg border border-border p-6 hover:shadow-lg transition transform hover:scale-105 cursor-pointer text-left`}
+            <div
+              key={seccion.id}
+              className={`bg-gradient-to-br ${seccion.color} rounded-lg border border-border p-6 hover:shadow-lg transition`}
             >
-              <div className="flex items-start justify-between mb-3">
-                <Icon size={28} className="text-primary group-hover:scale-110 transition" />
+              <div className="flex items-start gap-3 mb-4">
+                <Icon size={28} className="text-primary" />
+                <div>
+                  <h3 className="font-semibold text-foreground text-lg">{seccion.title}</h3>
+                  <p className="text-sm text-muted-foreground">{seccion.description}</p>
+                </div>
               </div>
-              <h3 className="font-semibold text-foreground mb-1">{modulo.title}</h3>
-              <p className="text-sm text-muted-foreground">{modulo.description}</p>
-            </button>
+              
+              <div className="space-y-2 mt-4">
+                {seccion.submenu.map((item) => {
+                  const ItemIcon = item.icon
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => onModuleSelect(item.id)}
+                      className="w-full flex items-center gap-3 bg-background/60 hover:bg-background rounded-md p-3 transition text-left border border-border/50"
+                    >
+                      <ItemIcon size={20} className="text-primary" />
+                      <span className="font-medium text-sm">{item.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           )
         })}
       </div>
