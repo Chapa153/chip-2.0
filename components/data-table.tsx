@@ -135,21 +135,17 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const [rangeEnd, setRangeEnd] = useState<string>("")
   const [openStartCombobox, setOpenStartCombobox] = useState(false)
   const [openEndCombobox, setOpenEndCombobox] = useState(false)
-  // END CHANGE
+  const [showLargeRangeAlert, setShowLargeRangeAlert] = useState(false)
   const [searchGlobal, setSearchGlobal] = useState("")
   const [atributosDialogOpen, setAtributosDialogOpen] = useState(false)
   const [selectedConceptoAtributos, setSelectedConceptoAtributos] = useState<{id: string, nombre: string} | null>(null)
-  // CHANGE: Agregar estado para filas en modo edición
   const [editingRows, setEditingRows] = useState<Set<string>>(new Set())
   const [tempRowData, setTempRowData] = useState<Map<string, Map<string, string>>>(new Map())
-  // END CHANGE
 
   const VARIABLES_PER_PAGE = 6
-  // END CHANGE
   const ROOT_CONCEPTS_PER_PAGE = 10
   const CHILDREN_PER_PAGE = 10
 
-  // Total de variables (simulado)
   const totalVariables = 28
   const totalVariablePages = Math.ceil(totalVariables / VARIABLES_PER_PAGE)
 
@@ -182,21 +178,17 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       return mockConcepts
     }
 
-    // Obtener los IDs en el rango
     const rangeIds = new Set(allFlat.slice(startIndex, endIndex + 1).map((c) => c.id))
 
-    // Filtrar el árbol manteniendo la estructura
     const filterTree = (nodes: ConceptNode[]): ConceptNode[] => {
       return nodes
         .map((node) => {
           if (rangeIds.has(node.id)) {
-            // Si el nodo está en el rango, incluirlo con sus hijos filtrados
             return {
               ...node,
               children: node.children ? filterTree(node.children) : undefined,
             }
           }
-          // Si el nodo no está en el rango pero tiene hijos que sí están, incluirlo
           if (node.children) {
             const filteredChildren = filterTree(node.children)
             if (filteredChildren.length > 0) {
@@ -254,7 +246,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return filterBySearch(conceptosFiltrados)
   }, [getFilteredConcepts, searchGlobal])
 
-  // Obtener variables para la página actual
   const getCurrentVariables = () => {
     const start = variablePage * VARIABLES_PER_PAGE + 1
     return Array.from({ length: VARIABLES_PER_PAGE }, (_, i) => ({
@@ -286,7 +277,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       nodes.forEach((node) => {
         result.push(node)
         if (expandedNodes.has(node.id) && node.children) {
-          // Si el nodo tiene más de 10 hijos, aplicar paginación
           if (node.children.length > CHILDREN_PER_PAGE) {
             const currentPage = getChildrenPage(node.id)
             const start = currentPage * CHILDREN_PER_PAGE
@@ -370,13 +360,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return sum
   }
 
-  // CHANGE: Funciones para modo edición por fila
   const startEditingRow = (conceptId: string) => {
     const newEditingRows = new Set(editingRows)
     newEditingRows.add(conceptId)
     setEditingRows(newEditingRows)
     
-    // Guardar datos actuales en temporal
     const rowData = new Map<string, string>()
     currentVariables.forEach((variable) => {
       const value = getCellValue(conceptId, variable.id)
@@ -402,7 +390,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       })
       setCellData(newCellData)
       
-      // Limpiar datos temporales
       const newTempData = new Map(tempRowData)
       newTempData.delete(conceptId)
       setTempRowData(newTempData)
@@ -414,14 +401,12 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     newEditingRows.delete(conceptId)
     setEditingRows(newEditingRows)
     
-    // Limpiar datos temporales
     const newTempData = new Map(tempRowData)
     newTempData.delete(conceptId)
     setTempRowData(newTempData)
   }
 
   const handleTempCellChange = (conceptId: string, variableId: string, value: string) => {
-    // Solo permitir números
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       const rowData = tempRowData.get(conceptId) || new Map<string, string>()
       rowData.set(variableId, value)
@@ -443,10 +428,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const isRowEditing = (conceptId: string) => {
     return editingRows.has(conceptId)
   }
-  // END CHANGE
 
   const handleCellChange = (conceptId: string, variableId: string, value: string) => {
-    // Solo permitir números
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       const key = `${conceptId}-${variableId}`
       const newData = new Map(cellData)
@@ -457,21 +440,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
   const handleCellBlur = (conceptId: string, variableId: string) => {
     setEditingCellKey(null)
-    // Recalcular suma del padre si este concepto tiene padre
-    const findParent = (nodes: ConceptNode[], targetId: string): ConceptNode | null => {
-      for (const node of nodes) {
-        if (node.children) {
-          for (const child of node.children) {
-            if (child.id === targetId) return node
-          }
-          const found = findParent(node.children, targetId)
-          if (found) return found
-        }
-      }
-      return null
-    }
-    
-    // Forzar re-render para actualizar la suma del padre
     setCellData(new Map(cellData))
   }
 
@@ -485,7 +453,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       for (const node of nodes) {
         if (node.id === nodeId) return node
         if (node.children) {
-          const found = findNode(node.children)
+          for (const child of node.children) {
+            if (child.id === nodeId) return node
+          }
+          const found = findNode(node.children, nodeId, node)
           if (found) return found
         }
       }
@@ -498,7 +469,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   const shouldShowChildrenPagination = (concept: ConceptNode, index: number): boolean => {
-    // Buscar el padre de este concepto
     const findParent = (
       nodes: ConceptNode[],
       targetId: string,
@@ -518,17 +488,14 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
     const parent = findParent(mockConcepts, concept.id)
 
-    // Si no tiene padre o el padre no está expandido, no mostrar paginador
     if (!parent || !expandedNodes.has(parent.id)) {
       return false
     }
 
-    // Si el padre no tiene más de 10 hijos, no mostrar paginador
     if (!parent.children || parent.children.length <= CHILDREN_PER_PAGE) {
       return false
     }
 
-    // Verificar si este es el último hijo visible en la página actual
     const currentPage = getChildrenPage(parent.id)
     const start = currentPage * CHILDREN_PER_PAGE
     const visibleChildren = parent.children.slice(start, start + CHILDREN_PER_PAGE)
@@ -544,15 +511,37 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     setAtributosDialogOpen(true)
   }
 
+  const getAvailableEndConcepts = useMemo(() => {
+    if (!rangeStart) {
+      return getAllConceptsFlat
+    }
+    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeStart)
+    if (startIndex === -1) {
+      return getAllConceptsFlat
+    }
+    return getAllConceptsFlat.slice(startIndex + 1)
+  }, [rangeStart, getAllConceptsFlat])
+
+  const getRangeSize = useMemo((): number => {
+    if (!rangeStart || !rangeEnd) {
+      return 0
+    }
+    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeStart)
+    const endIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeEnd)
+    if (startIndex === -1 || endIndex === -1 || startIndex > endIndex) {
+      return 0
+    }
+    return endIndex - startIndex + 1
+  }, [rangeStart, rangeEnd, getAllConceptsFlat])
+
   const handleAplicarRango = () => {
-    setRangeStart(tempRangeStart)
-    setRangeEnd(tempRangeEnd)
-    setRangeDialogOpen(false)
+    if (getRangeSize > 10000) {
+      setShowLargeRangeAlert(true)
+    }
   }
 
   return (
     <div className="space-y-4">
-      {/* Header con título dinámico y botón volver */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {onBack && (
@@ -619,6 +608,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                     variant="outline"
                     role="combobox"
                     className="w-full justify-between"
+                    disabled={!rangeStart}
                   >
                     {rangeEnd
                       ? getAllConceptsFlat.find((concept) => concept.id === rangeEnd)?.label || "Seleccionar..."
@@ -632,7 +622,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                     <CommandList>
                       <CommandEmpty>No se encontraron conceptos.</CommandEmpty>
                       <CommandGroup>
-                        {getAllConceptsFlat.map((concept) => (
+                        {getAvailableEndConcepts.map((concept) => (
                           <CommandItem
                             key={concept.id}
                             value={concept.id}
@@ -657,19 +647,40 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             <div className="flex items-end gap-2">
               <Button 
                 className="bg-blue-600 hover:bg-blue-700"
-                onClick={() => {
-                  // This button now directly applies the filter
-                  // Optionally, you might want to clear previous filters or do other actions here
-                }}
+                onClick={handleAplicarRango}
                 disabled={!rangeStart || !rangeEnd}
               >
                 Aplicar filtro
               </Button>
-              {/* Removed the old "Modificar rango" button and its associated dialog */}
             </div>
           </div>
+
+          {showLargeRangeAlert && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-yellow-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-yellow-800 mb-1">
+                    Rango grande detectado
+                  </h4>
+                  <p className="text-sm text-yellow-700">
+                    El rango seleccionado contiene {getRangeSize.toLocaleString()} registros (más de 10,000). 
+                    La paginación se configurará automáticamente a 100 filas por página y los conceptos padres 
+                    se mostrarán colapsados para mejorar el rendimiento.
+                  </p>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowLargeRangeAlert(false)}
+                  className="text-yellow-600 hover:text-yellow-700"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-        {/* END CHANGE */}
 
         {(!rangeStart || !rangeEnd) ? (
           <div className="p-12 text-center">
@@ -691,7 +702,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                       className="pl-10"
                     />
                   </div>
-                  {/* END CHANGE */}
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -716,15 +726,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 </div>
               </div>
 
-              {/* Tabla */}
               <div className="relative">
-                {/* Encabezado de la tabla */}
                 <div className="sticky top-0 z-10 flex border-b bg-card">
-                  {/* CHANGE: Agregar columna de acciones */}
                   <div className="w-32 shrink-0 border-r bg-muted/50 p-3">
                     <span className="text-sm font-semibold text-foreground">Acciones</span>
                   </div>
-                  {/* END CHANGE */}
                   <div className="w-80 shrink-0 border-r bg-muted/50 p-3">
                     <span className="text-sm font-semibold text-foreground">Conceptos</span>
                   </div>
@@ -735,7 +741,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                   ))}
                 </div>
 
-                {/* Filas de datos */}
                 <div className="divide-y">
                   {flatConcepts.map((concept, index) => {
                     const isParent = isParentConcept(concept.id)
@@ -807,9 +812,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                               )}
                             </div>
                           </div>
-                          {/* END CHANGE */}
-
-                          {/* Columna de conceptos */}
                           <div className="w-80 shrink-0 border-r bg-card p-3">
                             <div className="flex items-center gap-2" style={{ paddingLeft: `${concept.level * 24}px` }}>
                               {concept.children && concept.children.length > 0 ? (
@@ -831,8 +833,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                               </span>
                             </div>
                           </div>
-
-                          {/* Celdas de datos */}
                           {currentVariables.map((variable) => {
                             if (isParent) {
                               const sum = calculateParentSum(concept.id, variable.id)
@@ -845,7 +845,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                               )
                             }
 
-                            {/* CHANGE: Habilitar inputs solo si la fila está en modo edición */}
                             return (
                               <div key={variable.id} className="w-32 shrink-0 border-r p-2 last:border-r-0">
                                 <Input
@@ -863,15 +862,12 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                 />
                               </div>
                             )
-                            {/* END CHANGE */}
                           })}
                         </div>
 
                         {showPagination && (
                           <div className="flex border-b bg-accent/10">
-                            {/* CHANGE: Agregar columna vacía para acciones en paginación */}
                             <div className="w-32 shrink-0 border-r bg-card" />
-                            {/* END CHANGE */}
                             <div className="w-80 shrink-0 border-r bg-card p-2">
                               {(() => {
                                 const findParent = (nodes: ConceptNode[], targetId: string): ConceptNode | null => {
@@ -1015,7 +1011,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
           </div>
         </DialogContent>
       </Dialog>
-      {/* END CHANGE */}
     </div>
   )
 }

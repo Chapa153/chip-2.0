@@ -118,10 +118,13 @@ export default function Page() {
   } else if (navigationStack.view === "formularios") {
     breadcrumbItems.push({ label: "Formularios", onClick: goToFormulariosModules })
     if (navigationStack.subview === "gestion-formularios") {
+      breadcrumbItems.push({ label: "Formulario" })
       breadcrumbItems.push({ label: "Gestión de Formularios", isActive: true })
     } else if (navigationStack.subview === "historico-envios") {
+      breadcrumbItems.push({ label: "Consultas" })
       breadcrumbItems.push({ label: "Histórico de Envíos", isActive: true })
     } else if (navigationStack.subview === "editar") {
+      breadcrumbItems.push({ label: "Formulario" })
       breadcrumbItems.push({ label: "Gestión de Formularios", onClick: () => setNavigationStack({ view: "formularios", subview: "gestion-formularios" }) })
       breadcrumbItems.push({ label: editingFormulario?.nombre || "Editar Formulario", isActive: true })
     } else {

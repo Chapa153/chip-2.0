@@ -170,7 +170,11 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={handleAplicarFiltros} className="bg-blue-600 hover:bg-blue-700">
+          <Button 
+            onClick={handleAplicarFiltros} 
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={!categoria || !ano || !periodo}
+          >
             Aplicar Filtros
           </Button>
         </div>
