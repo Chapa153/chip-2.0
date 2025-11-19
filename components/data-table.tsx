@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { ChevronRight, ChevronDown, Check, ChevronsUpDown, ArrowLeft, Search, Info, Filter, Edit, Save, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -59,9 +59,8 @@ const atributosExtensiblesMock: Record<string, AtributoExtensible[]> = {
 const generateMockConcepts = (): ConceptNode[] => {
   const concepts: ConceptNode[] = []
   
-  // Generar 50 conceptos raíz, cada uno con 10-30 hijos (750 registros aprox)
-  for (let i = 1; i <= 50; i++) {
-    const childrenCount = Math.floor(Math.random() * 20) + 10
+  for (let i = 1; i <= 100; i++) {
+    const childrenCount = Math.floor(Math.random() * 10) + 5
     const children: ConceptNode[] = []
     
     for (let j = 1; j <= childrenCount; j++) {
@@ -402,6 +401,9 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       for (const node of nodes) {
         if (node.id === targetId) return node
         if (node.children) {
+          for (const child of node.children) {
+            if (child.id === targetId) return node
+          }
           const found = findNode(node.children, targetId, node)
           if (found) return found
         }
@@ -485,19 +487,28 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     setRangeEnd(newRangeEnd)
     setOpenEndCombobox(false)
     
-    // Calcular el tamaño del rango
     const startIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeStart)
     const endIndex = getAllConceptsFlat.findIndex((c) => c.id === newRangeEnd)
     
     if (startIndex !== -1 && endIndex !== -1) {
       const rangeSize = endIndex - startIndex + 1
-      const shouldShowAlert = rangeSize > 30 || (rangeStart === "1" && newRangeEnd === getAllConceptsFlat[getAllConceptsFlat.length - 1]?.id)
+      // Simular alerta de 10,000 registros cuando el rango supera 30 conceptos
+      const shouldShowAlert = rangeSize > 30
       
       if (shouldShowAlert) {
         setShowLargeRangeAlert(true)
+      } else {
+        setShowLargeRangeAlert(false)
       }
     }
   }
+
+  useEffect(() => {
+    if (rangeStart && rangeEnd) {
+      setCurrentPage(0)
+      setExpandedNodes(new Set())
+    }
+  }, [rangeStart, rangeEnd])
 
   return (
     <div className="space-y-4">
