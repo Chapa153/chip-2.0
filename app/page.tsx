@@ -24,6 +24,7 @@ export default function Page() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [username, setUsername] = useState("")
   const [navigationStack, setNavigationStack] = useState<NavigationState>({ view: null })
+  const [formularioSection, setFormularioSection] = useState<string | null>(null)
   const [editingFormulario, setEditingFormulario] = useState<{id: string, nombre: string} | null>(null)
   const [filtrosGestionFormularios, setFiltrosGestionFormularios] = useState<{
     categoria?: string
@@ -43,6 +44,11 @@ export default function Page() {
   }
 
   const handleModuleSelect = (moduleId: string) => {
+    if (moduleId === "formulario-section" || moduleId === "consultas-section") {
+      setFormularioSection(moduleId)
+      return
+    }
+    
     if (["entidades", "usuarios", "roles", "auditoria"].includes(moduleId)) {
       setNavigationStack({ view: "administracion", subview: moduleId })
     } else if (moduleId === "gestion-formularios") {
@@ -82,12 +88,22 @@ export default function Page() {
   }
 
   const goToFormulariosModules = () => {
+    setFormularioSection(null)
     setNavigationStack({ view: "formularios" })
   }
 
   const handleBack = () => {
     if (navigationStack.subview) {
+      if (navigationStack.view === "formularios") {
+        if (navigationStack.subview === "gestion-formularios") {
+          setFormularioSection("formulario-section")
+        } else if (navigationStack.subview === "historico-envios") {
+          setFormularioSection("consultas-section")
+        }
+      }
       setNavigationStack({ view: navigationStack.view })
+    } else if (formularioSection) {
+      setFormularioSection(null)
     } else {
       setNavigationStack({ view: null })
     }
@@ -97,7 +113,6 @@ export default function Page() {
     return <LoginForm onLogin={handleLogin} />
   }
 
-  // Construir breadcrumb dinámico
   const breadcrumbItems: Array<{ label: string; onClick?: () => void; isActive?: boolean }> = [
     { label: "Inicio", onClick: goToHome },
   ]
@@ -118,15 +133,28 @@ export default function Page() {
   } else if (navigationStack.view === "formularios") {
     breadcrumbItems.push({ label: "Formularios", onClick: goToFormulariosModules })
     if (navigationStack.subview === "gestion-formularios") {
-      breadcrumbItems.push({ label: "Formulario" })
+      breadcrumbItems.push({ label: "Formulario", onClick: () => {
+        setFormularioSection("formulario-section")
+        setNavigationStack({ view: "formularios" })
+      }})
       breadcrumbItems.push({ label: "Gestión de Formularios", isActive: true })
     } else if (navigationStack.subview === "historico-envios") {
-      breadcrumbItems.push({ label: "Consultas" })
+      breadcrumbItems.push({ label: "Consultas", onClick: () => {
+        setFormularioSection("consultas-section")
+        setNavigationStack({ view: "formularios" })
+      }})
       breadcrumbItems.push({ label: "Histórico de Envíos", isActive: true })
     } else if (navigationStack.subview === "editar") {
-      breadcrumbItems.push({ label: "Formulario" })
+      breadcrumbItems.push({ label: "Formulario", onClick: () => {
+        setFormularioSection("formulario-section")
+        setNavigationStack({ view: "formularios" })
+      }})
       breadcrumbItems.push({ label: "Gestión de Formularios", onClick: () => setNavigationStack({ view: "formularios", subview: "gestion-formularios" }) })
       breadcrumbItems.push({ label: editingFormulario?.nombre || "Editar Formulario", isActive: true })
+    } else if (formularioSection === "formulario-section") {
+      breadcrumbItems.push({ label: "Formulario", isActive: true })
+    } else if (formularioSection === "consultas-section") {
+      breadcrumbItems.push({ label: "Consultas", isActive: true })
     } else {
       breadcrumbItems[breadcrumbItems.length - 1].isActive = true
     }
@@ -172,7 +200,10 @@ export default function Page() {
 
         {navigationStack.view === "formularios" && !navigationStack.subview && (
           <div className="max-w-7xl mx-auto px-4 py-12">
-            <FormulariosSubmodulos onModuleSelect={handleSubmoduleSelect} />
+            <FormulariosSubmodulos 
+              onModuleSelect={handleModuleSelect}
+              selectedSection={formularioSection}
+            />
           </div>
         )}
 
