@@ -481,12 +481,21 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return endIndex - startIndex + 1
   }, [rangeStart, rangeEnd, getAllConceptsFlat])
 
-  const handleAplicarRango = () => {
-    // Simular que si se selecciona el rango completo o más de 30 conceptos, tiene más de 10,000 registros
-    const shouldShowAlert = getRangeSize > 30 || (rangeStart === "1" && rangeEnd === getAllConceptsFlat[getAllConceptsFlat.length - 1]?.id)
+  const handleRangeEndChange = (newRangeEnd: string) => {
+    setRangeEnd(newRangeEnd)
+    setOpenEndCombobox(false)
     
-    if (shouldShowAlert) {
-      setShowLargeRangeAlert(true)
+    // Calcular el tamaño del rango
+    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeStart)
+    const endIndex = getAllConceptsFlat.findIndex((c) => c.id === newRangeEnd)
+    
+    if (startIndex !== -1 && endIndex !== -1) {
+      const rangeSize = endIndex - startIndex + 1
+      const shouldShowAlert = rangeSize > 30 || (rangeStart === "1" && newRangeEnd === getAllConceptsFlat[getAllConceptsFlat.length - 1]?.id)
+      
+      if (shouldShowAlert) {
+        setShowLargeRangeAlert(true)
+      }
     }
   }
 
@@ -515,6 +524,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                     variant="outline"
                     role="combobox"
                     className="w-full justify-between"
+                    disabled={editingRows.size > 0}
                   >
                     {rangeStart
                       ? getAllConceptsFlat.find((concept) => concept.id === rangeStart)?.label || "Seleccionar..."
@@ -558,7 +568,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                     variant="outline"
                     role="combobox"
                     className="w-full justify-between"
-                    disabled={!rangeStart}
+                    disabled={!rangeStart || editingRows.size > 0}
                   >
                     {rangeEnd
                       ? getAllConceptsFlat.find((concept) => concept.id === rangeEnd)?.label || "Seleccionar..."
@@ -577,8 +587,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                             key={concept.id}
                             value={`${concept.id} ${concept.label}`}
                             onSelect={() => {
-                              setRangeEnd(concept.id)
-                              setOpenEndCombobox(false)
+                              handleRangeEndChange(concept.id)
                             }}
                           >
                             <Check
@@ -593,17 +602,21 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 </PopoverContent>
               </Popover>
             </div>
-
-            <div className="flex items-end gap-2">
-              <Button 
-                className="bg-blue-600 hover:bg-blue-700"
-                onClick={handleAplicarRango}
-                disabled={!rangeStart || !rangeEnd}
-              >
-                Aplicar filtro
-              </Button>
-            </div>
           </div>
+
+          {editingRows.size > 0 && (
+            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-md">
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-orange-600 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-orange-700">
+                    Hay {editingRows.size} registro(s) en edición pendiente de guardar. 
+                    Debe guardar o cancelar los cambios antes de modificar el filtro de rango.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {showLargeRangeAlert && (
             <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
@@ -818,38 +831,36 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 </div>
               </div>
 
-              {allFlattenedConcepts.length > MAX_ROWS_PER_PAGE && (
-                <div className="border-t bg-muted/30 p-4">
-                  <div className="flex items-center justify-between">
+              <div className="border-t bg-muted/30 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Mostrando registros {currentPage * MAX_ROWS_PER_PAGE + 1} -{" "}
+                    {Math.min((currentPage + 1) * MAX_ROWS_PER_PAGE, allFlattenedConcepts.length)} de{" "}
+                    {allFlattenedConcepts.length} (máximo 100 por página)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                      disabled={currentPage === 0}
+                    >
+                      Anterior
+                    </Button>
                     <span className="text-sm text-muted-foreground">
-                      Mostrando registros {currentPage * MAX_ROWS_PER_PAGE + 1} -{" "}
-                      {Math.min((currentPage + 1) * MAX_ROWS_PER_PAGE, allFlattenedConcepts.length)} de{" "}
-                      {allFlattenedConcepts.length} (máximo 100 por página)
+                      Página {currentPage + 1} de {totalPages}
                     </span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                        disabled={currentPage === 0}
-                      >
-                        Anterior
-                      </Button>
-                      <span className="text-sm text-muted-foreground">
-                        Página {currentPage + 1} de {totalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                        disabled={currentPage === totalPages - 1}
-                      >
-                        Siguiente
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                      disabled={currentPage === totalPages - 1}
+                    >
+                      Siguiente
+                    </Button>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}
