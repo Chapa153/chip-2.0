@@ -56,80 +56,40 @@ const atributosExtensiblesMock: Record<string, AtributoExtensible[]> = {
   ],
 }
 
-const mockConcepts: ConceptNode[] = [
-  {
-    id: "1",
-    label: "Concepto 1",
-    level: 0,
-    children: [
-      {
-        id: "1.1",
-        label: "Concepto 1.1",
+const generateMockConcepts = (): ConceptNode[] => {
+  const concepts: ConceptNode[] = []
+  
+  // Generar 500 conceptos raíz, cada uno con hijos
+  for (let i = 1; i <= 500; i++) {
+    const childrenCount = Math.floor(Math.random() * 30) + 20 // 20-50 hijos por concepto
+    const children: ConceptNode[] = []
+    
+    for (let j = 1; j <= childrenCount; j++) {
+      children.push({
+        id: `${i}.${j}`,
+        label: `Concepto ${i}.${j}`,
         level: 1,
-        children: Array.from({ length: 30 }, (_, i) => ({
-          id: `1.1.${i + 1}`,
-          label: `Concepto 1.1.${i + 1}`,
-          level: 2,
-        })),
-      },
-      {
-        id: "1.2",
-        label: "Concepto 1.2",
-        level: 1,
-        children: [
-          { id: "1.2.1", label: "Concepto 1.2.1", level: 2 },
-          { id: "1.2.2", label: "Concepto 1.2.2", level: 2 },
-        ],
-      },
-      { id: "1.3", label: "Concepto 1.3", level: 1 },
-      { id: "1.4", label: "Concepto 1.4", level: 1 },
-    ],
-  },
-  {
-    id: "2",
-    label: "Concepto 2",
-    level: 0,
-    children: [
-      { id: "2.1", label: "Concepto 2.1", level: 1 },
-      { id: "2.2", label: "Concepto 2.2", level: 1 },
-      { id: "2.3", label: "Concepto 2.3", level: 1 },
-    ],
-  },
-  {
-    id: "3",
-    label: "Concepto 3",
-    level: 0,
-    children: [
-      {
-        id: "3.1",
-        label: "Concepto 3.1",
-        level: 1,
-        children: [
-          { id: "3.1.1", label: "Concepto 3.1.1", level: 2 },
-          { id: "3.1.2", label: "Concepto 3.1.2", level: 2 },
-        ],
-      },
-    ],
-  },
-  { id: "4", label: "Concepto 4", level: 0 },
-  { id: "5", label: "Concepto 5", level: 0 },
-  { id: "6", label: "Concepto 6", level: 0 },
-  { id: "7", label: "Concepto 7", level: 0 },
-  { id: "8", label: "Concepto 8", level: 0 },
-  { id: "9", label: "Concepto 9", level: 0 },
-  { id: "10", label: "Concepto 10", level: 0 },
-  { id: "11", label: "Concepto 11", level: 0 },
-  { id: "12", label: "Concepto 12", level: 0 },
-  { id: "13", label: "Concepto 13", level: 0 },
-  { id: "14", label: "Concepto 14", level: 0 },
-  { id: "15", label: "Concepto 15", level: 0 },
-]
+      })
+    }
+    
+    concepts.push({
+      id: `${i}`,
+      label: `Concepto ${i}`,
+      level: 0,
+      children,
+    })
+  }
+  
+  return concepts
+}
+
+const mockConcepts: ConceptNode[] = generateMockConcepts()
 
 function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: DataTableProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [cellData, setCellData] = useState<Map<string, string>>(new Map())
   const [variablePage, setVariablePage] = useState(0)
-  const [rootConceptPage, setRootConceptPage] = useState(0)
+  const [currentPage, setCurrentPage] = useState(0)
   const [rangeStart, setRangeStart] = useState<string>("")
   const [rangeEnd, setRangeEnd] = useState<string>("")
   const [openStartCombobox, setOpenStartCombobox] = useState(false)
@@ -142,7 +102,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const [tempRowData, setTempRowData] = useState<Map<string, Map<string, string>>>(new Map())
 
   const VARIABLES_PER_PAGE = 6
-  const ROOT_CONCEPTS_PER_PAGE = 10
+  const MAX_ROWS_PER_PAGE = 100
 
   const totalVariables = 28
   const totalVariablePages = Math.ceil(totalVariables / VARIABLES_PER_PAGE)
@@ -252,15 +212,14 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     }))
   }
 
-
   const getPaginatedRootConcepts = (): ConceptNode[] => {
-    const start = rootConceptPage * ROOT_CONCEPTS_PER_PAGE
-    return getFilteredConceptsWithSearch.slice(start, start + ROOT_CONCEPTS_PER_PAGE)
+    const start = currentPage * MAX_ROWS_PER_PAGE
+    return getFilteredConceptsWithSearch.slice(start, start + MAX_ROWS_PER_PAGE)
   }
 
-  const getFlattenedConcepts = (): ConceptNode[] => {
+  const getFlattenedConceptsForPagination = (): ConceptNode[] => {
     const result: ConceptNode[] = []
-    const paginatedRoots = getPaginatedRootConcepts()
+    const filteredConcepts = getFilteredConceptsWithSearch
 
     const traverse = (nodes: ConceptNode[]) => {
       nodes.forEach((node) => {
@@ -271,12 +230,20 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       })
     }
 
-    traverse(paginatedRoots)
+    traverse(filteredConcepts)
     return result
   }
 
-  const flatConcepts = getFlattenedConcepts()
-  const totalRootConceptPages = Math.ceil(getFilteredConceptsWithSearch.length / ROOT_CONCEPTS_PER_PAGE)
+  const allFlattenedConcepts = getFlattenedConceptsForPagination()
+  const totalPages = Math.ceil(allFlattenedConcepts.length / MAX_ROWS_PER_PAGE)
+  
+  const getCurrentPageConcepts = (): ConceptNode[] => {
+    const start = currentPage * MAX_ROWS_PER_PAGE
+    const end = start + MAX_ROWS_PER_PAGE
+    return allFlattenedConcepts.slice(start, end)
+  }
+
+  const flatConcepts = getCurrentPageConcepts()
 
   const toggleNode = (nodeId: string) => {
     const newExpanded = new Set(expandedNodes)
@@ -431,21 +398,18 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   const getNodeInfo = (nodeId: string): { node: ConceptNode | null; totalChildren: number } => {
-    const findNode = (nodes: ConceptNode[]): ConceptNode | null => {
+    const findNode = (nodes: ConceptNode[], targetId: string, parent: ConceptNode | null = null): ConceptNode | null => {
       for (const node of nodes) {
-        if (node.id === nodeId) return node
+        if (node.id === targetId) return node
         if (node.children) {
-          for (const child of node.children) {
-            if (child.id === nodeId) return node
-          }
-          const found = findNode(node.children, nodeId, node)
+          const found = findNode(node.children, targetId, node)
           if (found) return found
         }
       }
       return null
     }
 
-    const node = findNode(mockConcepts)
+    const node = findNode(mockConcepts, nodeId)
     const totalChildren = node?.children?.length || 0
     return { node, totalChildren }
   }
@@ -474,13 +438,13 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       return false
     }
 
-    if (!parent.children || parent.children.length <= CHILDREN_PER_PAGE) {
+    if (!parent.children || parent.children.length <= MAX_ROWS_PER_PAGE) {
       return false
     }
 
     const currentPage = getChildrenPage(parent.id)
-    const start = currentPage * CHILDREN_PER_PAGE
-    const visibleChildren = parent.children.slice(start, start + CHILDREN_PER_PAGE)
+    const start = currentPage * MAX_ROWS_PER_PAGE
+    const visibleChildren = parent.children.slice(start, start + MAX_ROWS_PER_PAGE)
     const lastVisibleChild = visibleChildren[visibleChildren.length - 1]
 
     return lastVisibleChild?.id === concept.id
@@ -850,33 +814,31 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 </div>
               </div>
 
-              {getFilteredConceptsWithSearch.length > ROOT_CONCEPTS_PER_PAGE && (
+              {allFlattenedConcepts.length > MAX_ROWS_PER_PAGE && (
                 <div className="border-t bg-muted/30 p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      Mostrando conceptos raíz {rootConceptPage * ROOT_CONCEPTS_PER_PAGE + 1} -{" "}
-                      {Math.min((rootConceptPage + 1) * ROOT_CONCEPTS_PER_PAGE, getFilteredConceptsWithSearch.length)} de{" "}
-                      {getFilteredConceptsWithSearch.length}
+                      Mostrando registros {currentPage * MAX_ROWS_PER_PAGE + 1} -{" "}
+                      {Math.min((currentPage + 1) * MAX_ROWS_PER_PAGE, allFlattenedConcepts.length)} de{" "}
+                      {allFlattenedConcepts.length} (máximo 100 por página)
                     </span>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setRootConceptPage(Math.max(0, rootConceptPage - 1))}
-                        disabled={rootConceptPage === 0}
+                        onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                        disabled={currentPage === 0}
                       >
                         Anterior
                       </Button>
                       <span className="text-sm text-muted-foreground">
-                        Página {rootConceptPage + 1} de {totalRootConceptPages}
+                        Página {currentPage + 1} de {totalPages}
                       </span>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() =>
-                          setRootConceptPage(Math.min(totalRootConceptPages - 1, rootConceptPage + 1))
-                        }
-                        disabled={rootConceptPage === totalRootConceptPages - 1}
+                        onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                        disabled={currentPage === totalPages - 1}
                       >
                         Siguiente
                       </Button>
