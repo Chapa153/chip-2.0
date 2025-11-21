@@ -42,6 +42,11 @@ interface AtributoExtensible {
   tipo: "texto" | "boolean"
 }
 
+interface Variable {
+  id: string
+  label: string
+}
+
 interface DataTableProps {
   title?: string
   onBack?: () => void
@@ -58,23 +63,40 @@ const AddChildDialog = ({
   onAdd,
   parentId,
   parentName,
+  variables,
+  existingChildren,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAdd: (parentId: string, numericValue: string, dropdownValue: string) => void
   parentId: string
   parentName: string
+  variables: Variable[]
+  existingChildren: ConceptNode[]
 }) => {
   const [numericValue, setNumericValue] = useState("")
   const [dropdownValue, setDropdownValue] = useState("")
+  const [error, setError] = useState("")
+
+  const var1Name = variables[0]?.label || "Variable 1"
+  const var2Name = variables[1]?.label || "Variable 2"
 
   const opcionesLista = ["Opción A", "Opción B", "Opción C", "Opción D", "Opción E"]
 
   const handleSubmit = () => {
     if (numericValue && dropdownValue) {
+      const newChildLabel = `${numericValue}, ${dropdownValue}`
+      const isDuplicate = existingChildren.some((child) => child.label === newChildLabel)
+
+      if (isDuplicate) {
+        setError("Ya existe un concepto hijo con estos valores. No se permiten duplicados.")
+        return
+      }
+
       onAdd(parentId, numericValue, dropdownValue)
       setNumericValue("")
       setDropdownValue("")
+      setError("")
       onOpenChange(false)
     }
   }
@@ -89,7 +111,7 @@ const AddChildDialog = ({
         <div className="space-y-4 py-4">
           <div>
             <label className="block text-sm font-medium mb-2">
-              Variable Numérica <span className="text-red-500">*</span>
+              {var1Name} <span className="text-red-500">*</span>
             </label>
             <Input
               type="text"
@@ -98,6 +120,7 @@ const AddChildDialog = ({
                 const value = e.target.value
                 if (value === "" || /^\d+$/.test(value)) {
                   setNumericValue(value)
+                  setError("")
                 }
               }}
               placeholder="Ingrese un valor numérico"
@@ -106,11 +129,14 @@ const AddChildDialog = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-2">
-              Variable de Selección <span className="text-red-500">*</span>
+              {var2Name} <span className="text-red-500">*</span>
             </label>
             <select
               value={dropdownValue}
-              onChange={(e) => setDropdownValue(e.target.value)}
+              onChange={(e) => {
+                setDropdownValue(e.target.value)
+                setError("")
+              }}
               className="w-full px-3 py-2 border border-input rounded-md bg-background"
             >
               <option value="">Seleccione una opción</option>
@@ -121,6 +147,7 @@ const AddChildDialog = ({
               ))}
             </select>
           </div>
+          {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">{error}</div>}
           <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-md">
             <strong>Nota:</strong> El nombre del concepto será: "{numericValue || "###"}, {dropdownValue || "Opción"}"
             <br />
@@ -725,6 +752,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     setAddChildDialogOpen(true)
   }
 
+  const getExistingChildren = (parentId: string): ConceptNode[] => {
+    const parent = dynamicConcepts.find((c) => c.id === parentId)
+    return parent?.children || []
+  }
+
   const isCellEditable = (conceptId: string, variableId: string): boolean => {
     if (isEstadoCambiosPatrimonio && nonEditableVars.has(conceptId)) {
       // Las primeras 2 variables no son editables
@@ -734,6 +766,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     }
     return true
   }
+
+  const allVariables: Variable[] = Array.from({ length: totalVariables }, (_, i) => ({
+    id: `var-${i + 1}`,
+    label: `Variable ${i + 1}`,
+  }))
 
   return (
     <div className="space-y-4">
@@ -979,25 +1016,42 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                       </td>
                       {currentVariables.map((variable) => {
                         const cellValue = isEditing
-                          ? getTempCellValue(concept.id, variable.id)
+                          ? tempRowData.get(concept.id)?.get(variable.id) || ""
                           : getCellValue(concept.id, variable.id)
-                        const displayValue = isParent
-                          ? calculateParentSum(concept.id, variable.id).toLocaleString()
-                          : cellValue
-                        const editable = isCellEditable(concept.id, variable.id)
+                        const isNonEditable = !isCellEditable(concept.id, variable.id)
+
+                        if (isEstadoCambiosPatrimonio && concept.level === 0) {
+                          return (
+                            <td key={variable.id} className="border border-gray-300 px-2 py-1 text-center text-sm">
+                              <span className="text-gray-400">-</span>
+                            </td>
+                          )
+                        }
 
                         return (
-                          <td key={variable.id} className="border border-gray-300 px-2 py-1 text-center">
+                          <td
+                            key={variable.id}
+                            className={cn(
+                              "border border-gray-300 px-2 py-1 text-center text-sm",
+                              isEditing && !isNonEditable && "bg-yellow-50",
+                              isNonEditable && "bg-gray-100",
+                            )}
+                          >
                             {isParent || !isEditing ? (
-                              <span className={cn("text-sm", isParent && "font-semibold")}>{displayValue}</span>
+                              <span className={cn("text-sm", isParent && "font-semibold")}>
+                                {calculateParentSum(concept.id, variable.id).toLocaleString()}
+                              </span>
                             ) : (
                               <Input
                                 type="text"
                                 value={cellValue}
                                 onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
-                                disabled={!editable}
-                                className={cn("text-center h-8 text-sm", !editable && "bg-gray-100 cursor-not-allowed")}
-                                placeholder={editable ? "0" : "No editable"}
+                                disabled={!isCellEditable(concept.id, variable.id)}
+                                className={cn(
+                                  "text-center h-8 text-sm",
+                                  !isCellEditable(concept.id, variable.id) && "bg-gray-100 cursor-not-allowed",
+                                )}
+                                placeholder={isCellEditable(concept.id, variable.id) ? "0" : "No editable"}
                               />
                             )}
                           </td>
@@ -1079,6 +1133,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
           onAdd={handleAddChild}
           parentId={selectedParentForAdd.id}
           parentName={selectedParentForAdd.name}
+          variables={allVariables}
+          existingChildren={getExistingChildren(selectedParentForAdd.id)}
         />
       )}
     </div>
