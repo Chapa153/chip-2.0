@@ -941,12 +941,13 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                   const isParent = isParentConcept(concept.id)
                   const isExpanded = expandedNodes.has(concept.id)
                   const isEditing = isRowEditing(concept.id)
+                  const isRootParent = isEstadoCambiosPatrimonio && concept.level === 0
 
                   return (
                     <tr key={concept.id} className={cn(concept.level > 0 && "bg-blue-50")}>
                       <td className="border border-gray-300 px-2 py-2">
                         <div className="flex items-center gap-1">
-                          {!isParent && (
+                          {!isRootParent && (
                             <>
                               {isEditing ? (
                                 <>
