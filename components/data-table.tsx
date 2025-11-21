@@ -204,9 +204,14 @@ const generateMockConcepts = (): ConceptNode[] => {
 function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: DataTableProps) {
   const isEstadoCambiosPatrimonio = title === "Estado de Cambios en el Patrimonio"
 
+  console.log("[v0] DataTable renderizado - title:", title)
+  console.log("[v0] isEstadoCambiosPatrimonio:", isEstadoCambiosPatrimonio)
+
   const [dynamicConcepts, setDynamicConcepts] = useState<ConceptNode[]>(
     isEstadoCambiosPatrimonio ? generateEstadoCambiosConceptos() : generateMockConcepts(),
   )
+
+  console.log("[v0] dynamicConcepts:", dynamicConcepts)
 
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [cellData, setCellData] = useState<Map<string, string>>(new Map())
