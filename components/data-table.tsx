@@ -950,12 +950,13 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                           >
                             <Info className="h-4 w-4 text-blue-600" />
                           </Button>
-                          {isEstadoCambiosPatrimonio && isParent && (
+                          {isEstadoCambiosPatrimonio && concept.level === 0 && (
                             <Button
                               size="sm"
                               variant="ghost"
                               className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                               onClick={() => handleOpenAddDialog(concept.id, concept.label)}
+                              title="Agregar concepto hijo"
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
