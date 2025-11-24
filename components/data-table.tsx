@@ -759,6 +759,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const [rangeSearchInitial, setRangeSearchInitial] = useState("")
   const [rangeSearchFinal, setRangeSearchFinal] = useState("")
 
+  const isCalculatedVariable = (variableId: string): boolean => {
+    return variableId === CALCULATED_VAR_ID
+  }
+
   const getFilteredStartRanges = useMemo(() => {
     const filtered = getAllConceptsFlat.filter(
       (concept) =>
@@ -875,6 +879,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   const isCellEditable = (conceptId: string, variableId: string): boolean => {
+    if (isCalculatedVariable(variableId)) {
+      return false
+    }
+
     if (isEstadoCambiosPatrimonio && nonEditableVars.has(conceptId)) {
       // Las primeras 2 variables no son editables
       if (variableId === "var-1" || variableId === "var-2") {
@@ -1315,9 +1323,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
                           const cellValue = getCellValue(concept.id, variable.id)
                           const isNonEditableVar =
-                            isEstadoCambiosPatrimonio &&
-                            nonEditableVars.has(concept.id) &&
-                            (variable.id === "var-1" || variable.id === "var-2")
+                            isCalculatedVariable(variable.id) ||
+                            (isEstadoCambiosPatrimonio &&
+                              nonEditableVars.has(concept.id) &&
+                              (variable.id === "var-1" || variable.id === "var-2"))
 
                           if (isRowEditing(concept.id) && !isNonEditableVar) {
                             const tempValue = getTempCellValue(concept.id, variable.id)
@@ -1325,11 +1334,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                             // Lista desplegable
                             if (variable.type === "dropdown") {
                               return (
-                                <td key={variable.id} className="border border-gray-300 px-1 py-1">
+                                <td key={variable.id} className="border border-gray-300 px-1 py-1 bg-yellow-50">
                                   <select
                                     value={tempValue}
                                     onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
-                                    className="w-full px-1 py-0.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="w-full px-1 py-0.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                                   >
                                     <option value="">Seleccionar...</option>
                                     <option value="Opción A">Opción A</option>
@@ -1343,12 +1352,12 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                             // String
                             if (variable.type === "string") {
                               return (
-                                <td key={variable.id} className="border border-gray-300 px-1 py-1">
+                                <td key={variable.id} className="border border-gray-300 px-1 py-1 bg-yellow-50">
                                   <input
                                     type="text"
                                     value={tempValue}
                                     onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
-                                    className="w-full px-1 py-0.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="w-full px-1 py-0.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                                   />
                                 </td>
                               )
@@ -1356,26 +1365,29 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
                             // Numérico
                             return (
-                              <td key={variable.id} className="border border-gray-300 px-1 py-1">
+                              <td key={variable.id} className="border border-gray-300 px-1 py-1 bg-yellow-50">
                                 <input
                                   type="text"
                                   value={tempValue}
                                   onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
-                                  className="w-full px-1 py-0.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  className="w-full px-1 py-0.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                                 />
                               </td>
                             )
                           }
 
-                          // Modo solo lectura
                           return (
                             <td
                               key={variable.id}
                               className={`border border-gray-300 px-2 py-1 text-center ${
-                                isNonEditableVar ? "bg-yellow-50" : ""
+                                isNonEditableVar ? "bg-gray-100" : ""
                               }`}
                             >
-                              <span className="text-sm">{cellValue || "0"}</span>
+                              <span
+                                className={`text-sm ${isCalculatedVariable(variable.id) ? "font-semibold text-blue-700" : ""}`}
+                              >
+                                {cellValue || "0"}
+                              </span>
                             </td>
                           )
                         })}
