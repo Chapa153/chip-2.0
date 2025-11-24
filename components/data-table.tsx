@@ -846,7 +846,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4 mb-4">
             <div className="flex-1">
               <Input
                 type="text"
@@ -856,25 +856,27 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 className="max-w-md"
               />
             </div>
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Variables:</span>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                disabled={currentPage === 0}
+                onClick={() => setVariablePage(Math.max(0, variablePage - 1))}
+                disabled={variablePage === 0}
               >
-                Anterior
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-muted-foreground">
-                Página {currentPage + 1} de {totalPages || 1}
+              <span className="text-sm">
+                {variablePage * VARIABLES_PER_PAGE + 1} -{" "}
+                {Math.min((variablePage + 1) * VARIABLES_PER_PAGE, totalVariables)} de {totalVariables}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                disabled={currentPage >= totalPages - 1}
+                onClick={() => setVariablePage(Math.min(totalVariablePages - 1, variablePage + 1))}
+                disabled={variablePage >= totalVariablePages - 1}
               >
-                Siguiente
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -1127,31 +1129,29 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">
               Mostrando {flatConcepts.length} de {allFlattenedConcepts.length} registros totales
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Variables:</span>
+            <div className="flex items-center gap-2 text-sm">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setVariablePage(Math.max(0, variablePage - 1))}
-                disabled={variablePage === 0}
+                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
               >
-                <ChevronLeft className="h-4 w-4" />
+                Anterior
               </Button>
-              <span className="text-sm">
-                {variablePage * VARIABLES_PER_PAGE + 1} -{" "}
-                {Math.min((variablePage + 1) * VARIABLES_PER_PAGE, totalVariables)} de {totalVariables}
+              <span className="text-muted-foreground">
+                Página {currentPage + 1} de {totalPages || 1}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setVariablePage(Math.min(totalVariablePages - 1, variablePage + 1))}
-                disabled={variablePage >= totalVariablePages - 1}
+                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage >= totalPages - 1}
               >
-                <ChevronRight className="h-4 w-4" />
+                Siguiente
               </Button>
             </div>
           </div>
