@@ -51,7 +51,7 @@ interface AtributoExtensible {
 interface Variable {
   id: string
   label: string
-  type: "numeric" | "dropdown" | "string" // numeric suma vertical, otros no
+  type: "numeric" | "dropdown" | "string" | "calculated" // numeric suma vertical, otros no
 }
 
 interface DataTableProps {
@@ -301,14 +301,27 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const VARIABLES_PER_PAGE = 6
   const MAX_ROWS_PER_PAGE = 100
 
-  const totalVariables = 28
-  const totalVariablePages = Math.ceil(totalVariables / VARIABLES_PER_PAGE)
+  const totalVariables = isEstadoCambiosPatrimonio ? 10 : 12 // Total de variables incluyendo la calculada
+  const CALCULATED_VAR_ID = "var-calculated-total" // Variable calculada especial
 
-  const allVariables: Variable[] = Array.from({ length: totalVariables }, (_, i) => {
-    if (i === 0) return { id: `var-${i + 1}`, label: `Variable ${i + 1}`, type: "dropdown" }
-    if (i === 1) return { id: `var-${i + 1}`, label: `Variable ${i + 1}`, type: "string" }
-    return { id: `var-${i + 1}`, label: `Variable ${i + 1}`, type: "numeric" }
-  })
+  // Variables con tipo, incluyendo la variable calculada al final
+  const allVariables: Variable[] = useMemo(() => {
+    const vars: Variable[] = []
+
+    // Variables normales
+    for (let i = 0; i < totalVariables - 1; i++) {
+      if (i === 0) vars.push({ id: `var-${i + 1}`, label: `Variable ${i + 1}`, type: "dropdown" })
+      else if (i === 1) vars.push({ id: `var-${i + 1}`, label: `Variable ${i + 1}`, type: "string" })
+      else vars.push({ id: `var-${i + 1}`, label: `Variable ${i + 1}`, type: "numeric" })
+    }
+
+    // Variable calculada al final
+    vars.push({ id: CALCULATED_VAR_ID, label: "Total Calculado", type: "calculated" })
+
+    return vars
+  }, [totalVariables, isEstadoCambiosPatrimonio])
+
+  const totalVariablePages = Math.ceil(totalVariables / VARIABLES_PER_PAGE)
 
   // Derived for paginated variables
   const paginatedVariables = useMemo(() => {
@@ -503,8 +516,40 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return node && node.children ? node.children.flatMap((child) => collectIds(child)) : []
   }
 
+  const calculateTotalForRow = (conceptId: string): number => {
+    // Solo calcular para conceptos hijo en Estado de Cambios
+    if (!isEstadoCambiosPatrimonio) return 0
+
+    const concept = dynamicConcepts.find((c) => c.id === conceptId)
+    if (!concept || concept.level === 0) return 0
+
+    let total = 0
+
+    // Sumar todas las variables numéricas excepto var-1 y var-2 (las no editables)
+    allVariables.forEach((variable) => {
+      if (variable.type === "numeric" && variable.id !== "var-1" && variable.id !== "var-2") {
+        const value = getCellValue(conceptId, variable.id)
+        const numValue = Number.parseFloat(value)
+        if (!isNaN(numValue)) {
+          total += numValue
+        }
+      }
+    })
+
+    return total
+  }
+
   const calculateParentSum = (conceptId: string, variableId: string): number => {
-    // Encontrar el tipo de variable
+    // Si es la variable calculada, calcular el total de totales de los hijos
+    if (variableId === CALCULATED_VAR_ID) {
+      const childrenIds = getChildrenIds(conceptId)
+      let sum = 0
+      childrenIds.forEach((childId) => {
+        sum += calculateTotalForRow(childId)
+      })
+      return sum
+    }
+
     const variable = allVariables.find((v) => v.id === variableId)
 
     // Solo sumar si es tipo numérico
@@ -710,24 +755,38 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   // const [startRange, setStartRange] = useState<string | null>(null) // Removed as rangeStart is used
   // const [endRange, setEndRange] = useState<string | null>(null) // Removed as rangeEnd is used
 
-  // Updated getAvailableEndConcepts logic to use startRange and endRange
-  const getAvailableEndRanges = () => {
+  const MAX_DROPDOWN_OPTIONS = 100 // Limitar opciones visibles para mejor rendimiento
+  const [rangeSearchInitial, setRangeSearchInitial] = useState("")
+  const [rangeSearchFinal, setRangeSearchFinal] = useState("")
+
+  const getFilteredStartRanges = useMemo(() => {
+    const filtered = getAllConceptsFlat.filter(
+      (concept) =>
+        concept.label.toLowerCase().includes(rangeSearchInitial.toLowerCase()) ||
+        concept.id.toLowerCase().includes(rangeSearchInitial.toLowerCase()),
+    )
+    return filtered.slice(0, MAX_DROPDOWN_OPTIONS)
+  }, [getAllConceptsFlat, rangeSearchInitial])
+
+  const getAvailableEndRanges = useMemo(() => {
     if (!rangeStart) {
-      return getAllConceptsFlat
+      return []
     }
     const startIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeStart)
     if (startIndex === -1) {
-      return getAllConceptsFlat
+      return []
     }
-    // Filter by searchTerm if it's active
-    return getAllConceptsFlat
+
+    const filtered = getAllConceptsFlat
       .slice(startIndex + 1)
       .filter(
         (concept) =>
-          concept.label.toLowerCase().includes(searchGlobal.toLowerCase()) ||
-          concept.id.toLowerCase().includes(searchGlobal.toLowerCase()),
+          concept.label.toLowerCase().includes(rangeSearchFinal.toLowerCase()) ||
+          concept.id.toLowerCase().includes(rangeSearchFinal.toLowerCase()),
       )
-  }
+
+    return filtered.slice(0, MAX_DROPDOWN_OPTIONS)
+  }, [getAllConceptsFlat, rangeStart, rangeSearchFinal])
 
   const handleRangeEndChange = (newEndRange: string) => {
     setRangeEnd(newEndRange)
@@ -896,6 +955,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             onValueChange={(value) => {
               setRangeStart(value)
               setRangeEnd("")
+              setRangeSearchInitial("")
             }}
             disabled={editingRows.size > 0}
           >
@@ -903,27 +963,74 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               <SelectValue placeholder="Seleccionar concepto..." />
             </SelectTrigger>
             <SelectContent>
-              {getAllConceptsFlat.map((concept) => (
-                <SelectItem key={concept.id} value={concept.id}>
-                  {concept.label}
-                </SelectItem>
-              ))}
+              <div className="p-2 border-b">
+                <Input
+                  placeholder="Buscar concepto..."
+                  value={rangeSearchInitial}
+                  onChange={(e) => setRangeSearchInitial(e.target.value)}
+                  className="h-8"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              {getFilteredStartRanges.length === 0 ? (
+                <div className="p-2 text-sm text-muted-foreground text-center">No se encontraron resultados</div>
+              ) : (
+                getFilteredStartRanges.map((concept) => (
+                  <SelectItem key={concept.id} value={concept.id}>
+                    {concept.label}
+                  </SelectItem>
+                ))
+              )}
+              {getFilteredStartRanges.length === MAX_DROPDOWN_OPTIONS && (
+                <div className="p-2 text-xs text-orange-600 bg-orange-50 border-t">
+                  Mostrando primeros {MAX_DROPDOWN_OPTIONS} resultados. Use el buscador para refinar.
+                </div>
+              )}
             </SelectContent>
           </Select>
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-2">Rango final:</label>
-          <Select value={rangeEnd} onValueChange={handleRangeEndChange} disabled={!rangeStart || editingRows.size > 0}>
+          <Select
+            value={rangeEnd}
+            onValueChange={(value) => {
+              handleRangeEndChange(value)
+              setRangeSearchFinal("")
+            }}
+            disabled={!rangeStart || editingRows.size > 0}
+          >
             <SelectTrigger className="w-full bg-white">
               <SelectValue placeholder="Seleccionar concepto..." />
             </SelectTrigger>
             <SelectContent>
-              {getAvailableEndRanges().map((concept) => (
-                <SelectItem key={concept.id} value={concept.id}>
-                  {concept.label}
-                </SelectItem>
-              ))}
+              <div className="p-2 border-b">
+                <Input
+                  placeholder="Buscar concepto..."
+                  value={rangeSearchFinal}
+                  onChange={(e) => setRangeSearchFinal(e.target.value)}
+                  className="h-8"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              {getAvailableEndRanges.length === 0 ? (
+                <div className="p-2 text-sm text-muted-foreground text-center">
+                  {rangeStart
+                    ? "No hay conceptos disponibles después del rango inicial"
+                    : "Seleccione primero un rango inicial"}
+                </div>
+              ) : (
+                getAvailableEndRanges.map((concept) => (
+                  <SelectItem key={concept.id} value={concept.id}>
+                    {concept.label}
+                  </SelectItem>
+                ))
+              )}
+              {getAvailableEndRanges.length === MAX_DROPDOWN_OPTIONS && (
+                <div className="p-2 text-xs text-orange-600 bg-orange-50 border-t">
+                  Mostrando primeros {MAX_DROPDOWN_OPTIONS} resultados. Use el buscador para refinar.
+                </div>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -1013,6 +1120,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                         {variable.type === "numeric" && "(Numérico)"}
                         {variable.type === "dropdown" && "(Lista)"}
                         {variable.type === "string" && "(Texto)"}
+                        {variable.type === "calculated" && "(Calculado)"}
                       </span>
                     </th>
                   ))}
