@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Search, ChevronLeft, Edit2, Plus, Check, MapPin, Building2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, ChevronLeft, Edit2, Plus, Check, MapPin, Building2, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getDepartamentos, getMunicipios } from "@/lib/colombia-data"
 import CrearEntidadView from "./crear-entidad-view"
+import EditarEntidadView from "./editar-entidad-view"
 
 interface Entidad {
   id: string
@@ -84,6 +85,8 @@ export default function EntidadesView({ onBack }: EntidadesViewProps) {
     sector: "",
   })
 
+  const [showEditView, setShowEditView] = useState(false)
+
   const departamentos = getDepartamentos()
   const municipios = searchFilters.departamento ? getMunicipios(searchFilters.departamento) : []
 
@@ -124,17 +127,7 @@ export default function EntidadesView({ onBack }: EntidadesViewProps) {
 
   const handleEdit = (entidad: Entidad) => {
     setEditingId(entidad.id)
-    setFormData({
-      razonSocial: entidad.razonSocial,
-      nit: entidad.nit,
-      sigla: entidad.sigla,
-      codigoEntidad: entidad.codigoEntidad,
-      departamento: entidad.departamento,
-      municipio: entidad.municipio,
-      estado: entidad.estado,
-      sector: entidad.sector,
-    })
-    setShowForm(true)
+    setShowEditView(true)
   }
 
   const handleSave = () => {
@@ -183,6 +176,18 @@ export default function EntidadesView({ onBack }: EntidadesViewProps) {
 
   if (showCrearEntidad) {
     return <CrearEntidadView onBack={() => setShowCrearEntidad(false)} />
+  }
+
+  if (showEditView && editingId) {
+    return (
+      <EditarEntidadView
+        entidadId={editingId}
+        onBack={() => {
+          setShowEditView(false)
+          setEditingId(null)
+        }}
+      />
+    )
   }
 
   return (
