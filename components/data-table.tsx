@@ -231,10 +231,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const [cellData, setCellData] = useState<Map<string, string>>(new Map())
   const [variablePage, setVariablePage] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
-  const [rangeStart, setRangeStart] = useState<string>("") // Changed from rangeStart
-  const [rangeEnd, setRangeEnd] = useState<string>("") // Changed from rangeEnd
-  const [openStartCombobox, setOpenStartCombobox] = useState(false)
-  const [openEndCombobox, setOpenEndCombobox] = useState(false)
+  const [rangeStart, setRangeStart] = useState<string>("")
+  const [rangeEnd, setRangeEnd] = useState<string>("")
   const [showLargeRangeAlert, setShowLargeRangeAlert] = useState(false)
   const [searchGlobal, setSearchGlobal] = useState("")
   const [atributosDialogOpen, setAtributosDialogOpen] = useState(false)
@@ -629,15 +627,34 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     if (startIndex === -1) {
       return getAllConceptsFlat
     }
-    return getAllConceptsFlat.slice(startIndex + 1).filter(
-      (concept) =>
-        // Ensure the concept is within the searched terms if searchTerm is active
-        concept.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        concept.id.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
+    // Filter by searchTerm if it's active
+    return getAllConceptsFlat
+      .slice(startIndex + 1)
+      .filter(
+        (concept) =>
+          concept.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          concept.id.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
   }
 
   const handleRangeChange = (newEndRange: string) => {
+    setEndRange(newEndRange)
+    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === startRange)
+    const endIndex = getAllConceptsFlat.findIndex((c) => c.id === newEndRange)
+
+    if (startIndex !== -1 && endIndex !== -1) {
+      const rangeSize = endIndex - startIndex + 1
+      const shouldShowAlert = rangeSize > 30 // Simulating the alert threshold
+
+      if (shouldShowAlert) {
+        setShowLargeRangeAlert(true)
+      } else {
+        setShowLargeRangeAlert(false)
+      }
+    }
+  }
+
+  const handleRangeEndChange = (newEndRange: string) => {
     setEndRange(newEndRange)
     const startIndex = getAllConceptsFlat.findIndex((c) => c.id === startRange)
     const endIndex = getAllConceptsFlat.findIndex((c) => c.id === newEndRange)
@@ -765,28 +782,19 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {onBack && (
-            <Button variant="outline" size="sm" onClick={onBack}>
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Volver
-            </Button>
-          )}
-          <h2 className="text-2xl font-bold">{title}</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <Input
-            type="text"
-            placeholder="Buscar por concepto..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64"
-          />
-        </div>
+    <div className="space-y-4 p-4">
+      {/* Header con botón volver y título */}
+      <div className="flex items-center gap-4">
+        {onBack && (
+          <Button variant="outline" size="sm" onClick={onBack}>
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Button>
+        )}
+        <h2 className="text-2xl font-bold">{title}</h2>
       </div>
 
+      {/* Alerta de registros pendientes */}
       {editingRows.size > 0 && (
         <Alert className="bg-orange-50 border-orange-200">
           <AlertDescription className="text-orange-800">
@@ -796,18 +804,18 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         </Alert>
       )}
 
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">Rango inicial:</label>
+      <div className="grid grid-cols-2 gap-4 bg-white border border-gray-200 rounded-lg p-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">Rango inicial:</label>
           <Select
-            value={startRange || ""}
+            value={rangeStart}
             onValueChange={(value) => {
-              setStartRange(value)
-              setEndRange(null)
+              setRangeStart(value)
+              setRangeEnd("")
             }}
             disabled={editingRows.size > 0}
           >
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar..." />
             </SelectTrigger>
             <SelectContent>
@@ -820,14 +828,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
           </Select>
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">Rango final:</label>
-          <Select
-            value={endRange || ""}
-            onValueChange={handleRangeChange}
-            disabled={!startRange || editingRows.size > 0}
-          >
-            <SelectTrigger className="w-48">
+        <div>
+          <label className="block text-sm font-medium mb-2">Rango final:</label>
+          <Select value={rangeEnd} onValueChange={handleRangeEndChange} disabled={!rangeStart || editingRows.size > 0}>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar..." />
             </SelectTrigger>
             <SelectContent>
@@ -841,6 +845,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         </div>
       </div>
 
+      {/* Alerta de más de 10,000 registros */}
       {showLargeRangeAlert && (
         <Alert className="bg-blue-50 border-blue-200">
           <AlertDescription className="text-blue-800">
@@ -850,7 +855,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         </Alert>
       )}
 
-      {!startRange || !endRange ? (
+      {!rangeStart || !rangeEnd ? (
         <div className="flex flex-col items-center justify-center py-16 text-gray-500">
           <Filter className="h-16 w-16 mb-4" />
           <p className="text-lg font-medium">Seleccione un rango de conceptos</p>
@@ -858,21 +863,55 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         </div>
       ) : (
         <>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <Input
+                type="text"
+                placeholder="Buscar en toda la tabla..."
+                value={searchGlobal}
+                onChange={(e) => setSearchGlobal(e.target.value)}
+                className="max-w-md"
+              />
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+              >
+                Anterior
+              </Button>
+              <span className="text-muted-foreground">
+                Página {currentPage + 1} de {totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage >= totalPages - 1}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+
+          {/* Tabla principal */}
           <div className="border border-gray-300 rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-blue-100">
-                    <th className="border border-gray-300 px-4 py-2 text-sm font-semibold text-left min-w-[150px]">
+                  <tr className="bg-gray-100">
+                    <th className="border border-gray-300 px-4 py-2 text-sm font-semibold text-left min-w-[120px]">
                       Acciones
                     </th>
                     <th className="border border-gray-300 px-4 py-2 text-sm font-semibold text-left min-w-[250px]">
-                      Concepto
+                      Conceptos
                     </th>
                     {paginatedVariables.map((variable) => (
                       <th
                         key={variable.id}
-                        className="border border-gray-300 px-4 py-2 text-sm font-semibold min-w-[120px]"
+                        className="border border-gray-300 px-4 py-2 text-sm font-semibold text-center min-w-[120px]"
                       >
                         {variable.label}
                       </th>
@@ -885,12 +924,37 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                     const isExpanded = expandedNodes.has(concept.id)
                     const isEditing = isRowEditing(concept.id)
                     const isRootParent = isEstadoCambiosPatrimonio && concept.level === 0
+                    const isChild = concept.level > 0
 
                     return (
-                      <tr key={concept.id} className={cn(concept.level > 0 && "bg-blue-50")}>
+                      <tr key={concept.id} className={cn(isChild && "bg-white")}>
                         <td className="border border-gray-300 px-2 py-2">
                           <div className="flex items-center gap-1">
-                            {!isRootParent && concept.level > 0 && (
+                            {isRootParent && isEstadoCambiosPatrimonio ? (
+                              // Solo botón + para padres raíz en Estado de Cambios
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  onClick={() => handleOpenAddDialog(concept.id, concept.label)}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => {
+                                    setSelectedConceptoAtributos({ id: concept.id, nombre: concept.label })
+                                    setAtributosDialogOpen(true)
+                                  }}
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
+                              </>
+                            ) : isChild && isEstadoCambiosPatrimonio ? (
+                              // Editar e info para hijos en Estado de Cambios
                               <>
                                 {isEditing ? (
                                   <>
@@ -921,33 +985,85 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                     <Edit className="h-4 w-4" />
                                   </Button>
                                 )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => {
+                                    setSelectedConceptoAtributos({ id: concept.id, nombre: concept.label })
+                                    setAtributosDialogOpen(true)
+                                  }}
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
                               </>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 w-7 p-0"
-                              onClick={() => handleVerAtributos(concept.id, concept.label)}
-                            >
-                              <Info className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            {isEstadoCambiosPatrimonio && concept.level === 0 && (
+                            ) : isChild && !isEstadoCambiosPatrimonio ? (
+                              // Para formularios normales, mostrar editar e info en hijos
+                              <>
+                                {isEditing ? (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      onClick={() => saveEditingRow(concept.id)}
+                                    >
+                                      <Save className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => cancelEditingRow(concept.id)}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => startEditingRow(concept.id)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => {
+                                    setSelectedConceptoAtributos({ id: concept.id, nombre: concept.label })
+                                    setAtributosDialogOpen(true)
+                                  }}
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              // Solo info para padres normales
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                onClick={() => handleOpenAddDialog(concept.id, concept.label)}
-                                title="Agregar concepto hijo"
+                                className="h-7 w-7 p-0"
+                                onClick={() => {
+                                  setSelectedConceptoAtributos({ id: concept.id, nombre: concept.label })
+                                  setAtributosDialogOpen(true)
+                                }}
                               >
-                                <Plus className="h-4 w-4" />
+                                <Info className="h-4 w-4" />
                               </Button>
                             )}
                           </div>
                         </td>
-                        <td className="border border-gray-300 px-2 py-2">
-                          <div className="flex items-center gap-1" style={{ paddingLeft: `${concept.level * 24}px` }}>
+                        <td className="border border-gray-300 px-4 py-2">
+                          <div className="flex items-center gap-2" style={{ paddingLeft: `${concept.level * 24}px` }}>
                             {isParent && (
-                              <button onClick={() => toggleNode(concept.id)} className="focus:outline-none">
+                              <button
+                                onClick={() => toggleNode(concept.id)}
+                                className="hover:bg-gray-100 rounded p-0.5"
+                              >
                                 {isExpanded ? (
                                   <ChevronDown className="h-4 w-4" />
                                 ) : (
@@ -955,63 +1071,68 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                 )}
                               </button>
                             )}
-                            <span className={cn("text-sm", isParent && "font-semibold")}>{concept.label}</span>
+                            <span className={cn("text-sm", concept.level === 0 && "font-semibold")}>
+                              {concept.label}
+                            </span>
                           </div>
                         </td>
                         {paginatedVariables.map((variable) => {
-                          const cellValue = isEditing
-                            ? tempRowData.get(concept.id)?.get(variable.id) || ""
-                            : getCellValue(concept.id, variable.id)
-                          const isNonEditable = !isCellEditable(concept.id, variable.id)
-
-                          if (isEstadoCambiosPatrimonio && concept.level === 0) {
-                            return (
-                              <td key={variable.id} className="border border-gray-300 px-2 py-1 text-center text-sm">
-                                <span className="text-gray-400">-</span>
-                              </td>
-                            )
+                          if (isEstadoCambiosPatrimonio && nonEditableVars.has(concept.id)) {
+                            const vars = nonEditableVars.get(concept.id)!
+                            if (variable.id === "var-1" || variable.id === "var-2") {
+                              const displayValue = variable.id === "var-1" ? vars.var1 : vars.var2
+                              return (
+                                <td
+                                  key={variable.id}
+                                  className="border border-gray-300 px-2 py-1 text-center bg-gray-50"
+                                >
+                                  <span className="text-sm text-gray-600">{displayValue}</span>
+                                </td>
+                              )
+                            }
                           }
 
-                          if (isNonEditable && nonEditableVars.has(concept.id)) {
-                            // This logic needs adjustment to correctly map variable IDs to stored nonEditableVars.
-                            // Assuming nonEditableVars stores values for specific variable IDs, not just generic var1/var2.
-                            // For now, we'll show the value if it exists in nonEditableVars and corresponds to the current variable.
-                            const savedValue =
-                              nonEditableVars.get(concept.id)?.[variable.id] ||
-                              getCellValue(concept.id, variable.id) ||
-                              "" // Fallback to getCellValue if not in nonEditableVars for some reason
-
+                          if (isRootParent && isEstadoCambiosPatrimonio) {
                             return (
                               <td
                                 key={variable.id}
-                                className="border border-gray-300 px-2 py-1 text-center text-sm bg-gray-100"
+                                className="border border-gray-300 px-2 py-1 text-center bg-gray-100"
                               >
-                                <span className="text-sm">{savedValue}</span>
+                                <span className="text-sm text-gray-400">-</span>
                               </td>
                             )
                           }
 
-                          return (
-                            <td
-                              key={variable.id}
-                              className={cn(
-                                "border border-gray-300 px-2 py-1 text-center text-sm",
-                                isEditing && !isNonEditable && "bg-yellow-50",
-                              )}
-                            >
-                              {isParent || !isEditing ? (
-                                <span className={cn("text-sm", isParent && "font-semibold")}>
-                                  {calculateParentSum(concept.id, variable.id).toLocaleString()}
-                                </span>
-                              ) : (
+                          if (isEditing) {
+                            const cellValue = getTempCellValue(concept.id, variable.id)
+                            return (
+                              <td key={variable.id} className="border border-gray-300 px-2 py-1 bg-yellow-50">
                                 <Input
                                   type="text"
                                   value={cellValue}
                                   onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
-                                  disabled={!isCellEditable(concept.id, variable.id)}
-                                  className="h-7 text-center"
+                                  className="w-full text-center text-sm h-8"
                                 />
-                              )}
+                              </td>
+                            )
+                          }
+
+                          if (isParent && !isEstadoCambiosPatrimonio) {
+                            const sum = calculateParentSum(concept.id, variable.id)
+                            return (
+                              <td
+                                key={variable.id}
+                                className="border border-gray-300 px-2 py-1 text-center bg-gray-100"
+                              >
+                                <span className="text-sm font-semibold">{sum.toFixed(2)}</span>
+                              </td>
+                            )
+                          }
+
+                          const cellValue = getCellValue(concept.id, variable.id)
+                          return (
+                            <td key={variable.id} className="border border-gray-300 px-2 py-1 text-center">
+                              <span className="text-sm">{cellValue || "0"}</span>
                             </td>
                           )
                         })}
@@ -1024,13 +1145,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Mostrando variables {variablePage * VARIABLES_PER_PAGE + 1} -{" "}
-                {Math.min((variablePage + 1) * VARIABLES_PER_PAGE, totalVariables)} de {totalVariables}
-              </span>
+            <div className="text-sm text-muted-foreground">
+              Mostrando {flatConcepts.length} de {allFlattenedConcepts.length} registros totales
             </div>
             <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Variables:</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -1038,10 +1157,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 disabled={variablePage === 0}
               >
                 <ChevronLeft className="h-4 w-4" />
-                Anterior
               </Button>
               <span className="text-sm">
-                Página {variablePage + 1} de {totalVariablePages}
+                {variablePage * VARIABLES_PER_PAGE + 1} -{" "}
+                {Math.min((variablePage + 1) * VARIABLES_PER_PAGE, totalVariables)} de {totalVariables}
               </span>
               <Button
                 variant="outline"
@@ -1049,38 +1168,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 onClick={() => setVariablePage(Math.min(totalVariablePages - 1, variablePage + 1))}
                 disabled={variablePage >= totalVariablePages - 1}
               >
-                Siguiente
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between border-t pt-4">
-            <div className="text-sm text-gray-600">
-              Mostrando {currentPage * MAX_ROWS_PER_PAGE + 1} -{" "}
-              {Math.min((currentPage + 1) * MAX_ROWS_PER_PAGE, allFlattenedConcepts.length)} de{" "}
-              {allFlattenedConcepts.length} registros
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                disabled={currentPage === 0}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Anterior
-              </Button>
-              <span className="text-sm">
-                Página {currentPage + 1} de {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                disabled={currentPage >= totalPages - 1}
-              >
-                Siguiente
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -1088,46 +1175,46 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         </>
       )}
 
+      {/* Dialogs */}
+      <AddChildDialog
+        open={addChildDialogOpen}
+        onOpenChange={setAddChildDialogOpen}
+        onAdd={handleAddChild}
+        parentId={selectedParentForAdd?.id || ""}
+        parentName={selectedParentForAdd?.name || ""}
+        variables={paginatedVariables}
+        existingChildren={getExistingChildren(selectedParentForAdd?.id || "")}
+      />
+
       <Dialog open={atributosDialogOpen} onOpenChange={setAtributosDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Atributos Extensibles</DialogTitle>
-            <DialogDescription>
-              {selectedConceptoAtributos?.nombre} ({selectedConceptoAtributos?.id})
-            </DialogDescription>
+            <DialogDescription>Concepto: {selectedConceptoAtributos?.nombre}</DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-2">
-              {(atributosExtensiblesMock[selectedConceptoAtributos?.id || ""] || atributosExtensiblesMock["1"]).map(
-                (atributo, idx) => (
-                  <div key={idx} className="grid grid-cols-2 gap-4 py-2 border-b last:border-b-0">
-                    <div className="text-sm font-medium text-gray-700">{atributo.nombre}:</div>
-                    <div className={`text-sm ${atributo.tipo === "boolean" ? "flex items-center" : ""}`}>
-                      {atributo.tipo === "boolean" ? (
-                        <input type="checkbox" checked={atributo.valor as boolean} disabled className="rounded" />
-                      ) : (
-                        <span className="bg-gray-100 px-3 py-1 rounded">{atributo.valor as string}</span>
-                      )}
-                    </div>
+          <div className="grid grid-cols-2 gap-3 py-4">
+            {(atributosExtensiblesMock[selectedConceptoAtributos?.id || ""] || atributosExtensiblesMock["1"]).map(
+              (atributo, index) => (
+                <div key={index} className="grid grid-cols-[1fr_auto] items-center gap-2">
+                  <div className="text-sm font-medium text-gray-700">{atributo.nombre}:</div>
+                  <div
+                    className={cn(
+                      "px-3 py-1 text-sm rounded",
+                      atributo.tipo === "boolean"
+                        ? atributo.valor
+                          ? "bg-gray-300 text-gray-800"
+                          : "bg-white border border-gray-300"
+                        : "bg-gray-300 text-gray-800",
+                    )}
+                  >
+                    {atributo.tipo === "boolean" ? (atributo.valor ? "☐" : "☐") : atributo.valor}
                   </div>
-                ),
-              )}
-            </div>
+                </div>
+              ),
+            )}
           </div>
         </DialogContent>
       </Dialog>
-
-      {isEstadoCambiosPatrimonio && selectedParentForAdd && (
-        <AddChildDialog
-          open={addChildDialogOpen}
-          onOpenChange={setAddChildDialogOpen}
-          onAdd={handleAddChild}
-          parentId={selectedParentForAdd.id}
-          parentName={selectedParentForAdd.name}
-          variables={allVariables}
-          existingChildren={getExistingChildren(selectedParentForAdd.id)}
-        />
-      )}
     </div>
   )
 }
