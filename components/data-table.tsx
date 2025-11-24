@@ -1,7 +1,19 @@
 "use client"
 
 import React, { useState, useMemo, useEffect } from "react" // Corrected import of React
-import { ChevronRight, ChevronDown, Info, Filter, Edit, Save, X, Plus, ChevronLeft, ArrowLeft } from "lucide-react" // Added ArrowLeft
+import {
+  ChevronRight,
+  ChevronDown,
+  Info,
+  Filter,
+  Edit,
+  Save,
+  X,
+  Plus,
+  ChevronLeft,
+  ArrowLeft,
+  Send,
+} from "lucide-react" // Added ArrowLeft and Send
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -835,15 +847,27 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
   return (
     <div className="flex flex-col gap-4 p-6 bg-white rounded-lg">
-      {/* Header con título y botón volver */}
+      {/* Header con título y botones volver/enviar */}
       <div className="flex items-center justify-between pb-4 border-b">
         <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-        {onBack && (
-          <Button variant="outline" onClick={onBack}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <Button variant="outline" onClick={onBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Volver
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              // Lógica de envío
+              alert("Formulario enviado correctamente")
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Send className="mr-2 h-4 w-4" />
+            Enviar
           </Button>
-        )}
+        </div>
       </div>
 
       {isEstadoCambiosPatrimonio && (
