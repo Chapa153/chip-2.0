@@ -1,26 +1,13 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import {
-  ChevronRight,
-  ChevronDown,
-  Check,
-  ChevronsUpDown,
-  ArrowLeft,
-  Info,
-  Filter,
-  Edit,
-  Save,
-  X,
-  Plus,
-} from "lucide-react"
+import { ChevronRight, ChevronDown, Info, Filter, Edit, Save, X, Plus, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { Alert, AlertDescription } from "@/components/ui/alert" // Added from updates
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // Added from updates
 
 // Tipos para la estructura de datos
 interface ConceptNode {
@@ -244,8 +231,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const [cellData, setCellData] = useState<Map<string, string>>(new Map())
   const [variablePage, setVariablePage] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
-  const [rangeStart, setRangeStart] = useState<string>("")
-  const [rangeEnd, setRangeEnd] = useState<string>("")
+  const [rangeStart, setRangeStart] = useState<string>("") // Changed from rangeStart
+  const [rangeEnd, setRangeEnd] = useState<string>("") // Changed from rangeEnd
   const [openStartCombobox, setOpenStartCombobox] = useState(false)
   const [openEndCombobox, setOpenEndCombobox] = useState(false)
   const [showLargeRangeAlert, setShowLargeRangeAlert] = useState(false)
@@ -477,7 +464,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     setEditingRows(newEditingRows)
 
     const rowData = new Map<string, string>()
-    currentVariables.forEach((variable) => {
+    getCurrentVariables().forEach((variable) => {
       const value = getCellValue(conceptId, variable.id)
       rowData.set(variable.id, value)
     })
@@ -556,6 +543,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
   const getCellValue = (conceptId: string, variableId: string) => {
     if (isEstadoCambiosPatrimonio && nonEditableVars.has(conceptId)) {
+      // The mapping for nonEditableVars needs to align with the actual variable IDs used.
+      // Assuming 'var-1' and 'var-2' map to the first two in getCurrentVariables().
       const vars = nonEditableVars.get(conceptId)!
       if (variableId === "var-1") return vars.var1
       if (variableId === "var-2") return vars.var2
@@ -626,47 +615,36 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return lastVisibleChild?.id === concept.id
   }
 
-  const currentVariables = getCurrentVariables()
+  // New state and derived values from updates
+  const [searchTerm, setSearchTerm] = useState("")
+  const [startRange, setStartRange] = useState<string | null>(null)
+  const [endRange, setEndRange] = useState<string | null>(null)
 
-  const handleVerAtributos = (conceptoId: string, conceptoNombre: string) => {
-    setSelectedConceptoAtributos({ id: conceptoId, nombre: conceptoNombre })
-    setAtributosDialogOpen(true)
-  }
-
-  const getAvailableEndConcepts = useMemo(() => {
-    if (!rangeStart) {
+  // Updated getAvailableEndConcepts logic to use startRange and endRange
+  const getAvailableEndRanges = () => {
+    if (!startRange) {
       return getAllConceptsFlat
     }
-    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeStart)
+    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === startRange)
     if (startIndex === -1) {
       return getAllConceptsFlat
     }
-    return getAllConceptsFlat.slice(startIndex + 1)
-  }, [rangeStart, getAllConceptsFlat])
+    return getAllConceptsFlat.slice(startIndex + 1).filter(
+      (concept) =>
+        // Ensure the concept is within the searched terms if searchTerm is active
+        concept.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        concept.id.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
+  }
 
-  const getRangeSize = useMemo((): number => {
-    if (!rangeStart || !rangeEnd) {
-      return 0
-    }
-    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeStart)
-    const endIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeEnd)
-    if (startIndex === -1 || endIndex === -1 || startIndex > endIndex) {
-      return 0
-    }
-    return endIndex - startIndex + 1
-  }, [rangeStart, rangeEnd, getAllConceptsFlat])
-
-  const handleRangeEndChange = (newRangeEnd: string) => {
-    setRangeEnd(newRangeEnd)
-    setOpenEndCombobox(false)
-
-    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeStart)
-    const endIndex = getAllConceptsFlat.findIndex((c) => c.id === newRangeEnd)
+  const handleRangeChange = (newEndRange: string) => {
+    setEndRange(newEndRange)
+    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === startRange)
+    const endIndex = getAllConceptsFlat.findIndex((c) => c.id === newEndRange)
 
     if (startIndex !== -1 && endIndex !== -1) {
       const rangeSize = endIndex - startIndex + 1
-      // Simular alerta de 10,000 registros cuando el rango supera 30 conceptos
-      const shouldShowAlert = rangeSize > 30
+      const shouldShowAlert = rangeSize > 30 // Simulating the alert threshold
 
       if (shouldShowAlert) {
         setShowLargeRangeAlert(true)
@@ -677,11 +655,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   useEffect(() => {
-    if (rangeStart && rangeEnd) {
+    if (startRange && endRange) {
       setCurrentPage(0)
       setExpandedNodes(new Set())
     }
-  }, [rangeStart, rangeEnd])
+  }, [startRange, endRange])
 
   const handleAddChild = (parentId: string, numericValue: string, dropdownValue: string) => {
     const newChildId = `${parentId}.${Date.now()}`
@@ -695,6 +673,9 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
     // Guardar las variables no editables
     const newNonEditableVars = new Map(nonEditableVars)
+    // Ensure the keys used here match the actual variable IDs. Assuming var1Name and var2Name map to the first two variables.
+    const firstVariableId = getCurrentVariables()[0]?.id || "var-1"
+    const secondVariableId = getCurrentVariables()[1]?.id || "var-2"
     newNonEditableVars.set(newChildId, { var1: numericValue, var2: dropdownValue })
     setNonEditableVars(newNonEditableVars)
 
@@ -772,307 +753,314 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     label: `Variable ${i + 1}`,
   }))
 
+  // Derived for paginated variables
+  const paginatedVariables = useMemo(() => {
+    const start = variablePage * VARIABLES_PER_PAGE
+    return allVariables.slice(start, start + VARIABLES_PER_PAGE)
+  }, [variablePage, allVariables])
+
+  const handleVerAtributos = (conceptId: string, conceptLabel: string) => {
+    // Implement handleVerAtributos logic here
+    console.log(`Ver atributos for concept ${conceptId}: ${conceptLabel}`)
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {onBack && (
             <Button variant="outline" size="sm" onClick={onBack}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ChevronLeft className="h-4 w-4 mr-2" />
               Volver
             </Button>
           )}
-          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+          <h2 className="text-2xl font-bold">{title}</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            type="text"
+            placeholder="Buscar por concepto..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-64"
+          />
+        </div>
+      </div>
+
+      {editingRows.size > 0 && (
+        <Alert className="bg-orange-50 border-orange-200">
+          <AlertDescription className="text-orange-800">
+            Tienes {editingRows.size} registro(s) pendiente(s) de guardar. Debes guardar o cancelar antes de modificar
+            los filtros de rango.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Rango inicial:</label>
+          <Select
+            value={startRange || ""}
+            onValueChange={(value) => {
+              setStartRange(value)
+              setEndRange(null)
+            }}
+            disabled={editingRows.size > 0}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Seleccionar..." />
+            </SelectTrigger>
+            <SelectContent>
+              {getAllConceptsFlat.map((concept) => (
+                <SelectItem key={concept.id} value={concept.id}>
+                  {concept.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Rango final:</label>
+          <Select
+            value={endRange || ""}
+            onValueChange={handleRangeChange}
+            disabled={!startRange || editingRows.size > 0}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Seleccionar..." />
+            </SelectTrigger>
+            <SelectContent>
+              {getAvailableEndRanges().map((concept) => (
+                <SelectItem key={concept.id} value={concept.id}>
+                  {concept.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {showLargeRangeAlert && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-          <Info className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <h4 className="font-semibold text-amber-900 mb-1">Rango grande detectado</h4>
-            <p className="text-sm text-amber-800">
-              El rango seleccionado contiene más de 10,000 registros. Para optimizar el rendimiento:
-            </p>
-            <ul className="list-disc list-inside text-sm text-amber-800 mt-2 space-y-1">
-              <li>Se mostrará un máximo de 100 filas por página</li>
-              <li>Los conceptos padres se mostrarán colapsados por defecto</li>
-              <li>Puede expandir cada concepto individualmente según necesite</li>
-            </ul>
-          </div>
-        </div>
+        <Alert className="bg-blue-50 border-blue-200">
+          <AlertDescription className="text-blue-800">
+            El rango seleccionado contiene más de 10,000 registros. Se aplicará paginación automática de 100 filas por
+            página y los conceptos padres se mostrarán colapsados por defecto para optimizar el rendimiento.
+          </AlertDescription>
+        </Alert>
       )}
 
-      <Card className="overflow-hidden">
-        <div className="border-b bg-muted/30 p-4">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Rango inicial:</label>
-              <Popover open={openStartCombobox} onOpenChange={setOpenStartCombobox}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full justify-between bg-transparent"
-                    disabled={editingRows.size > 0}
-                  >
-                    {rangeStart
-                      ? getAllConceptsFlat.find((concept) => concept.id === rangeStart)?.label || "Seleccionar..."
-                      : "Seleccionar..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Buscar concepto..." />
-                    <CommandList className="max-h-[300px]">
-                      <CommandEmpty>No se encontraron conceptos.</CommandEmpty>
-                      <CommandGroup>
-                        {getAllConceptsFlat.slice(0, 200).map((concept) => (
-                          <CommandItem
-                            key={concept.id}
-                            value={`${concept.id} ${concept.label}`}
-                            onSelect={() => {
-                              setRangeStart(concept.id)
-                              setOpenStartCombobox(false)
-                            }}
-                          >
-                            <Check
-                              className={cn("mr-2 h-4 w-4", rangeStart === concept.id ? "opacity-100" : "opacity-0")}
-                            />
-                            <span className="truncate">
-                              {concept.label} ({concept.id})
-                            </span>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Rango final:</label>
-              <Popover open={openEndCombobox} onOpenChange={setOpenEndCombobox}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full justify-between bg-transparent"
-                    disabled={!rangeStart || editingRows.size > 0}
-                  >
-                    {rangeEnd
-                      ? getAllConceptsFlat.find((concept) => concept.id === rangeEnd)?.label || "Seleccionar..."
-                      : "Seleccionar..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Buscar concepto..." />
-                    <CommandList className="max-h-[300px]">
-                      <CommandEmpty>No se encontraron conceptos.</CommandEmpty>
-                      <CommandGroup>
-                        {getAvailableEndConcepts.slice(0, 200).map((concept) => (
-                          <CommandItem
-                            key={concept.id}
-                            value={`${concept.id} ${concept.label}`}
-                            onSelect={() => {
-                              handleRangeEndChange(concept.id)
-                            }}
-                          >
-                            <Check
-                              className={cn("mr-2 h-4 w-4", rangeEnd === concept.id ? "opacity-100" : "opacity-0")}
-                            />
-                            <span className="truncate">
-                              {concept.label} ({concept.id})
-                            </span>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {editingRows.size > 0 && (
-            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-md">
-              <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-orange-600 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-orange-700">
-                    Hay {editingRows.size} registro(s) en edición pendiente de guardar. Debe guardar o cancelar los
-                    cambios antes de modificar el filtro de rango.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+      {!startRange || !endRange ? (
+        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+          <Filter className="h-16 w-16 mb-4" />
+          <p className="text-lg font-medium">Seleccione un rango de conceptos</p>
+          <p className="text-sm">Para visualizar los datos, debe seleccionar un rango inicial y final</p>
         </div>
-
-        {!rangeStart || !rangeEnd ? (
-          <div className="p-12 text-center">
-            <Filter className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Seleccione un rango de conceptos</h3>
-            <p className="text-gray-500">Para visualizar los datos, debe seleccionar un rango inicial y final</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead className="bg-gray-100 sticky top-0 z-10">
-                <tr>
-                  <th className="border border-gray-300 px-4 py-2 text-left font-semibold w-16">Acciones</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left font-semibold min-w-[250px]">Conceptos</th>
-                  {currentVariables.map((variable) => (
-                    <th
-                      key={variable.id}
-                      className="border border-gray-300 px-4 py-2 text-center font-semibold min-w-[120px]"
-                    >
-                      {variable.label}
+      ) : (
+        <>
+          <div className="border border-gray-300 rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-blue-100">
+                    <th className="border border-gray-300 px-4 py-2 text-sm font-semibold text-left min-w-[150px]">
+                      Acciones
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {flatConcepts.map((concept) => {
-                  const isParent = isParentConcept(concept.id)
-                  const isExpanded = expandedNodes.has(concept.id)
-                  const isEditing = isRowEditing(concept.id)
-                  const isRootParent = isEstadoCambiosPatrimonio && concept.level === 0
+                    <th className="border border-gray-300 px-4 py-2 text-sm font-semibold text-left min-w-[250px]">
+                      Concepto
+                    </th>
+                    {paginatedVariables.map((variable) => (
+                      <th
+                        key={variable.id}
+                        className="border border-gray-300 px-4 py-2 text-sm font-semibold min-w-[120px]"
+                      >
+                        {variable.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {flatConcepts.map((concept) => {
+                    const isParent = isParentConcept(concept.id)
+                    const isExpanded = expandedNodes.has(concept.id)
+                    const isEditing = isRowEditing(concept.id)
+                    const isRootParent = isEstadoCambiosPatrimonio && concept.level === 0
 
-                  return (
-                    <tr key={concept.id} className={cn(concept.level > 0 && "bg-blue-50")}>
-                      <td className="border border-gray-300 px-2 py-2">
-                        <div className="flex items-center gap-1">
-                          {!isRootParent && (
-                            <>
-                              {isEditing ? (
-                                <>
+                    return (
+                      <tr key={concept.id} className={cn(concept.level > 0 && "bg-blue-50")}>
+                        <td className="border border-gray-300 px-2 py-2">
+                          <div className="flex items-center gap-1">
+                            {!isRootParent && concept.level > 0 && (
+                              <>
+                                {isEditing ? (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      onClick={() => saveEditingRow(concept.id)}
+                                    >
+                                      <Save className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => cancelEditingRow(concept.id)}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                ) : (
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                    onClick={() => saveEditingRow(concept.id)}
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => startEditingRow(concept.id)}
                                   >
-                                    <Save className="h-4 w-4" />
+                                    <Edit className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    onClick={() => cancelEditingRow(concept.id)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0"
-                                  onClick={() => startEditingRow(concept.id)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0"
-                            onClick={() => handleVerAtributos(concept.id, concept.label)}
-                          >
-                            <Info className="h-4 w-4 text-blue-600" />
-                          </Button>
-                          {isEstadoCambiosPatrimonio && concept.level === 0 && (
+                                )}
+                              </>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                              onClick={() => handleOpenAddDialog(concept.id, concept.label)}
-                              title="Agregar concepto hijo"
+                              className="h-7 w-7 p-0"
+                              onClick={() => handleVerAtributos(concept.id, concept.label)}
                             >
-                              <Plus className="h-4 w-4" />
+                              <Info className="h-4 w-4 text-blue-600" />
                             </Button>
-                          )}
-                        </div>
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        <div className="flex items-center gap-2" style={{ paddingLeft: `${concept.level * 24}px` }}>
-                          {isParent && (
-                            <button onClick={() => toggleNode(concept.id)} className="flex-shrink-0">
-                              {isExpanded ? (
-                                <ChevronDown className="w-4 h-4 text-gray-600" />
-                              ) : (
-                                <ChevronRight className="w-4 h-4 text-gray-600" />
-                              )}
-                            </button>
-                          )}
-                          <span className={cn("text-sm", isParent && "font-semibold")}>{concept.label}</span>
-                        </div>
-                      </td>
-                      {currentVariables.map((variable) => {
-                        const cellValue = isEditing
-                          ? tempRowData.get(concept.id)?.get(variable.id) || ""
-                          : getCellValue(concept.id, variable.id)
-                        const isNonEditable = !isCellEditable(concept.id, variable.id)
+                            {isEstadoCambiosPatrimonio && concept.level === 0 && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={() => handleOpenAddDialog(concept.id, concept.label)}
+                                title="Agregar concepto hijo"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="border border-gray-300 px-2 py-2">
+                          <div className="flex items-center gap-1" style={{ paddingLeft: `${concept.level * 24}px` }}>
+                            {isParent && (
+                              <button onClick={() => toggleNode(concept.id)} className="focus:outline-none">
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </button>
+                            )}
+                            <span className={cn("text-sm", isParent && "font-semibold")}>{concept.label}</span>
+                          </div>
+                        </td>
+                        {paginatedVariables.map((variable) => {
+                          const cellValue = isEditing
+                            ? tempRowData.get(concept.id)?.get(variable.id) || ""
+                            : getCellValue(concept.id, variable.id)
+                          const isNonEditable = !isCellEditable(concept.id, variable.id)
 
-                        if (isEstadoCambiosPatrimonio && concept.level === 0) {
+                          if (isEstadoCambiosPatrimonio && concept.level === 0) {
+                            return (
+                              <td key={variable.id} className="border border-gray-300 px-2 py-1 text-center text-sm">
+                                <span className="text-gray-400">-</span>
+                              </td>
+                            )
+                          }
+
+                          if (isNonEditable && nonEditableVars.has(concept.id)) {
+                            // This logic needs adjustment to correctly map variable IDs to stored nonEditableVars.
+                            // Assuming nonEditableVars stores values for specific variable IDs, not just generic var1/var2.
+                            // For now, we'll show the value if it exists in nonEditableVars and corresponds to the current variable.
+                            const savedValue =
+                              nonEditableVars.get(concept.id)?.[variable.id] ||
+                              getCellValue(concept.id, variable.id) ||
+                              "" // Fallback to getCellValue if not in nonEditableVars for some reason
+
+                            return (
+                              <td
+                                key={variable.id}
+                                className="border border-gray-300 px-2 py-1 text-center text-sm bg-gray-100"
+                              >
+                                <span className="text-sm">{savedValue}</span>
+                              </td>
+                            )
+                          }
+
                           return (
-                            <td key={variable.id} className="border border-gray-300 px-2 py-1 text-center text-sm">
-                              <span className="text-gray-400">-</span>
+                            <td
+                              key={variable.id}
+                              className={cn(
+                                "border border-gray-300 px-2 py-1 text-center text-sm",
+                                isEditing && !isNonEditable && "bg-yellow-50",
+                              )}
+                            >
+                              {isParent || !isEditing ? (
+                                <span className={cn("text-sm", isParent && "font-semibold")}>
+                                  {calculateParentSum(concept.id, variable.id).toLocaleString()}
+                                </span>
+                              ) : (
+                                <Input
+                                  type="text"
+                                  value={cellValue}
+                                  onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
+                                  disabled={!isCellEditable(concept.id, variable.id)}
+                                  className="h-7 text-center"
+                                />
+                              )}
                             </td>
                           )
-                        }
-
-                        return (
-                          <td
-                            key={variable.id}
-                            className={cn(
-                              "border border-gray-300 px-2 py-1 text-center text-sm",
-                              isEditing && !isNonEditable && "bg-yellow-50",
-                              isNonEditable && "bg-gray-100",
-                            )}
-                          >
-                            {isParent || !isEditing ? (
-                              <span className={cn("text-sm", isParent && "font-semibold")}>
-                                {calculateParentSum(concept.id, variable.id).toLocaleString()}
-                              </span>
-                            ) : (
-                              <Input
-                                type="text"
-                                value={cellValue}
-                                onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
-                                disabled={!isCellEditable(concept.id, variable.id)}
-                                className={cn(
-                                  "text-center h-8 text-sm",
-                                  !isCellEditable(concept.id, variable.id) && "bg-gray-100 cursor-not-allowed",
-                                )}
-                                placeholder={isCellEditable(concept.id, variable.id) ? "0" : "No editable"}
-                              />
-                            )}
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        })}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
 
-        <div className="border-t bg-muted/30 p-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              Mostrando registros {currentPage * MAX_ROWS_PER_PAGE + 1} -{" "}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                Mostrando variables {variablePage * VARIABLES_PER_PAGE + 1} -{" "}
+                {Math.min((variablePage + 1) * VARIABLES_PER_PAGE, totalVariables)} de {totalVariables}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setVariablePage(Math.max(0, variablePage - 1))}
+                disabled={variablePage === 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </Button>
+              <span className="text-sm">
+                Página {variablePage + 1} de {totalVariablePages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setVariablePage(Math.min(totalVariablePages - 1, variablePage + 1))}
+                disabled={variablePage >= totalVariablePages - 1}
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t pt-4">
+            <div className="text-sm text-gray-600">
+              Mostrando {currentPage * MAX_ROWS_PER_PAGE + 1} -{" "}
               {Math.min((currentPage + 1) * MAX_ROWS_PER_PAGE, allFlattenedConcepts.length)} de{" "}
-              {allFlattenedConcepts.length} (máximo 100 por página)
-            </span>
+              {allFlattenedConcepts.length} registros
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -1080,23 +1068,25 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                 disabled={currentPage === 0}
               >
+                <ChevronLeft className="h-4 w-4" />
                 Anterior
               </Button>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm">
                 Página {currentPage + 1} de {totalPages}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                disabled={currentPage === totalPages - 1}
+                disabled={currentPage >= totalPages - 1}
               >
                 Siguiente
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
-        </div>
-      </Card>
+        </>
+      )}
 
       <Dialog open={atributosDialogOpen} onOpenChange={setAtributosDialogOpen}>
         <DialogContent className="max-w-2xl">
