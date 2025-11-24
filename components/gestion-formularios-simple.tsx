@@ -1,10 +1,10 @@
 "use client"
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Filter, Upload, Send, FileDown, MoreVertical, Search, Edit, FileSpreadsheet, HelpCircle } from 'lucide-react'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Filter, Upload, Send, FileDown, MoreVertical, Search, Edit, FileSpreadsheet, HelpCircle } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -14,26 +14,29 @@ interface GestionFormulariosSimpleProps {
     ano?: string
     periodo?: string
   }
+  onFiltrosChange?: (filtros: { categoria?: string; ano?: string; periodo?: string }) => void
 }
 
-export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }: GestionFormulariosSimpleProps) {
+export default function GestionFormulariosSimple({
+  onEditForm,
+  filtrosPrevios,
+  onFiltrosChange,
+}: GestionFormulariosSimpleProps) {
   const [entidad] = useState(filtrosPrevios?.entidad || "Contaduría General de la Nación")
   const [categoria, setCategoria] = useState(filtrosPrevios?.categoria || "")
   const [ano, setAno] = useState(filtrosPrevios?.ano || "")
   const [periodo, setPeriodo] = useState(filtrosPrevios?.periodo || "")
-  const [mostrarTabla, setMostrarTabla] = useState(!!filtrosPrevios?.categoria && !!filtrosPrevios?.ano && !!filtrosPrevios?.periodo)
+  const [mostrarTabla, setMostrarTabla] = useState(
+    !!filtrosPrevios?.categoria && !!filtrosPrevios?.ano && !!filtrosPrevios?.periodo,
+  )
   const [searchTerm, setSearchTerm] = useState("")
   const [filtrosModificados, setFiltrosModificados] = useState(false)
   const [selectedFormularios, setSelectedFormularios] = useState<string[]>([])
 
-  const categorias = [
-    "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA",
-    "INFORMACIÓN PRESUPUESTAL",
-    "INFORMACIÓN FINANCIERA"
-  ]
+  const categorias = ["INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA", "INFORMACIÓN PRESUPUESTAL", "INFORMACIÓN FINANCIERA"]
 
   const anos = ["2024", "2025", "2026"]
-  
+
   const getPeriodos = () => {
     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
       return ["Enero - Marzo", "Abril - Junio", "Julio - Septiembre", "Octubre - Diciembre"]
@@ -42,17 +45,42 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
   }
 
   const formularios = [
-    { id: "CGN-2025-01", nombre: "Balance General", estado: "Pendiente en validar", fecha: "9/11/2024", estadoColor: "yellow" },
+    {
+      id: "CGN-2025-01",
+      nombre: "Balance General",
+      estado: "Pendiente en validar",
+      fecha: "9/11/2024",
+      estadoColor: "yellow",
+    },
     { id: "CGN-2025-02", nombre: "Estado de Resultados", estado: "Aceptado", fecha: "8/11/2024", estadoColor: "green" },
-    { id: "CGN-2025-03", nombre: "Flujo de Efectivo", estado: "En Validación", fecha: "7/11/2024", estadoColor: "blue" },
-    { id: "CGN-2025-04", nombre: "Estado de Cambios en el Patrimonio", estado: "Rechazado por Formato", fecha: "6/11/2024", estadoColor: "red" },
-    { id: "CGN-2025-05", nombre: "Notas a los Estados Financieros", estado: "Rechazado por Deficiencia", fecha: "5/11/2024", estadoColor: "red" },
+    {
+      id: "CGN-2025-03",
+      nombre: "Flujo de Efectivo",
+      estado: "En Validación",
+      fecha: "7/11/2024",
+      estadoColor: "blue",
+    },
+    {
+      id: "CGN-2025-04",
+      nombre: "Estado de Cambios en el Patrimonio",
+      estado: "Rechazado por Formato",
+      fecha: "6/11/2024",
+      estadoColor: "red",
+    },
+    {
+      id: "CGN-2025-05",
+      nombre: "Notas a los Estados Financieros",
+      estado: "Rechazado por Deficiencia",
+      fecha: "5/11/2024",
+      estadoColor: "red",
+    },
   ]
 
   const handleAplicarFiltros = () => {
     if (categoria && ano && periodo) {
       setMostrarTabla(true)
       setFiltrosModificados(false)
+      onFiltrosChange?.({ categoria, ano, periodo })
     }
   }
 
@@ -64,34 +92,36 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
   }
 
   const toggleFormularioSelection = (formId: string) => {
-    setSelectedFormularios(prev => 
-      prev.includes(formId) 
-        ? prev.filter(id => id !== formId)
-        : [...prev, formId]
-    )
+    setSelectedFormularios((prev) => (prev.includes(formId) ? prev.filter((id) => id !== formId) : [...prev, formId]))
   }
 
   const toggleSelectAll = () => {
     if (selectedFormularios.length === formularios.length) {
       setSelectedFormularios([])
     } else {
-      setSelectedFormularios(formularios.map(f => f.id))
+      setSelectedFormularios(formularios.map((f) => f.id))
     }
   }
 
   const getEstadoBadgeClass = (color: string) => {
     switch (color) {
-      case "yellow": return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "green": return "bg-green-100 text-green-800 border-green-200"
-      case "blue": return "bg-blue-100 text-blue-800 border-blue-200"
-      case "red": return "bg-red-100 text-red-800 border-red-200"
-      default: return "bg-gray-100 text-gray-800 border-gray-200"
+      case "yellow":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "green":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "blue":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "red":
+        return "bg-red-100 text-red-800 border-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
 
-  const filteredFormularios = formularios.filter(f => 
-    f.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.id.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredFormularios = formularios.filter(
+    (f) =>
+      f.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   return (
@@ -102,17 +132,17 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
           <Filter className="w-5 h-5" />
           <h3 className="font-semibold text-lg">Filtros de Búsqueda</h3>
         </div>
-        
+
         {filtrosModificados && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
             Los filtros han sido modificados. Haga clic en "Aplicar Filtros" para actualizar los resultados.
           </div>
         )}
-        
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium mb-2">Entidad</label>
-            <input 
+            <input
               value={entidad}
               disabled
               className="w-full px-3 py-2 border border-input rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
@@ -123,14 +153,16 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
             <label className="block text-sm font-medium mb-2">
               Categoría <span className="text-red-500">*</span>
             </label>
-            <select 
+            <select
               value={categoria}
               onChange={(e) => handleFilterChange(setCategoria, e.target.value)}
               className="w-full px-3 py-2 border border-input rounded-md bg-background"
             >
               <option value="">Seleccione categoría</option>
-              {categorias.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+              {categorias.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
           </div>
@@ -139,14 +171,16 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
             <label className="block text-sm font-medium mb-2">
               Año <span className="text-red-500">*</span>
             </label>
-            <select 
+            <select
               value={ano}
               onChange={(e) => handleFilterChange(setAno, e.target.value)}
               className="w-full px-3 py-2 border border-input rounded-md bg-background"
             >
               <option value="">Seleccione año</option>
-              {anos.map(a => (
-                <option key={a} value={a}>{a}</option>
+              {anos.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
               ))}
             </select>
           </div>
@@ -155,23 +189,25 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
             <label className="block text-sm font-medium mb-2">
               Periodo <span className="text-red-500">*</span>
             </label>
-            <select 
+            <select
               value={periodo}
               onChange={(e) => handleFilterChange(setPeriodo, e.target.value)}
               disabled={!categoria}
               className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50"
             >
               <option value="">Seleccione periodo</option>
-              {getPeriodos().map(p => (
-                <option key={p} value={p}>{p}</option>
+              {getPeriodos().map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
               ))}
             </select>
           </div>
         </div>
 
         <div className="flex justify-end">
-          <Button 
-            onClick={handleAplicarFiltros} 
+          <Button
+            onClick={handleAplicarFiltros}
             className="bg-blue-600 hover:bg-blue-700"
             disabled={!categoria || !ano || !periodo}
           >
@@ -185,7 +221,9 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
         <div className="bg-white rounded-lg border border-border p-12 text-center">
           <Filter className="w-16 h-16 mx-auto text-gray-300 mb-4" />
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Seleccione los filtros de búsqueda</h3>
-          <p className="text-gray-500">Para visualizar los formularios disponibles, debe seleccionar Categoría, Año y Periodo</p>
+          <p className="text-gray-500">
+            Para visualizar los formularios disponibles, debe seleccionar Categoría, Año y Periodo
+          </p>
         </div>
       )}
 
@@ -203,9 +241,9 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
                 <FileDown className="w-4 h-4 mr-2" />
                 Envíos
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={selectedFormularios.length === 0}
                 className={selectedFormularios.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
               >
@@ -214,8 +252,8 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     disabled={selectedFormularios.length === 0}
                     className={selectedFormularios.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
@@ -316,7 +354,7 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
             {/* Barra de Búsqueda */}
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input 
+              <Input
                 placeholder="Buscar por código o nombre..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -331,8 +369,8 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
               <thead className="bg-gray-50 border-b border-border">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="rounded"
                       checked={selectedFormularios.length === formularios.length}
                       onChange={toggleSelectAll}
@@ -359,27 +397,23 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
                 {filteredFormularios.map((form) => (
                   <tr key={form.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="rounded"
                         checked={selectedFormularios.includes(form.id)}
                         onChange={() => toggleFormularioSelection(form.id)}
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-blue-600">
-                      {form.id}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {form.nombre}
-                    </td>
+                    <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}>
+                      <span
+                        className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
+                      >
                         {form.estado}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {form.fecha}
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
                     <td className="px-4 py-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -414,16 +448,24 @@ export default function GestionFormulariosSimple({ onEditForm, filtrosPrevios }:
                 <option>25</option>
                 <option>50</option>
               </select>
-              <span className="text-sm text-gray-600 ml-4">
-                Mostrando 1 a 5 de 5 resultados
-              </span>
+              <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled>Primera</Button>
-              <Button variant="outline" size="sm" disabled>Anterior</Button>
-              <Button variant="default" size="sm">Página 1 de 1</Button>
-              <Button variant="outline" size="sm" disabled>Siguiente</Button>
-              <Button variant="outline" size="sm" disabled>Última</Button>
+              <Button variant="outline" size="sm" disabled>
+                Primera
+              </Button>
+              <Button variant="outline" size="sm" disabled>
+                Anterior
+              </Button>
+              <Button variant="default" size="sm">
+                Página 1 de 1
+              </Button>
+              <Button variant="outline" size="sm" disabled>
+                Siguiente
+              </Button>
+              <Button variant="outline" size="sm" disabled>
+                Última
+              </Button>
             </div>
           </div>
         </div>

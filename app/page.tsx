@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import LoginForm from "@/components/login-form"
 import ModulosPrincipales from "@/components/modulos-principales"
 import AdministracionSubmodulos from "@/components/administracion-submódulos"
 import FormulariosSubmodulos from "@/components/formularios-submodulos"
 import UsuariosModule from "@/components/usuarios-module"
-import RolesModule from "@/components/roles-module"
 import EntidadesView from "@/components/entidades-view"
 import GestionFormulariosSimple from "@/components/gestion-formularios-simple"
 import DataTable from "@/components/data-table"
@@ -25,7 +24,7 @@ export default function Page() {
   const [username, setUsername] = useState("")
   const [navigationStack, setNavigationStack] = useState<NavigationState>({ view: null })
   const [formularioSection, setFormularioSection] = useState<string | null>(null)
-  const [editingFormulario, setEditingFormulario] = useState<{id: string, nombre: string} | null>(null)
+  const [editingFormulario, setEditingFormulario] = useState<{ id: string; nombre: string } | null>(null)
   const [filtrosGestionFormularios, setFiltrosGestionFormularios] = useState<{
     categoria?: string
     ano?: string
@@ -48,7 +47,7 @@ export default function Page() {
       setFormularioSection(moduleId)
       return
     }
-    
+
     if (["entidades", "usuarios", "roles", "auditoria"].includes(moduleId)) {
       setNavigationStack({ view: "administracion", subview: moduleId })
     } else if (moduleId === "gestion-formularios") {
@@ -65,11 +64,6 @@ export default function Page() {
   }
 
   const handleEditFormulario = (formId: string, formName: string) => {
-    const filtrosActuales = {
-      categoria: filtrosGestionFormularios.categoria,
-      ano: filtrosGestionFormularios.ano,
-      periodo: filtrosGestionFormularios.periodo
-    }
     setEditingFormulario({ id: formId, nombre: formName })
     setNavigationStack({ view: "formularios", subview: "editar" })
   }
@@ -77,6 +71,11 @@ export default function Page() {
   const handleVolverDeEdicion = () => {
     setNavigationStack({ view: "formularios", subview: "gestion-formularios" })
     setEditingFormulario(null)
+    // No resetear filtrosGestionFormularios
+  }
+
+  const handleFiltrosChange = (nuevosFiltros: { categoria?: string; ano?: string; periodo?: string }) => {
+    setFiltrosGestionFormularios(nuevosFiltros)
   }
 
   const goToHome = () => {
@@ -133,23 +132,35 @@ export default function Page() {
   } else if (navigationStack.view === "formularios") {
     breadcrumbItems.push({ label: "Formularios", onClick: goToFormulariosModules })
     if (navigationStack.subview === "gestion-formularios") {
-      breadcrumbItems.push({ label: "Formulario", onClick: () => {
-        setFormularioSection("formulario-section")
-        setNavigationStack({ view: "formularios" })
-      }})
+      breadcrumbItems.push({
+        label: "Formulario",
+        onClick: () => {
+          setFormularioSection("formulario-section")
+          setNavigationStack({ view: "formularios" })
+        },
+      })
       breadcrumbItems.push({ label: "Gestión de Formularios", isActive: true })
     } else if (navigationStack.subview === "historico-envios") {
-      breadcrumbItems.push({ label: "Consultas", onClick: () => {
-        setFormularioSection("consultas-section")
-        setNavigationStack({ view: "formularios" })
-      }})
+      breadcrumbItems.push({
+        label: "Consultas",
+        onClick: () => {
+          setFormularioSection("consultas-section")
+          setNavigationStack({ view: "formularios" })
+        },
+      })
       breadcrumbItems.push({ label: "Histórico de Envíos", isActive: true })
     } else if (navigationStack.subview === "editar") {
-      breadcrumbItems.push({ label: "Formulario", onClick: () => {
-        setFormularioSection("formulario-section")
-        setNavigationStack({ view: "formularios" })
-      }})
-      breadcrumbItems.push({ label: "Gestión de Formularios", onClick: () => setNavigationStack({ view: "formularios", subview: "gestion-formularios" }) })
+      breadcrumbItems.push({
+        label: "Formulario",
+        onClick: () => {
+          setFormularioSection("formulario-section")
+          setNavigationStack({ view: "formularios" })
+        },
+      })
+      breadcrumbItems.push({
+        label: "Gestión de Formularios",
+        onClick: () => setNavigationStack({ view: "formularios", subview: "gestion-formularios" }),
+      })
       breadcrumbItems.push({ label: editingFormulario?.nombre || "Editar Formulario", isActive: true })
     } else if (formularioSection === "formulario-section") {
       breadcrumbItems.push({ label: "Formulario", isActive: true })
@@ -200,10 +211,7 @@ export default function Page() {
 
         {navigationStack.view === "formularios" && !navigationStack.subview && (
           <div className="max-w-7xl mx-auto px-4 py-12">
-            <FormulariosSubmodulos 
-              onModuleSelect={handleModuleSelect}
-              selectedSection={formularioSection}
-            />
+            <FormulariosSubmodulos onModuleSelect={handleModuleSelect} selectedSection={formularioSection} />
           </div>
         )}
 
@@ -227,16 +235,17 @@ export default function Page() {
         {navigationStack.view === "formularios" && navigationStack.subview === "gestion-formularios" && (
           <div className="max-w-7xl mx-auto px-4 py-6">
             {console.log("[v0] Renderizando GestionFormulariosSimple")}
-            <GestionFormulariosSimple 
+            <GestionFormulariosSimple
               onEditForm={handleEditFormulario}
               filtrosPrevios={filtrosGestionFormularios}
+              onFiltrosChange={handleFiltrosChange}
             />
           </div>
         )}
 
         {navigationStack.view === "formularios" && navigationStack.subview === "editar" && editingFormulario && (
           <div className="max-w-7xl mx-auto px-4 py-6">
-            <DataTable 
+            <DataTable
               title={editingFormulario.nombre}
               onBack={handleVolverDeEdicion}
               filtrosPrevios={filtrosGestionFormularios}

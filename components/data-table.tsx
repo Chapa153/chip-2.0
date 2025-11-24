@@ -231,9 +231,9 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const [cellData, setCellData] = useState<Map<string, string>>(new Map())
   const [variablePage, setVariablePage] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
-  const [rangeStart, setRangeStart] = useState<string>("")
-  const [rangeEnd, setRangeEnd] = useState<string>("")
-  const [showLargeRangeAlert, setShowLargeRangeAlert] = useState(false)
+  const [rangeStart, setRangeStart] = useState<string>("") // Unificando estados de rango
+  const [rangeEnd, setRangeEnd] = useState<string>("") // Unificando estados de rango
+  const [showLargeRangeAlert, setShowLargeRangeAlert] = useState(false) // Unificando estados de rango
   const [searchGlobal, setSearchGlobal] = useState("")
   const [atributosDialogOpen, setAtributosDialogOpen] = useState(false)
   const [selectedConceptoAtributos, setSelectedConceptoAtributos] = useState<{ id: string; nombre: string } | null>(
@@ -614,16 +614,16 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   // New state and derived values from updates
-  const [searchTerm, setSearchTerm] = useState("")
-  const [startRange, setStartRange] = useState<string | null>(null)
-  const [endRange, setEndRange] = useState<string | null>(null)
+  // const [searchTerm, setSearchTerm] = useState("") // Removed as searchGlobal is used
+  // const [startRange, setStartRange] = useState<string | null>(null) // Removed as rangeStart is used
+  // const [endRange, setEndRange] = useState<string | null>(null) // Removed as rangeEnd is used
 
   // Updated getAvailableEndConcepts logic to use startRange and endRange
   const getAvailableEndRanges = () => {
-    if (!startRange) {
+    if (!rangeStart) {
       return getAllConceptsFlat
     }
-    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === startRange)
+    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeStart)
     if (startIndex === -1) {
       return getAllConceptsFlat
     }
@@ -632,36 +632,19 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       .slice(startIndex + 1)
       .filter(
         (concept) =>
-          concept.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          concept.id.toLowerCase().includes(searchTerm.toLowerCase()),
+          concept.label.toLowerCase().includes(searchGlobal.toLowerCase()) ||
+          concept.id.toLowerCase().includes(searchGlobal.toLowerCase()),
       )
   }
 
-  const handleRangeChange = (newEndRange: string) => {
-    setEndRange(newEndRange)
-    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === startRange)
-    const endIndex = getAllConceptsFlat.findIndex((c) => c.id === newEndRange)
-
-    if (startIndex !== -1 && endIndex !== -1) {
-      const rangeSize = endIndex - startIndex + 1
-      const shouldShowAlert = rangeSize > 30 // Simulating the alert threshold
-
-      if (shouldShowAlert) {
-        setShowLargeRangeAlert(true)
-      } else {
-        setShowLargeRangeAlert(false)
-      }
-    }
-  }
-
   const handleRangeEndChange = (newEndRange: string) => {
-    setEndRange(newEndRange)
-    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === startRange)
+    setRangeEnd(newEndRange)
+    const startIndex = getAllConceptsFlat.findIndex((c) => c.id === rangeStart)
     const endIndex = getAllConceptsFlat.findIndex((c) => c.id === newEndRange)
 
     if (startIndex !== -1 && endIndex !== -1) {
       const rangeSize = endIndex - startIndex + 1
-      const shouldShowAlert = rangeSize > 30 // Simulating the alert threshold
+      const shouldShowAlert = rangeSize > 30
 
       if (shouldShowAlert) {
         setShowLargeRangeAlert(true)
@@ -672,11 +655,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   useEffect(() => {
-    if (startRange && endRange) {
+    if (rangeStart && rangeEnd) {
       setCurrentPage(0)
       setExpandedNodes(new Set())
     }
-  }, [startRange, endRange])
+  }, [rangeStart, rangeEnd])
 
   const handleAddChild = (parentId: string, numericValue: string, dropdownValue: string) => {
     const newChildId = `${parentId}.${Date.now()}`
