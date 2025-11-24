@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, React } from "react" // Added React import
+import React, { useState, useMemo, useEffect } from "react" // Corrected import of React
 import { ChevronRight, ChevronDown, Info, Filter, Edit, Save, X, Plus, ChevronLeft, ArrowLeft } from "lucide-react" // Added ArrowLeft
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
