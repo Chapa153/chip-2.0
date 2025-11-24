@@ -9,6 +9,7 @@ import { getNombresClasificadores, getClasificador, type NodoClasificador } from
 interface EditarEntidadViewProps {
   onBack: () => void
   entidadId: string
+  entidadData?: any // Placeholder for actual entity data
 }
 
 interface CategoriaAmbito {
@@ -40,7 +41,7 @@ interface ClasificadorAsignado {
   codigoNodo: string
 }
 
-export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadViewProps) {
+export function EditarEntidadView({ onBack, entidadId, entidadData }: EditarEntidadViewProps) {
   const [activeTab, setActiveTab] = useState<
     "info" | "estado" | "ambito" | "responsables" | "clasificadores" | "composicion" | "cuin"
   >("info")
@@ -184,77 +185,157 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
   useEffect(() => {
     // Aquí se cargarían los datos reales de la entidad desde el backend
     // Por ahora, datos de ejemplo
-    setFormInfo({
-      nit: "900123456-7",
-      sigla: "CGN",
-      razonSocial: "Contaduría General de la Nación",
-      codigoEntidad: "E001",
-      tipoDocumento: "Decreto",
-      numeroDocumento: "D-2024-001",
-      fechaDocumento: "2024-01-15",
-      sector: "Sector público nacional",
-      naturaleza: "Principal",
-      departamento: "Cundinamarca",
-      municipio: "Bogotá D.C.",
-      direccion: "Carrera 8 # 6-64",
-      telefono: "+57 1 5187000",
-      email: "contacto@contaduria.gov.co",
-      // Datos para los nuevos campos
-      objeto:
-        "Supervisar y regular la contabilidad pública y privada en el país, asegurando la transparencia y la correcta gestión de los recursos públicos.",
-      codigoPostal: "110111",
-      fax: "6012345678",
-      paginaWeb: "https://www.contaduria.gov.co",
-      departamentoTerritorial: "Cundinamarca",
-      municipioTerritorial: "Bogotá D.C.",
-      agregadora: true,
-      consolidadora: false,
-      planeadora: false,
-    })
+    // Si entidadData está disponible, úsalo para precargar los campos
+    if (entidadData) {
+      setFormInfo({
+        nit: entidadData.nit || "900123456-7",
+        sigla: entidadData.sigla || "CGN",
+        razonSocial: entidadData.razonSocial || "Contaduría General de la Nación",
+        codigoEntidad: entidadData.codigoEntidad || "E001",
+        tipoDocumento: entidadData.tipoDocumento || "Decreto",
+        numeroDocumento: entidadData.numeroDocumento || "D-2024-001",
+        fechaDocumento: entidadData.fechaDocumento || "2024-01-15",
+        sector: entidadData.sector || "Sector público nacional",
+        naturaleza: entidadData.naturaleza || "Principal",
+        departamento: entidadData.departamento || "Cundinamarca",
+        municipio: entidadData.municipio || "Bogotá D.C.",
+        direccion: entidadData.direccion || "Carrera 8 # 6-64",
+        telefono: entidadData.telefono || "+57 1 5187000",
+        email: entidadData.email || "contacto@contaduria.gov.co",
+        objeto:
+          entidadData.objeto ||
+          "Supervisar y regular la contabilidad pública y privada en el país, asegurando la transparencia y la correcta gestión de los recursos públicos.",
+        codigoPostal: entidadData.codigoPostal || "110111",
+        fax: entidadData.fax || "6012345678",
+        paginaWeb: entidadData.paginaWeb || "https://www.contaduria.gov.co",
+        departamentoTerritorial: entidadData.departamentoTerritorial || "Cundinamarca",
+        municipioTerritorial: entidadData.municipioTerritorial || "Bogotá D.C.",
+        agregadora: entidadData.agregadora || false,
+        consolidadora: entidadData.consolidadora || false,
+        planeadora: entidadData.planeadora || false,
+      })
 
-    setFormEstado({
-      estado: "ACTIVO",
-      subestado: "ACTIVA",
-      fechaNuevoEstado: "2024-01-15",
-      actoAdministrativo: "Decreto 123 de 2024",
-      observaciones: "Entidad activa y operando normalmente",
-    })
+      setFormEstado({
+        estado: entidadData.estado || "ACTIVO",
+        subestado: entidadData.subestado || "ACTIVA",
+        fechaNuevoEstado: entidadData.fechaNuevoEstado || "2024-01-15",
+        actoAdministrativo: entidadData.actoAdministrativo || "Decreto 123 de 2024",
+        observaciones: entidadData.observaciones || "Entidad activa y operando normalmente",
+      })
 
-    setCategoriasAmbito([
-      {
-        id: "1",
-        categoria: "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA",
-        ambito: "Entidades de Gobierno",
-        año: "2024",
-        periodo: "Enero - Marzo",
-      },
-    ])
+      setCategoriasAmbito(
+        entidadData.categoriasAmbito || [
+          {
+            id: "1",
+            categoria: "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA",
+            ambito: "Entidades de Gobierno",
+            año: "2024",
+            periodo: "Enero - Marzo",
+          },
+        ],
+      )
 
-    setResponsables([
-      {
-        id: "1",
-        tipo: "Representante Legal",
-        nombres: "Juan Pérez González",
-        sexo: "Masculino",
-        cedula: "123456789",
-        telefono: "+57 300 1234567",
-        fax: "",
-        email: "juan.perez@contaduria.gov.co",
-        cargo: "Contador General",
-        tarjetaProfesional: "TP-12345",
-        enPropiedad: true,
-      },
-    ])
+      setResponsables(
+        entidadData.responsables || [
+          {
+            id: "1",
+            tipo: "Representante Legal",
+            nombres: "Juan Pérez González",
+            sexo: "Masculino",
+            cedula: "123456789",
+            telefono: "+57 300 1234567",
+            fax: "",
+            email: "juan.perez@contaduria.gov.co",
+            cargo: "Contador General",
+            tarjetaProfesional: "TP-12345",
+            enPropiedad: true,
+          },
+        ],
+      )
 
-    setClasificadoresAsignados([
-      {
-        id: "1",
-        nombreClasificador: "Nivel de Clasificación",
-        nodoSeleccionado: "Nivel 1",
-        codigoNodo: "N1",
-      },
-    ])
-  }, [entidadId])
+      setClasificadoresAsignados(
+        entidadData.clasificadoresAsignados || [
+          {
+            id: "1",
+            nombreClasificador: "Nivel de Clasificación",
+            nodoSeleccionado: "Nivel 1",
+            codigoNodo: "N1",
+          },
+        ],
+      )
+    } else {
+      // Datos de ejemplo si entidadData no está disponible
+      setFormInfo({
+        nit: "900123456-7",
+        sigla: "CGN",
+        razonSocial: "Contaduría General de la Nación",
+        codigoEntidad: "E001",
+        tipoDocumento: "Decreto",
+        numeroDocumento: "D-2024-001",
+        fechaDocumento: "2024-01-15",
+        sector: "Sector público nacional",
+        naturaleza: "Principal",
+        departamento: "Cundinamarca",
+        municipio: "Bogotá D.C.",
+        direccion: "Carrera 8 # 6-64",
+        telefono: "+57 1 5187000",
+        email: "contacto@contaduria.gov.co",
+        objeto:
+          "Supervisar y regular la contabilidad pública y privada en el país, asegurando la transparencia y la correcta gestión de los recursos públicos.",
+        codigoPostal: "110111",
+        fax: "6012345678",
+        paginaWeb: "https://www.contaduria.gov.co",
+        departamentoTerritorial: "Cundinamarca",
+        municipioTerritorial: "Bogotá D.C.",
+        agregadora: true,
+        consolidadora: false,
+        planeadora: false,
+      })
+
+      setFormEstado({
+        estado: "ACTIVO",
+        subestado: "ACTIVA",
+        fechaNuevoEstado: "2024-01-15",
+        actoAdministrativo: "Decreto 123 de 2024",
+        observaciones: "Entidad activa y operando normally",
+      })
+
+      setCategoriasAmbito([
+        {
+          id: "1",
+          categoria: "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA",
+          ambito: "Entidades de Gobierno",
+          año: "2024",
+          periodo: "Enero - Marzo",
+        },
+      ])
+
+      setResponsables([
+        {
+          id: "1",
+          tipo: "Representante Legal",
+          nombres: "Juan Pérez González",
+          sexo: "Masculino",
+          cedula: "123456789",
+          telefono: "+57 300 1234567",
+          fax: "",
+          email: "juan.perez@contaduria.gov.co",
+          cargo: "Contador General",
+          tarjetaProfesional: "TP-12345",
+          enPropiedad: true,
+        },
+      ])
+
+      setClasificadoresAsignados([
+        {
+          id: "1",
+          nombreClasificador: "Nivel de Clasificación",
+          nodoSeleccionado: "Nivel 1",
+          codigoNodo: "N1",
+        },
+      ])
+    }
+  }, [entidadId, entidadData])
 
   const departamentos = getDepartamentos()
 
@@ -453,8 +534,8 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-card border border-border rounded-lg p-6 mb-6 shadow-sm">
           <div className="flex items-center gap-4 mb-6">
@@ -464,6 +545,19 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
             <div>
               <h1 className="text-3xl font-bold text-foreground">Editar Entidad</h1>
               <p className="text-muted-foreground mt-1">Modifica la información de la entidad</p>
+            </div>
+          </div>
+
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-semibold text-muted-foreground mb-1">NIT</p>
+                <p className="text-lg font-bold text-foreground">{formInfo.nit || "Sin asignar"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-muted-foreground mb-1">Razón Social</p>
+                <p className="text-lg font-bold text-foreground">{formInfo.razonSocial || "Sin asignar"}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -553,18 +647,21 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
         {activeTab === "info" && (
           <div className="bg-card border border-border rounded-lg p-8">
             <h2 className="text-xl font-bold text-foreground mb-6">Información General</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* NIT */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">NIT *</label>
                 <input
                   type="text"
                   value={formInfo.nit}
-                  onChange={(e) => setFormInfo({ ...formInfo, nit: e.target.value })}
+                  disabled
                   placeholder="Ej: 900123456-7"
-                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 border border-input rounded-md bg-muted text-muted-foreground focus:outline-none cursor-not-allowed"
                 />
+                <p className="text-xs text-muted-foreground mt-1">El NIT no se puede modificar</p>
               </div>
 
+              {/* SIGLA */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Sigla</label>
                 <input
@@ -576,6 +673,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
+              {/* RAZÓN SOCIAL - ocupa toda la fila */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-foreground mb-2">Razón Social *</label>
                 <input
@@ -587,6 +685,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
+              {/* OBJETO - ocupa toda la fila */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-foreground mb-2">Objeto</label>
                 <textarea
@@ -598,6 +697,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
+              {/* TIPO DOCUMENTO */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Documento de Creación *</label>
                 <select
@@ -614,6 +714,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 </select>
               </div>
 
+              {/* NÚMERO DOCUMENTO */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Número de Documento *</label>
                 <input
@@ -625,6 +726,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
+              {/* FECHA DOCUMENTO */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Fecha Documento</label>
                 <input
@@ -635,17 +737,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Código Entidad</label>
-                <input
-                  type="text"
-                  value={formInfo.codigoEntidad}
-                  onChange={(e) => setFormInfo({ ...formInfo, codigoEntidad: e.target.value })}
-                  placeholder="Ej: E001"
-                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
+              {/* DEPARTAMENTO */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Departamento *</label>
                 <select
@@ -662,6 +754,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 </select>
               </div>
 
+              {/* MUNICIPIO */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Municipio *</label>
                 <select
@@ -680,6 +773,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 </select>
               </div>
 
+              {/* DIRECCIÓN */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Dirección</label>
                 <input
@@ -691,6 +785,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
+              {/* CÓDIGO POSTAL */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Código Postal</label>
                 <input
@@ -702,6 +797,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
+              {/* TELÉFONO */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Teléfono</label>
                 <input
@@ -713,6 +809,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
+              {/* FAX */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Fax</label>
                 <input
@@ -724,6 +821,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
+              {/* EMAIL */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Email</label>
                 <input
@@ -735,6 +833,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
+              {/* PÁGINA WEB */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Página Web</label>
                 <input
@@ -746,6 +845,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 />
               </div>
 
+              {/* SECTOR */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Sector *</label>
                 <select
@@ -760,6 +860,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 </select>
               </div>
 
+              {/* NATURALEZA */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Naturaleza</label>
                 <select
@@ -796,6 +897,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 </select>
               </div>
 
+              {/* DEPARTAMENTO TERRITORIAL */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Departamento Territorial</label>
                 <select
@@ -814,6 +916,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                 </select>
               </div>
 
+              {/* MUNICIPIO TERRITORIAL */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Municipio Territorial</label>
                 <select
@@ -833,6 +936,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
               </div>
             </div>
 
+            {/* Características Especiales */}
             <div className="bg-muted rounded-lg p-4 mb-8">
               <p className="text-sm font-semibold text-foreground mb-4">Características Especiales</p>
               <div className="flex flex-wrap gap-6">
@@ -1447,3 +1551,5 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
     </div>
   )
 }
+
+export default EditarEntidadView
