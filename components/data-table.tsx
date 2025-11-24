@@ -1,13 +1,20 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import { ChevronRight, ChevronDown, Info, Filter, Edit, Save, X, Plus, ChevronLeft } from "lucide-react"
+import { useState, useMemo, useEffect, React } from "react" // Added React import
+import { ChevronRight, ChevronDown, Info, Filter, Edit, Save, X, Plus, ChevronLeft, ArrowLeft } from "lucide-react" // Added ArrowLeft
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog" // Added DialogFooter
 import { cn } from "@/lib/utils"
-import { Alert, AlertDescription } from "@/components/ui/alert" // Added from updates
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // Added from updates
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Tipos para la estructura de datos
 interface ConceptNode {
@@ -32,6 +39,7 @@ interface AtributoExtensible {
 interface Variable {
   id: string
   label: string
+  type: "numeric" | "dropdown" | "string" // numeric suma vertical, otros no
 }
 
 interface DataTableProps {
@@ -221,7 +229,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   console.log("[v0] DataTable renderizado - title:", title)
   console.log("[v0] isEstadoCambiosPatrimonio:", isEstadoCambiosPatrimonio)
 
-  const [dynamicConcepts, setDynamicConcepts] = useState<ConceptNode[]>(
+  const [dynamicConcepts, setDynamicConcepts] = useState<ConceptNode[]>(() =>
     isEstadoCambiosPatrimonio ? generateEstadoCambiosConceptos() : generateMockConcepts(),
   )
 
@@ -244,15 +252,57 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
   // Dialog para agregar hijos
   const [addChildDialogOpen, setAddChildDialogOpen] = useState(false)
-  const [selectedParentForAdd, setSelectedParentForAdd] = useState<{ id: string; name: string } | null>(null)
+  const [selectedParentId, setSelectedParentId] = useState<string>("") // Declarando selectedParentId
+  const [newChildVar1, setNewChildVar1] = useState<string>("") // Declarando newChildVar1
+  const [newChildVar2, setNewChildVar2] = useState<string>("") // Declarando newChildVar2
+  const [errorMessage, setErrorMessage] = useState<string>("") // Declarando errorMessage
+  const [showAddChildDialog, setShowAddChildDialog] = useState(false) // Declarando showAddChildDialog
 
   const [nonEditableVars, setNonEditableVars] = useState<Map<string, { var1: string; var2: string }>>(new Map())
+
+  const [selectedSegmento, setSelectedSegmento] = useState<string>("persona-natural")
+  const segmentosDisponibles = [
+    { id: "persona-natural", label: "Persona Natural" },
+    { id: "persona-juridica", label: "Persona Jurídica" },
+  ]
+
+  const [conceptosPorSegmento, setConceptosPorSegmento] = useState<Map<string, ConceptNode[]>>(() => {
+    if (isEstadoCambiosPatrimonio) {
+      const initialMap = new Map<string, ConceptNode[]>()
+      segmentosDisponibles.forEach((seg) => {
+        initialMap.set(seg.id, generateEstadoCambiosConceptos())
+      })
+      return initialMap
+    }
+    return new Map()
+  })
+
+  useEffect(() => {
+    if (isEstadoCambiosPatrimonio && selectedSegmento) {
+      const conceptosSegmento = conceptosPorSegmento.get(selectedSegmento)
+      if (conceptosSegmento) {
+        setDynamicConcepts(conceptosSegmento)
+      }
+    }
+  }, [selectedSegmento, conceptosPorSegmento, isEstadoCambiosPatrimonio])
 
   const VARIABLES_PER_PAGE = 6
   const MAX_ROWS_PER_PAGE = 100
 
   const totalVariables = 28
   const totalVariablePages = Math.ceil(totalVariables / VARIABLES_PER_PAGE)
+
+  const allVariables: Variable[] = Array.from({ length: totalVariables }, (_, i) => {
+    if (i === 0) return { id: `var-${i + 1}`, label: `Variable ${i + 1}`, type: "dropdown" }
+    if (i === 1) return { id: `var-${i + 1}`, label: `Variable ${i + 1}`, type: "string" }
+    return { id: `var-${i + 1}`, label: `Variable ${i + 1}`, type: "numeric" }
+  })
+
+  // Derived for paginated variables
+  const paginatedVariables = useMemo(() => {
+    const start = variablePage * VARIABLES_PER_PAGE
+    return allVariables.slice(start, start + VARIABLES_PER_PAGE)
+  }, [variablePage, allVariables])
 
   const getAllConceptsFlat = useMemo((): Array<{ id: string; label: string; level: number }> => {
     const result: Array<{ id: string; label: string; level: number }> = []
@@ -442,6 +492,14 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   const calculateParentSum = (conceptId: string, variableId: string): number => {
+    // Encontrar el tipo de variable
+    const variable = allVariables.find((v) => v.id === variableId)
+
+    // Solo sumar si es tipo numérico
+    if (variable?.type !== "numeric") {
+      return 0
+    }
+
     const childrenIds = getChildrenIds(conceptId)
     let sum = 0
 
@@ -503,7 +561,19 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   const handleTempCellChange = (conceptId: string, variableId: string, value: string) => {
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+    // Permitir valores vacíos y números para inputs numéricos
+    const variable = allVariables.find((v) => v.id === variableId)
+    if (variable?.type === "numeric") {
+      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+        const rowData = tempRowData.get(conceptId) || new Map<string, string>()
+        rowData.set(variableId, value)
+
+        const newTempData = new Map(tempRowData)
+        newTempData.set(conceptId, rowData)
+        setTempRowData(newTempData)
+      }
+    } else {
+      // Para otros tipos, permitir cualquier valor (o aplicar validación específica si es necesario)
       const rowData = tempRowData.get(conceptId) || new Map<string, string>()
       rowData.set(variableId, value)
 
@@ -526,7 +596,17 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   const handleCellChange = (conceptId: string, variableId: string, value: string) => {
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+    // Permitir valores vacíos y números para inputs numéricos
+    const variable = allVariables.find((v) => v.id === variableId)
+    if (variable?.type === "numeric") {
+      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+        const key = `${conceptId}-${variableId}`
+        const newData = new Map(cellData)
+        newData.set(key, value)
+        setCellData(newData)
+      }
+    } else {
+      // Para otros tipos, permitir cualquier valor (o aplicar validación específica si es necesario)
       const key = `${conceptId}-${variableId}`
       const newData = new Map(cellData)
       newData.set(key, value)
@@ -661,76 +741,61 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     }
   }, [rangeStart, rangeEnd])
 
-  const handleAddChild = (parentId: string, numericValue: string, dropdownValue: string) => {
-    const newChildId = `${parentId}.${Date.now()}`
-    const newChildLabel = `${numericValue}, ${dropdownValue}`
-
-    const newChild: ConceptNode = {
-      id: newChildId,
-      label: newChildLabel,
-      level: 1,
+  const handleAddChild = () => {
+    if (!newChildVar1.trim() || !newChildVar2.trim()) {
+      setErrorMessage("Debe completar ambas variables")
+      return
     }
 
-    // Guardar las variables no editables
-    const newNonEditableVars = new Map(nonEditableVars)
-    // Ensure the keys used here match the actual variable IDs. Assuming var1Name and var2Name map to the first two variables.
-    const firstVariableId = getCurrentVariables()[0]?.id || "var-1"
-    const secondVariableId = getCurrentVariables()[1]?.id || "var-2"
-    newNonEditableVars.set(newChildId, { var1: numericValue, var2: dropdownValue })
-    setNonEditableVars(newNonEditableVars)
+    const childName = `${newChildVar1}, ${newChildVar2}`
 
-    // Actualizar el árbol de conceptos
-    const updatedConcepts = dynamicConcepts.map((concept) => {
-      if (concept.id === parentId) {
-        return {
-          ...concept,
-          children: [...(concept.children || []), newChild],
-        }
+    const parent = dynamicConcepts.find((c) => c.id === selectedParentId)
+    if (parent) {
+      const duplicate = parent.children?.some((child) => child.label === childName)
+      if (duplicate) {
+        setErrorMessage(`Ya existe un concepto hijo con el nombre: ${childName}`)
+        return
       }
-      // Recorrer recursivamente para encontrar el padre en caso de que esté anidado
-      if (concept.children) {
-        const findAndReplace = (nodes: ConceptNode[]): ConceptNode[] | null => {
-          const index = nodes.findIndex((node) => node.id === parentId)
-          if (index !== -1) {
-            return [
-              ...nodes.slice(0, index),
-              {
-                ...nodes[index],
-                children: [...(nodes[index].children || []), newChild],
-              },
-              ...nodes.slice(index + 1),
-            ]
-          }
-          // Si no se encuentra en este nivel, buscar en los hijos
-          const updatedChildren = nodes.map((node) =>
-            node.children ? { ...node, children: findAndReplace(node.children) || node.children } : node,
-          )
-          // Verificar si alguno de los hijos fue modificado
-          if (updatedChildren.some((node, i) => node !== nodes[i])) {
-            return updatedChildren
-          }
-          return null // No se encontró en este subárbol
-        }
 
-        const newChildren = findAndReplace(concept.children)
-        if (newChildren) {
-          return { ...concept, children: newChildren }
-        }
+      const newChildId = `${selectedParentId}.${(parent.children?.length || 0) + 1}`
+      const newChild: ConceptNode = {
+        id: newChildId,
+        label: childName,
+        level: 1,
       }
-      return concept
-    })
 
-    setDynamicConcepts(updatedConcepts)
+      const updatedConcepts = dynamicConcepts.map((c) => {
+        if (c.id === selectedParentId) {
+          return {
+            ...c,
+            children: [...(c.children || []), newChild],
+          }
+        }
+        return c
+      })
 
-    // Auto-expandir el padre
-    const newExpanded = new Set(expandedNodes)
-    newExpanded.add(parentId)
-    setExpandedNodes(newExpanded)
+      if (isEstadoCambiosPatrimonio) {
+        const newConceptosPorSegmento = new Map(conceptosPorSegmento)
+        newConceptosPorSegmento.set(selectedSegmento, updatedConcepts)
+        setConceptosPorSegmento(newConceptosPorSegmento)
+      }
+
+      setDynamicConcepts(updatedConcepts)
+
+      const newNonEditableVars = new Map(nonEditableVars)
+      newNonEditableVars.set(newChildId, { var1: newChildVar1, var2: newChildVar2 })
+      setNonEditableVars(newNonEditableVars)
+
+      setShowAddChildDialog(false)
+      setNewChildVar1("")
+      setNewChildVar2("")
+      setErrorMessage("")
+    }
   }
 
   const handleOpenAddDialog = (parentId: string, parentName: string) => {
-    setSelectedParentForAdd({ id: parentId, name: parentName })
-    setAddChildDialogOpen(true)
+    setSelectedParentId(parentId)
+    setShowAddChildDialog(true)
   }
 
   const getExistingChildren = (parentId: string): ConceptNode[] => {
@@ -748,46 +813,58 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return true
   }
 
-  const allVariables: Variable[] = Array.from({ length: totalVariables }, (_, i) => ({
-    id: `var-${i + 1}`,
-    label: `Variable ${i + 1}`,
-  }))
-
-  // Derived for paginated variables
-  const paginatedVariables = useMemo(() => {
-    const start = variablePage * VARIABLES_PER_PAGE
-    return allVariables.slice(start, start + VARIABLES_PER_PAGE)
-  }, [variablePage, allVariables])
+  // Modificar la lógica para obtener las variables paginadas, usando `paginatedVariables`
+  const getPaginatedConcepts = (): ConceptNode[] => {
+    const start = currentPage * MAX_ROWS_PER_PAGE
+    return allFlattenedConcepts.slice(start, start + MAX_ROWS_PER_PAGE)
+  }
 
   const handleVerAtributos = (conceptId: string, conceptLabel: string) => {
     // Implement handleVerAtributos logic here
     console.log(`Ver atributos for concept ${conceptId}: ${conceptLabel}`)
+    // Assuming attributes are stored by conceptId, and we need to display the label as part of the title.
+    // This mock data needs to be adjusted to include the concept label if it's not implicitly available.
+    const conceptAttributes = atributosExtensiblesMock[conceptId] || atributosExtensiblesMock["1"]
+    // Temporarily storing the concept label with the attributes for display in the dialog title.
+    // A more robust solution would involve a separate state for the dialog title/description.
+    setSelectedConceptoAtributos(
+      conceptAttributes ? [{ id: conceptId, nombre: conceptLabel, valor: "", tipo: "texto" }] : null,
+    ) // Simplified for title display
+    setAtributosDialogOpen(true)
   }
 
   return (
-    <div className="space-y-4 p-4">
-      {/* Header con botón volver y título */}
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-4 p-6 bg-white rounded-lg">
+      {/* Header con título y botón volver */}
+      <div className="flex items-center justify-between pb-4 border-b">
+        <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
         {onBack && (
-          <Button variant="outline" size="sm" onClick={onBack}>
-            <ChevronLeft className="h-4 w-4 mr-2" />
+          <Button variant="outline" onClick={onBack}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Volver
           </Button>
         )}
-        <h2 className="text-2xl font-bold">{title}</h2>
       </div>
 
-      {/* Alerta de registros pendientes */}
-      {editingRows.size > 0 && (
-        <Alert className="bg-orange-50 border-orange-200">
-          <AlertDescription className="text-orange-800">
-            Tienes {editingRows.size} registro(s) pendiente(s) de guardar. Debes guardar o cancelar antes de modificar
-            los filtros de rango.
-          </AlertDescription>
-        </Alert>
+      {isEstadoCambiosPatrimonio && (
+        <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <label className="text-sm font-medium text-gray-700">Segmento:</label>
+          <select
+            value={selectedSegmento}
+            onChange={(e) => setSelectedSegmento(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {segmentosDisponibles.map((seg) => (
+              <option key={seg.id} value={seg.id}>
+                {seg.label}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 bg-white border border-gray-200 rounded-lg p-4">
+      {/* Controles de rango */}
+      <div className="flex items-end gap-4 p-4 bg-teal-50 rounded-lg border border-teal-200">
         <div>
           <label className="block text-sm font-medium mb-2">Rango inicial:</label>
           <Select
@@ -798,8 +875,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             }}
             disabled={editingRows.size > 0}
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Seleccionar..." />
+            <SelectTrigger className="w-full bg-white">
+              <SelectValue placeholder="Seleccionar concepto..." />
             </SelectTrigger>
             <SelectContent>
               {getAllConceptsFlat.map((concept) => (
@@ -814,8 +891,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         <div>
           <label className="block text-sm font-medium mb-2">Rango final:</label>
           <Select value={rangeEnd} onValueChange={handleRangeEndChange} disabled={!rangeStart || editingRows.size > 0}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Seleccionar..." />
+            <SelectTrigger className="w-full bg-white">
+              <SelectValue placeholder="Seleccionar concepto..." />
             </SelectTrigger>
             <SelectContent>
               {getAvailableEndRanges().map((concept) => (
@@ -827,6 +904,16 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
           </Select>
         </div>
       </div>
+
+      {/* Alerta de registros pendientes */}
+      {editingRows.size > 0 && (
+        <Alert className="bg-orange-50 border-orange-200">
+          <AlertDescription className="text-orange-800">
+            Tienes {editingRows.size} registro(s) pendiente(s) de guardar. Debes guardar o cancelar antes de modificar
+            los filtros de rango.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Alerta de más de 10,000 registros */}
       {showLargeRangeAlert && (
@@ -882,37 +969,43 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
           </div>
 
           {/* Tabla principal */}
-          <div className="border border-gray-300 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border border-gray-300 px-4 py-2 text-sm font-semibold text-left min-w-[120px]">
-                      Acciones
+          <div className="overflow-x-auto border border-gray-300 rounded-md">
+            <table className="w-full border-collapse">
+              <thead className="bg-gray-100 sticky top-0 z-10">
+                <tr>
+                  <th className="border border-gray-300 px-2 py-2 text-left text-sm font-semibold min-w-[100px]">
+                    Acciones
+                  </th>
+                  <th className="border border-gray-300 px-2 py-2 text-left text-sm font-semibold min-w-[200px]">
+                    Conceptos
+                  </th>
+                  {paginatedVariables.map((variable) => (
+                    <th
+                      key={variable.id}
+                      className="border border-gray-300 px-2 py-2 text-center text-sm font-semibold min-w-[120px]"
+                    >
+                      {variable.label}
+                      <span className="block text-xs font-normal text-gray-500">
+                        {variable.type === "numeric" && "(Numérico)"}
+                        {variable.type === "dropdown" && "(Lista)"}
+                        {variable.type === "string" && "(Texto)"}
+                      </span>
                     </th>
-                    <th className="border border-gray-300 px-4 py-2 text-sm font-semibold text-left min-w-[250px]">
-                      Conceptos
-                    </th>
-                    {paginatedVariables.map((variable) => (
-                      <th
-                        key={variable.id}
-                        className="border border-gray-300 px-4 py-2 text-sm font-semibold text-center min-w-[120px]"
-                      >
-                        {variable.label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {flatConcepts.map((concept) => {
-                    const isParent = isParentConcept(concept.id)
-                    const isExpanded = expandedNodes.has(concept.id)
-                    const isEditing = isRowEditing(concept.id)
-                    const isRootParent = isEstadoCambiosPatrimonio && concept.level === 0
-                    const isChild = concept.level > 0
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {getPaginatedConcepts().map((concept) => {
+                  const isParent = isParentConcept(concept.id)
+                  const isExpanded = expandedNodes.has(concept.id)
+                  const isEditing = isRowEditing(concept.id)
+                  const isRootParent = isEstadoCambiosPatrimonio && concept.level === 0
+                  const isChild = concept.level > 0
 
-                    return (
-                      <tr key={concept.id} className={cn(isChild && "bg-white")}>
+                  return (
+                    <React.Fragment key={concept.id}>
+                      {/* Fila del concepto padre */}
+                      <tr className={isParent ? "bg-gray-50" : ""}>
                         <td className="border border-gray-300 px-2 py-2">
                           <div className="flex items-center gap-1">
                             {isRootParent && isEstadoCambiosPatrimonio ? (
@@ -930,10 +1023,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                   size="sm"
                                   variant="ghost"
                                   className="h-7 w-7 p-0"
-                                  onClick={() => {
-                                    setSelectedConceptoAtributos({ id: concept.id, nombre: concept.label })
-                                    setAtributosDialogOpen(true)
-                                  }}
+                                  onClick={() => handleVerAtributos(concept.id, concept.label)}
                                 >
                                   <Info className="h-4 w-4" />
                                 </Button>
@@ -974,10 +1064,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                   size="sm"
                                   variant="ghost"
                                   className="h-7 w-7 p-0"
-                                  onClick={() => {
-                                    setSelectedConceptoAtributos({ id: concept.id, nombre: concept.label })
-                                    setAtributosDialogOpen(true)
-                                  }}
+                                  onClick={() => handleVerAtributos(concept.id, concept.label)}
                                 >
                                   <Info className="h-4 w-4" />
                                 </Button>
@@ -1018,10 +1105,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                   size="sm"
                                   variant="ghost"
                                   className="h-7 w-7 p-0"
-                                  onClick={() => {
-                                    setSelectedConceptoAtributos({ id: concept.id, nombre: concept.label })
-                                    setAtributosDialogOpen(true)
-                                  }}
+                                  onClick={() => handleVerAtributos(concept.id, concept.label)}
                                 >
                                   <Info className="h-4 w-4" />
                                 </Button>
@@ -1032,10 +1116,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                 size="sm"
                                 variant="ghost"
                                 className="h-7 w-7 p-0"
-                                onClick={() => {
-                                  setSelectedConceptoAtributos({ id: concept.id, nombre: concept.label })
-                                  setAtributosDialogOpen(true)
-                                }}
+                                onClick={() => handleVerAtributos(concept.id, concept.label)}
                               >
                                 <Info className="h-4 w-4" />
                               </Button>
@@ -1061,49 +1142,23 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                             </span>
                           </div>
                         </td>
+
                         {paginatedVariables.map((variable) => {
-                          if (isEstadoCambiosPatrimonio && nonEditableVars.has(concept.id)) {
-                            const vars = nonEditableVars.get(concept.id)!
-                            if (variable.id === "var-1" || variable.id === "var-2") {
-                              const displayValue = variable.id === "var-1" ? vars.var1 : vars.var2
+                          if (isParent && !isEstadoCambiosPatrimonio) {
+                            const sum = calculateParentSum(concept.id, variable.id)
+
+                            // Si no es numérico, mostrar guion
+                            if (variable.type !== "numeric") {
                               return (
                                 <td
                                   key={variable.id}
-                                  className="border border-gray-300 px-2 py-1 text-center bg-gray-50"
+                                  className="border border-gray-300 px-2 py-1 text-center bg-gray-100"
                                 >
-                                  <span className="text-sm text-gray-600">{displayValue}</span>
+                                  <span className="text-sm text-gray-400">-</span>
                                 </td>
                               )
                             }
-                          }
 
-                          if (isRootParent && isEstadoCambiosPatrimonio) {
-                            return (
-                              <td
-                                key={variable.id}
-                                className="border border-gray-300 px-2 py-1 text-center bg-gray-100"
-                              >
-                                <span className="text-sm text-gray-400">-</span>
-                              </td>
-                            )
-                          }
-
-                          if (isEditing) {
-                            const cellValue = getTempCellValue(concept.id, variable.id)
-                            return (
-                              <td key={variable.id} className="border border-gray-300 px-2 py-1 bg-yellow-50">
-                                <Input
-                                  type="text"
-                                  value={cellValue}
-                                  onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
-                                  className="w-full text-center text-sm h-8"
-                                />
-                              </td>
-                            )
-                          }
-
-                          if (isParent && !isEstadoCambiosPatrimonio) {
-                            const sum = calculateParentSum(concept.id, variable.id)
                             return (
                               <td
                                 key={variable.id}
@@ -1114,24 +1169,102 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                             )
                           }
 
+                          // Para Estado de Cambios en el Patrimonio, padres no muestran valores
+                          if (isParent && isEstadoCambiosPatrimonio) {
+                            return (
+                              <td
+                                key={variable.id}
+                                className="border border-gray-300 px-2 py-1 text-center bg-gray-100"
+                              >
+                                <span className="text-sm text-gray-400">-</span>
+                              </td>
+                            )
+                          }
+
                           const cellValue = getCellValue(concept.id, variable.id)
+                          const isNonEditableVar =
+                            isEstadoCambiosPatrimonio &&
+                            nonEditableVars.has(concept.id) &&
+                            (variable.id === "var-1" || variable.id === "var-2")
+
+                          if (isRowEditing(concept.id) && !isNonEditableVar) {
+                            const tempValue = getTempCellValue(concept.id, variable.id)
+
+                            // Lista desplegable
+                            if (variable.type === "dropdown") {
+                              return (
+                                <td key={variable.id} className="border border-gray-300 px-1 py-1">
+                                  <select
+                                    value={tempValue}
+                                    onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
+                                    className="w-full px-1 py-0.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  >
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Opción A">Opción A</option>
+                                    <option value="Opción B">Opción B</option>
+                                    <option value="Opción C">Opción C</option>
+                                  </select>
+                                </td>
+                              )
+                            }
+
+                            // String
+                            if (variable.type === "string") {
+                              return (
+                                <td key={variable.id} className="border border-gray-300 px-1 py-1">
+                                  <input
+                                    type="text"
+                                    value={tempValue}
+                                    onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
+                                    className="w-full px-1 py-0.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  />
+                                </td>
+                              )
+                            }
+
+                            // Numérico
+                            return (
+                              <td key={variable.id} className="border border-gray-300 px-1 py-1">
+                                <input
+                                  type="text"
+                                  value={tempValue}
+                                  onChange={(e) => handleTempCellChange(concept.id, variable.id, e.target.value)}
+                                  className="w-full px-1 py-0.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                              </td>
+                            )
+                          }
+
+                          // Modo solo lectura
                           return (
-                            <td key={variable.id} className="border border-gray-300 px-2 py-1 text-center">
+                            <td
+                              key={variable.id}
+                              className={`border border-gray-300 px-2 py-1 text-center ${
+                                isNonEditableVar ? "bg-yellow-50" : ""
+                              }`}
+                            >
                               <span className="text-sm">{cellValue || "0"}</span>
                             </td>
                           )
                         })}
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+
+                      {/* Fila para los hijos del concepto (si está expandido) */}
+                      {isExpanded && concept.children && concept.children.length > 0 && (
+                        // A placeholder row for indentation purposes, actual children will be rendered recursively
+                        // This part might need adjustment based on how you want to render nested children visually
+                        <></>
+                      )}
+                    </React.Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
 
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">
-              Mostrando {flatConcepts.length} de {allFlattenedConcepts.length} registros totales
+              Mostrando {getPaginatedConcepts().length} de {allFlattenedConcepts.length} registros totales
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Button
@@ -1159,24 +1292,58 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       )}
 
       {/* Dialogs */}
-      <AddChildDialog
-        open={addChildDialogOpen}
-        onOpenChange={setAddChildDialogOpen}
-        onAdd={handleAddChild}
-        parentId={selectedParentForAdd?.id || ""}
-        parentName={selectedParentForAdd?.name || ""}
-        variables={paginatedVariables}
-        existingChildren={getExistingChildren(selectedParentForAdd?.id || "")}
-      />
+      <Dialog open={showAddChildDialog} onOpenChange={setShowAddChildDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar Concepto Hijo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {allVariables[0]?.label} ({allVariables[0]?.type === "dropdown" ? "Lista" : "Texto"}):
+              </label>
+              <select
+                value={newChildVar1}
+                onChange={(e) => setNewChildVar1(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              >
+                <option value="">Seleccionar...</option>
+                <option value="Opción A">Opción A</option>
+                <option value="Opción B">Opción B</option>
+                <option value="Opción C">Opción C</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {allVariables[1]?.label} ({allVariables[1]?.type === "string" ? "Texto" : "Lista"}):
+              </label>
+              <input
+                type="text"
+                value={newChildVar2}
+                onChange={(e) => setNewChildVar2(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="Ingrese texto..."
+              />
+            </div>
+            {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddChildDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAddChild}>Agregar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={atributosDialogOpen} onOpenChange={setAtributosDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Atributos Extensibles</DialogTitle>
-            <DialogDescription>Concepto: {selectedConceptoAtributos?.nombre}</DialogDescription>
+            <DialogDescription>Concepto: {selectedConceptoAtributos?.[0]?.nombre || "N/A"}</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3 py-4">
-            {(atributosExtensiblesMock[selectedConceptoAtributos?.id || ""] || atributosExtensiblesMock["1"]).map(
+            {(atributosExtensiblesMock[selectedConceptoAtributos?.[0]?.id || ""] || atributosExtensiblesMock["1"]).map(
               (atributo, index) => (
                 <div key={index} className="grid grid-cols-[1fr_auto] items-center gap-2">
                   <div className="text-sm font-medium text-gray-700">{atributo.nombre}:</div>
@@ -1190,7 +1357,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                         : "bg-gray-300 text-gray-800",
                     )}
                   >
-                    {atributo.tipo === "boolean" ? (atributo.valor ? "☐" : "☐") : atributo.valor}
+                    {atributo.tipo === "boolean" ? (atributo.valor ? "Sí" : "No") : atributo.valor}
                   </div>
                 </div>
               ),
