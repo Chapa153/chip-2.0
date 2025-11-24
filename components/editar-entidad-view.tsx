@@ -68,6 +68,16 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
     direccion: "",
     telefono: "",
     email: "",
+    // Nuevos campos añadidos:
+    objeto: "",
+    codigoPostal: "",
+    fax: "",
+    paginaWeb: "",
+    departamentoTerritorial: "",
+    municipioTerritorial: "",
+    agregadora: false,
+    consolidadora: false,
+    planeadora: false,
   })
 
   // Formulario Estado
@@ -189,6 +199,17 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
       direccion: "Carrera 8 # 6-64",
       telefono: "+57 1 5187000",
       email: "contacto@contaduria.gov.co",
+      // Datos para los nuevos campos
+      objeto:
+        "Supervisar y regular la contabilidad pública y privada en el país, asegurando la transparencia y la correcta gestión de los recursos públicos.",
+      codigoPostal: "110111",
+      fax: "6012345678",
+      paginaWeb: "https://www.contaduria.gov.co",
+      departamentoTerritorial: "Cundinamarca",
+      municipioTerritorial: "Bogotá D.C.",
+      agregadora: true,
+      consolidadora: false,
+      planeadora: false,
     })
 
     setFormEstado({
@@ -239,8 +260,17 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
 
   // Handlers para Información General
   const handleGuardarInfo = () => {
-    if (!formInfo.razonSocial || !formInfo.nit || !formInfo.departamento || !formInfo.municipio) {
-      alert("Por favor completa todos los campos requeridos")
+    // Validaciones actualizadas para incluir campos obligatorios
+    if (
+      !formInfo.nit ||
+      !formInfo.razonSocial ||
+      !formInfo.departamento ||
+      !formInfo.municipio ||
+      !formInfo.sector || // Sector es obligatorio
+      !formInfo.tipoDocumento || // Tipo de documento es obligatorio
+      !formInfo.numeroDocumento // Número de documento es obligatorio
+    ) {
+      alert("Por favor completa todos los campos requeridos (*)")
       return
     }
     setInfoGuardada(true)
@@ -523,14 +553,15 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
         {activeTab === "info" && (
           <div className="bg-card border border-border rounded-lg p-8">
             <h2 className="text-xl font-bold text-foreground mb-6">Información General</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">NIT *</label>
                 <input
                   type="text"
                   value={formInfo.nit}
-                  disabled
-                  className="w-full px-4 py-2 border border-input rounded-md bg-muted text-muted-foreground cursor-not-allowed"
+                  onChange={(e) => setFormInfo({ ...formInfo, nit: e.target.value })}
+                  placeholder="Ej: 900123456-7"
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
@@ -540,6 +571,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                   type="text"
                   value={formInfo.sigla}
                   onChange={(e) => setFormInfo({ ...formInfo, sigla: e.target.value })}
+                  placeholder="Ej: CGN"
                   className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -550,6 +582,55 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                   type="text"
                   value={formInfo.razonSocial}
                   onChange={(e) => setFormInfo({ ...formInfo, razonSocial: e.target.value })}
+                  placeholder="Ej: Contaduría General de la Nación"
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-foreground mb-2">Objeto</label>
+                <textarea
+                  value={formInfo.objeto}
+                  onChange={(e) => setFormInfo({ ...formInfo, objeto: e.target.value })}
+                  placeholder="Descripción del objeto de la entidad"
+                  rows={2}
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Documento de Creación *</label>
+                <select
+                  value={formInfo.tipoDocumento}
+                  onChange={(e) => setFormInfo({ ...formInfo, tipoDocumento: e.target.value })}
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Selecciona un tipo...</option>
+                  <option value="Acta">Acta</option>
+                  <option value="Decreto">Decreto</option>
+                  <option value="Ley">Ley</option>
+                  <option value="Resolución">Resolución</option>
+                  <option value="Ordenanza">Ordenanza</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Número de Documento *</label>
+                <input
+                  type="text"
+                  value={formInfo.numeroDocumento}
+                  onChange={(e) => setFormInfo({ ...formInfo, numeroDocumento: e.target.value })}
+                  placeholder="Ej: 123456"
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Fecha Documento</label>
+                <input
+                  type="date"
+                  value={formInfo.fechaDocumento}
+                  onChange={(e) => setFormInfo({ ...formInfo, fechaDocumento: e.target.value })}
                   className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -560,6 +641,7 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                   type="text"
                   value={formInfo.codigoEntidad}
                   onChange={(e) => setFormInfo({ ...formInfo, codigoEntidad: e.target.value })}
+                  placeholder="Ej: E001"
                   className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -604,6 +686,18 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                   type="text"
                   value={formInfo.direccion}
                   onChange={(e) => setFormInfo({ ...formInfo, direccion: e.target.value })}
+                  placeholder="Ej: Carrera 8 # 6-64"
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Código Postal</label>
+                <input
+                  type="text"
+                  value={formInfo.codigoPostal}
+                  onChange={(e) => setFormInfo({ ...formInfo, codigoPostal: e.target.value })}
+                  placeholder="Ej: 110111"
                   className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -614,6 +708,18 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                   type="text"
                   value={formInfo.telefono}
                   onChange={(e) => setFormInfo({ ...formInfo, telefono: e.target.value })}
+                  placeholder="Ej: +57 1 5187000"
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Fax</label>
+                <input
+                  type="text"
+                  value={formInfo.fax}
+                  onChange={(e) => setFormInfo({ ...formInfo, fax: e.target.value })}
+                  placeholder="Ej: 6012341234"
                   className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -624,8 +730,139 @@ export default function EditarEntidadView({ onBack, entidadId }: EditarEntidadVi
                   type="email"
                   value={formInfo.email}
                   onChange={(e) => setFormInfo({ ...formInfo, email: e.target.value })}
+                  placeholder="Ej: contacto@contaduria.gov.co"
                   className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Página Web</label>
+                <input
+                  type="text"
+                  value={formInfo.paginaWeb}
+                  onChange={(e) => setFormInfo({ ...formInfo, paginaWeb: e.target.value })}
+                  placeholder="https://www.example.com"
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Sector *</label>
+                <select
+                  value={formInfo.sector}
+                  onChange={(e) => setFormInfo({ ...formInfo, sector: e.target.value, naturaleza: "" })}
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Selecciona un sector...</option>
+                  <option value="Público">Público</option>
+                  <option value="Privado">Privado</option>
+                  <option value="Mixto">Mixto</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Naturaleza</label>
+                <select
+                  value={formInfo.naturaleza}
+                  onChange={(e) => setFormInfo({ ...formInfo, naturaleza: e.target.value })}
+                  disabled={!formInfo.sector}
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
+                >
+                  <option value="">Selecciona naturaleza...</option>
+                  {formInfo.sector === "Público" && (
+                    <>
+                      <option value="Entidad Territorial">Entidad Territorial</option>
+                      <option value="Empresa Industrial y Comercial del Estado">
+                        Empresa Industrial y Comercial del Estado
+                      </option>
+                      <option value="Organismo Autónomo">Organismo Autónomo</option>
+                      <option value="Entidad descentralizada">Entidad descentralizada</option>
+                    </>
+                  )}
+                  {formInfo.sector === "Privado" && (
+                    <>
+                      <option value="Sociedad Anónima">Sociedad Anónima</option>
+                      <option value="Sociedad Limitada">Sociedad Limitada</option>
+                      <option value="Empresa Unipersonal">Empresa Unipersonal</option>
+                      <option value="Cooperativa">Cooperativa</option>
+                    </>
+                  )}
+                  {formInfo.sector === "Mixto" && (
+                    <>
+                      <option value="Empresa de Economía Mixta">Empresa de Economía Mixta</option>
+                      <option value="Sociedad de Economía Mixta">Sociedad de Economía Mixta</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Departamento Territorial</label>
+                <select
+                  value={formInfo.departamentoTerritorial}
+                  onChange={(e) =>
+                    setFormInfo({ ...formInfo, departamentoTerritorial: e.target.value, municipioTerritorial: "" })
+                  }
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Selecciona un departamento...</option>
+                  {departamentos.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Municipio Territorial</label>
+                <select
+                  value={formInfo.municipioTerritorial}
+                  onChange={(e) => setFormInfo({ ...formInfo, municipioTerritorial: e.target.value })}
+                  disabled={!formInfo.departamentoTerritorial}
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
+                >
+                  <option value="">Selecciona municipio...</option>
+                  {formInfo.departamentoTerritorial &&
+                    getMunicipios(formInfo.departamentoTerritorial).map((mun) => (
+                      <option key={mun} value={mun}>
+                        {mun}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="bg-muted rounded-lg p-4 mb-8">
+              <p className="text-sm font-semibold text-foreground mb-4">Características Especiales</p>
+              <div className="flex flex-wrap gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formInfo.agregadora}
+                    onChange={(e) => setFormInfo({ ...formInfo, agregadora: e.target.checked })}
+                    className="w-4 h-4 rounded border-input"
+                  />
+                  <span className="text-sm text-foreground">Agregadora</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formInfo.consolidadora}
+                    onChange={(e) => setFormInfo({ ...formInfo, consolidadora: e.target.checked })}
+                    className="w-4 h-4 rounded border-input"
+                  />
+                  <span className="text-sm text-foreground">Consolidadora</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formInfo.planeadora}
+                    onChange={(e) => setFormInfo({ ...formInfo, planeadora: e.target.checked })}
+                    className="w-4 h-4 rounded border-input"
+                  />
+                  <span className="text-sm text-foreground">Planeadora</span>
+                </label>
               </div>
             </div>
 
