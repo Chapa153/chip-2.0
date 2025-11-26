@@ -1,9 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Plus, Edit2, ChevronDown, ChevronUp, ChevronRight, Send } from "lucide-react"
+import { ArrowLeft, Check, ChevronDown, ChevronRight, Edit, Plus, Search, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface Rol {
   id: string
@@ -71,95 +70,38 @@ const permisosJerarquicos: PermisoNode[] = [
     id: "operaciones",
     nombre: "Ingresar opción operaciones generales",
     children: [
-      { id: "op-nuevo", nombre: "Ingresar opción nuevo" },
-      { id: "op-modificar", nombre: "Ingresar opción modificar" },
-      { id: "op-eliminar", nombre: "Ingresar opción eliminar" },
-      { id: "op-guardar", nombre: "Ingresar opción guardar" },
+      { id: "operaciones-nuevo", nombre: "Ingresar opción nuevo" },
+      { id: "operaciones-modificar", nombre: "Ingresar opción modificar" },
+      { id: "operaciones-eliminar", nombre: "Ingresar opción eliminar" },
+      { id: "operaciones-guardar", nombre: "Ingresar opción guardar" },
     ],
   },
   {
     id: "seguridad",
     nombre: "Ingresar opción Seguridad",
+    children: [],
   },
   {
     id: "formularios",
     nombre: "Ingresar opción Formularios",
+    children: [],
   },
   {
     id: "entidades",
     nombre: "Ingresar opción Entidades",
-    children: [{ id: "ent-categorias", nombre: "Ingresar opción Categorías" }],
+    children: [{ id: "entidades-categorias", nombre: "Ingresar opción Categorías" }],
   },
   {
     id: "consolidacion",
     nombre: "Ingresar opción Consolidación",
+    children: [],
   },
   {
     id: "mensajes",
     nombre: "Ingresar opción Mensajes",
+    children: [],
   },
 ]
-
-function PermisoTreeNode({
-  node,
-  level = 0,
-  selectedIds,
-  onToggle,
-}: {
-  node: PermisoNode
-  level?: number
-  selectedIds: Set<string>
-  onToggle: (id: string, checked: boolean) => void
-}) {
-  const [isExpanded, setIsExpanded] = useState(true)
-  const hasChildren = node.children && node.children.length > 0
-  const isChecked = selectedIds.has(node.id)
-
-  const handleCheckChange = (checked: boolean) => {
-    onToggle(node.id, checked)
-    // Si tiene hijos, marcar/desmarcar todos
-    if (hasChildren) {
-      node.children?.forEach((child) => {
-        onToggle(child.id, checked)
-      })
-    }
-  }
-
-  return (
-    <div style={{ marginLeft: `${level * 20}px` }}>
-      <div className="flex items-center gap-2 py-1">
-        {hasChildren && (
-          <button onClick={() => setIsExpanded(!isExpanded)} className="p-1 hover:bg-accent/20 rounded">
-            <ChevronRight size={16} className={`transition-transform ${isExpanded ? "rotate-90" : ""}`} />
-          </button>
-        )}
-        {!hasChildren && <div className="w-6" />}
-        <label className="flex items-center gap-2 cursor-pointer flex-1">
-          <input
-            type="checkbox"
-            checked={isChecked}
-            onChange={(e) => handleCheckChange(e.target.checked)}
-            className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
-          />
-          <span className="text-sm text-foreground">{node.nombre}</span>
-        </label>
-      </div>
-      {hasChildren && isExpanded && (
-        <div>
-          {node.children?.map((child) => (
-            <PermisoTreeNode
-              key={child.id}
-              node={child}
-              level={level + 1}
-              selectedIds={selectedIds}
-              onToggle={onToggle}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
   const [roles, setRoles] = useState<Rol[]>([
@@ -198,17 +140,100 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
-    codigoRol: "",
-    nombreRol: "",
-    descripcionRol: "",
-    intentosFallidos: "",
-    periodoVigencia: "",
-    permisos: {} as Record<string, string[]>,
+    codigo: "",
+    nombre: "",
+    descripcion: "",
+    estado: "Activo",
   })
 
-  const [activeTab, setActiveTab] = useState("datos")
+  const [activeTab, setActiveTab] = useState<"datos" | "permisos">("datos")
   const [datosRolGuardados, setDatosRolGuardados] = useState(false)
   const [selectedPermisos, setSelectedPermisos] = useState<Set<string>>(new Set())
+  const [expandedPermisos, setExpandedPermisos] = useState<Set<string>>(new Set())
+
+  const toggleExpanded = (id: string) => {
+    const newExpanded = new Set(expandedPermisos)
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id)
+    } else {
+      newExpanded.add(id)
+    }
+    setExpandedPermisos(newExpanded)
+  }
+
+  const handleTogglePermiso = (node: PermisoNode) => {
+    const newSelected = new Set(selectedPermisos)
+    const isSelected = newSelected.has(node.id)
+
+    const getAllDescendantIds = (n: PermisoNode): string[] => {
+      const ids: string[] = [n.id]
+      if (n.children) {
+        n.children.forEach((child) => {
+          ids.push(...getAllDescendantIds(child))
+        })
+      }
+      return ids
+    }
+
+    const allIds = getAllDescendantIds(node)
+
+    if (isSelected) {
+      allIds.forEach((id) => newSelected.delete(id))
+    } else {
+      allIds.forEach((id) => newSelected.add(id))
+    }
+
+    setSelectedPermisos(newSelected)
+  }
+
+  const isPartiallySelected = (node: PermisoNode): boolean => {
+    if (!node.children || node.children.length === 0) return false
+    const childIds = node.children.map((c) => c.id)
+    const selectedCount = childIds.filter((id) => selectedPermisos.has(id)).length
+    return selectedCount > 0 && selectedCount < childIds.length
+  }
+
+  const renderPermisoNode = (node: PermisoNode, level = 0) => {
+    const hasChildren = node.children && node.children.length > 0
+    const isExpanded = expandedPermisos.has(node.id)
+    const isSelected = selectedPermisos.has(node.id)
+    const isPartial = isPartiallySelected(node)
+
+    return (
+      <div key={node.id}>
+        <div
+          className="flex items-center gap-2 py-2 px-2 hover:bg-muted/50 rounded-md"
+          style={{ paddingLeft: `${level * 24 + 8}px` }}
+        >
+          {hasChildren ? (
+            <button onClick={() => toggleExpanded(node.id)} className="p-1 hover:bg-muted rounded transition-colors">
+              {isExpanded ? (
+                <ChevronDown size={16} className="text-muted-foreground" />
+              ) : (
+                <ChevronRight size={16} className="text-muted-foreground" />
+              )}
+            </button>
+          ) : (
+            <span className="w-6" />
+          )}
+
+          <input
+            type="checkbox"
+            checked={isSelected}
+            ref={(el) => {
+              if (el) el.indeterminate = isPartial
+            }}
+            onChange={() => handleTogglePermiso(node)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+
+          <span className="text-sm text-foreground">{node.nombre}</span>
+        </div>
+
+        {hasChildren && isExpanded && <div>{node.children!.map((child) => renderPermisoNode(child, level + 1))}</div>}
+      </div>
+    )
+  }
 
   const handleSearch = () => {
     setShowResults(true)
@@ -221,12 +246,10 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
   const handleEdit = (rol: Rol) => {
     setEditingId(rol.id)
     setFormData({
-      codigoRol: rol.codigo,
-      nombreRol: rol.nombre,
-      descripcionRol: "",
-      intentosFallidos: "3",
-      periodoVigencia: "90",
-      permisos: {},
+      codigo: rol.codigo,
+      nombre: rol.nombre,
+      descripcion: "",
+      estado: rol.estado,
     })
     setShowForm(true)
   }
@@ -234,44 +257,33 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
   const handleCreateNew = () => {
     setEditingId(null)
     setFormData({
-      codigoRol: "",
-      nombreRol: "",
-      descripcionRol: "",
-      intentosFallidos: "",
-      periodoVigencia: "",
-      permisos: {},
+      codigo: "",
+      nombre: "",
+      descripcion: "",
+      estado: "Activo",
     })
     setShowForm(true)
   }
 
   const handleGuardarDatosRol = () => {
-    if (!formData.codigoRol || !formData.nombreRol) {
-      alert("Por favor completa los campos obligatorios")
+    if (!formData.codigo || !formData.nombre) {
+      alert("Por favor complete los campos obligatorios")
       return
     }
     setDatosRolGuardados(true)
-    alert("Datos del rol guardados exitosamente")
-  }
-
-  const handleTogglePermiso = (id: string, checked: boolean) => {
-    setSelectedPermisos((prev) => {
-      const newSet = new Set(prev)
-      if (checked) {
-        newSet.add(id)
-      } else {
-        newSet.delete(id)
-      }
-      return newSet
-    })
+    alert("Datos del rol guardados correctamente")
   }
 
   const handleGuardarPermisosRol = () => {
     if (selectedPermisos.size === 0) {
-      alert("Por favor selecciona al menos un permiso")
+      alert("Debe seleccionar al menos un permiso")
       return
     }
-    alert("Permisos del rol guardados exitosamente")
+    alert(`Permisos guardados: ${selectedPermisos.size} permisos seleccionados`)
     setShowForm(false)
+    setEditingId(null)
+    setFormData({ codigo: "", nombre: "", descripcion: "", estado: "Activo" })
+    setActiveTab("datos")
     setDatosRolGuardados(false)
     setSelectedPermisos(new Set())
   }
@@ -285,152 +297,206 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
 
   if (showForm) {
     return (
-      <div className="bg-background">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">
-              {editingId ? "Modificar Rol" : "Crear Nuevo Rol"}
-            </h2>
-            <p className="text-muted-foreground">
-              Complete la información del rol y seleccione los permisos correspondientes
-            </p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowForm(false)
+                setEditingId(null)
+                setFormData({ codigo: "", nombre: "", descripcion: "", estado: "Activo" })
+                setActiveTab("datos")
+                setDatosRolGuardados(false)
+              }}
+              className="border-border"
+            >
+              <ArrowLeft size={18} className="mr-2" />
+              Volver
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">{editingId ? "Modificar Rol" : "Crear Nuevo Rol"}</h1>
+              <p className="text-muted-foreground text-sm">
+                {editingId
+                  ? "Modifique los datos del rol y sus permisos"
+                  : "Complete el formulario para crear un nuevo rol"}
+              </p>
+            </div>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-            <Send size={18} className="mr-2" />
-            Enviar
-          </Button>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="datos">Datos del Rol</TabsTrigger>
-            <TabsTrigger value="permisos" disabled={!datosRolGuardados && !editingId}>
-              Selección de Permisos
+        <div className="border-b border-border">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveTab("datos")}
+              className={`py-3 px-4 font-medium transition-all border-b-2 ${
+                activeTab === "datos"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              1. Datos del Rol
+            </button>
+            <button
+              onClick={() => {
+                if (datosRolGuardados || editingId) {
+                  setActiveTab("permisos")
+                } else {
+                  alert("Debe guardar los datos del rol primero")
+                }
+              }}
+              className={`py-3 px-4 font-medium transition-all border-b-2 ${
+                activeTab === "permisos"
+                  ? "border-primary text-primary"
+                  : `border-transparent ${
+                      datosRolGuardados || editingId
+                        ? "text-muted-foreground hover:text-foreground"
+                        : "text-muted-foreground opacity-50"
+                    }`
+              }`}
+            >
+              2. Selección de Permisos
+              {datosRolGuardados && <Check size={16} className="inline ml-2" />}
               {!datosRolGuardados && !editingId && " 🔒"}
-            </TabsTrigger>
-          </TabsList>
+            </button>
+          </div>
+        </div>
 
-          <TabsContent value="datos">
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Datos del Rol</h3>
+        {activeTab === "datos" && (
+          <div className="bg-card border border-border rounded-lg p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Código Rol *</label>
+                <input
+                  type="text"
+                  value={formData.codigo}
+                  onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
+                  disabled={!!editingId}
+                  placeholder="Ej: ROL001"
+                  className={`w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
+                    editingId ? "bg-muted text-muted-foreground" : ""
+                  }`}
+                />
+                {editingId && <p className="text-xs text-muted-foreground mt-1">El código no es modificable</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Nombre Rol *</label>
+                <input
+                  type="text"
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  placeholder="Ej: Administrador del Sistema"
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-foreground mb-2">Descripción</label>
+                <textarea
+                  value={formData.descripcion}
+                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                  placeholder="Descripción detallada del rol y sus responsabilidades"
+                  rows={3}
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Estado *</label>
+                <select
+                  value={formData.estado}
+                  onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                </select>
+              </div>
 
               {editingId && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-blue-900">
-                    <span className="font-semibold">Fecha de última modificación:</span>{" "}
-                    {new Date().toLocaleDateString("es-ES")}
-                  </p>
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Fecha Última Modificación</label>
+                  <input
+                    type="text"
+                    value={new Date().toLocaleDateString("es-CO", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    disabled
+                    className="w-full px-4 py-2 border border-input rounded-md bg-muted text-muted-foreground"
+                  />
                 </div>
               )}
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex gap-4 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowForm(false)
+                  setEditingId(null)
+                  setFormData({ codigo: "", nombre: "", descripcion: "", estado: "Activo" })
+                  setActiveTab("datos")
+                  setDatosRolGuardados(false)
+                }}
+                className="border-border hover:bg-muted"
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleGuardarDatosRol} className="bg-primary hover:bg-primary/90">
+                <Check size={18} className="mr-2" />
+                Guardar Datos del Rol
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "permisos" && (
+          <div className="bg-card border border-border rounded-lg p-8">
+            <div className="bg-muted rounded-lg p-4 mb-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Código Rol <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.codigoRol}
-                    onChange={(e) => setFormData({ ...formData, codigoRol: e.target.value.toUpperCase() })}
-                    placeholder="Ej: ADM_SYSTEM"
-                    disabled={!!editingId}
-                    className={`w-full px-3 py-2 border border-input rounded-md text-foreground ${
-                      editingId ? "bg-gray-100 cursor-not-allowed" : "bg-background"
-                    }`}
-                  />
+                  <p className="text-xs text-muted-foreground">Código Rol</p>
+                  <p className="text-lg font-semibold text-foreground">{formData.codigo}</p>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Nombre del Rol <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nombreRol}
-                    onChange={(e) => setFormData({ ...formData, nombreRol: e.target.value })}
-                    placeholder="Ej: Administrador del sistema"
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                  />
+                  <p className="text-xs text-muted-foreground">Nombre Rol</p>
+                  <p className="text-lg font-semibold text-foreground">{formData.nombre}</p>
                 </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-foreground mb-2">Descripción del Rol</label>
-                  <textarea
-                    value={formData.descripcionRol}
-                    onChange={(e) => setFormData({ ...formData, descripcionRol: e.target.value })}
-                    placeholder="Describe las responsabilidades y alcance de este rol..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Número de Intentos Fallidos</label>
-                  <input
-                    type="number"
-                    value={formData.intentosFallidos}
-                    onChange={(e) => setFormData({ ...formData, intentosFallidos: e.target.value })}
-                    placeholder="3"
-                    min="1"
-                    max="10"
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Periodo de Vigencia (días)</label>
-                  <input
-                    type="number"
-                    value={formData.periodoVigencia}
-                    onChange={(e) => setFormData({ ...formData, periodoVigencia: e.target.value })}
-                    placeholder="90"
-                    min="1"
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 justify-end mt-6">
-                <Button variant="outline" onClick={() => setShowForm(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleGuardarDatosRol} className="bg-primary hover:bg-primary/90">
-                  Guardar Datos del Rol
-                </Button>
               </div>
             </div>
-          </TabsContent>
 
-          <TabsContent value="permisos">
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Selección de Permisos</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Seleccione los permisos que tendrá este rol. Los permisos marcados se aplicarán en cascada a las
-                opciones hijas.
-              </p>
+            <h3 className="text-xl font-bold text-foreground mb-4">Árbol de Permisos</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Seleccione los permisos que tendrá este rol. Al seleccionar un permiso padre, se seleccionarán
+              automáticamente todos sus permisos hijos.
+            </p>
 
-              <div className="border border-border rounded-lg p-4 bg-background max-h-96 overflow-y-auto">
-                {permisosJerarquicos.map((nodo) => (
-                  <PermisoTreeNode
-                    key={nodo.id}
-                    node={nodo}
-                    selectedIds={selectedPermisos}
-                    onToggle={handleTogglePermiso}
-                  />
-                ))}
-              </div>
-
-              <div className="flex gap-3 justify-end mt-6">
-                <Button variant="outline" onClick={() => setActiveTab("datos")}>
-                  Volver a Datos
-                </Button>
-                <Button onClick={handleGuardarPermisosRol} className="bg-primary hover:bg-primary/90">
-                  Guardar Permisos Rol
-                </Button>
-              </div>
+            <div className="border border-border rounded-lg p-4 bg-background max-h-96 overflow-y-auto mb-6">
+              {permisosJerarquicos.map((nodo) => renderPermisoNode(nodo, 0))}
             </div>
-          </TabsContent>
-        </Tabs>
+
+            {selectedPermisos.size > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <p className="text-green-800 text-sm font-medium">{selectedPermisos.size} permiso(s) seleccionado(s)</p>
+              </div>
+            )}
+
+            <div className="flex gap-4 justify-end">
+              <Button variant="outline" onClick={() => setActiveTab("datos")} className="border-border hover:bg-muted">
+                Volver a Datos
+              </Button>
+              <Button onClick={handleGuardarPermisosRol} className="bg-primary hover:bg-primary/90">
+                <Check size={18} className="mr-2" />
+                Guardar Permisos Rol
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -555,7 +621,7 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
                         onClick={() => handleEdit(rol)}
                         className="p-2 hover:bg-accent/20 rounded-md transition text-accent"
                       >
-                        <Edit2 size={16} />
+                        <Edit size={16} />
                       </button>
                     </td>
                     <td className="px-4 py-3">
