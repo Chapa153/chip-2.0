@@ -410,7 +410,7 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
                 <label className="block text-sm font-semibold text-foreground mb-2">Código Rol *</label>
                 <input
                   type="text"
-                  value={formData.codigo}
+                  value={formData.codigo || ""}
                   onChange={(e) => {
                     setFormData({ ...formData, codigo: e.target.value })
                     if (fieldErrors.codigo) {
@@ -418,12 +418,11 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
                     }
                   }}
                   disabled={!!editingId}
-                  placeholder="Ej: ROL001"
+                  placeholder="Ingrese código del rol"
                   className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
-                    editingId ? "bg-muted text-muted-foreground" : ""
+                    editingId ? "bg-muted cursor-not-allowed" : ""
                   } ${fieldErrors.codigo ? "border-red-500 ring-2 ring-red-200" : "border-input"}`}
                 />
-                {editingId && <p className="text-xs text-muted-foreground mt-1">El código no es modificable</p>}
                 {fieldErrors.codigo && <p className="text-xs text-red-500 mt-1">Este campo es obligatorio</p>}
               </div>
 
@@ -432,14 +431,14 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
                 <label className="block text-sm font-semibold text-foreground mb-2">Nombre Rol *</label>
                 <input
                   type="text"
-                  value={formData.nombre}
+                  value={formData.nombre || ""}
                   onChange={(e) => {
                     setFormData({ ...formData, nombre: e.target.value })
                     if (fieldErrors.nombre) {
                       setFieldErrors({ ...fieldErrors, nombre: false })
                     }
                   }}
-                  placeholder="Ej: Administrador del Sistema"
+                  placeholder="Ingrese nombre del rol"
                   className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
                     fieldErrors.nombre ? "border-red-500 ring-2 ring-red-200" : "border-input"
                   }`}
@@ -454,7 +453,7 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
                 <input
                   type="number"
                   min="1"
-                  value={formData.intentosFallidos}
+                  value={formData.intentosFallidos || ""}
                   onChange={(e) => {
                     setFormData({ ...formData, intentosFallidos: e.target.value })
                     if (fieldErrors.intentosFallidos) {
@@ -476,7 +475,7 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
                 <input
                   type="number"
                   min="1"
-                  value={formData.periodoVigencia}
+                  value={formData.periodoVigencia || ""}
                   onChange={(e) => {
                     setFormData({ ...formData, periodoVigencia: e.target.value })
                     if (fieldErrors.periodoVigencia) {
@@ -497,11 +496,11 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-foreground mb-2">Descripción</label>
                 <textarea
-                  value={formData.descripcion}
+                  value={formData.descripcion || ""}
                   onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                  placeholder="Descripción detallada del rol y sus responsabilidades"
+                  placeholder="Ingrese descripción del rol"
                   rows={3}
-                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
