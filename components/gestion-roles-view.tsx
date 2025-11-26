@@ -1,7 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeft, Check, ChevronDown, ChevronRight, Edit, Plus, Search, ChevronUp, AlertCircle } from "lucide-react"
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Edit,
+  Plus,
+  Search,
+  ChevronUp,
+  AlertCircle,
+  Filter,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import React from "react"
 
 interface Rol {
   id: string
@@ -154,6 +166,16 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
   const [expandedRol, setExpandedRol] = useState<string | null>(null)
   const itemsPerPage = 10
 
+  const [showResults, setShowResults] = useState(false)
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
+  const [advancedFilters, setAdvancedFilters] = useState({
+    codigo: "",
+    nombre: "",
+    estado: "",
+    fechaDesde: "",
+    fechaHasta: "",
+  })
+
   const [formData, setFormData] = useState({
     codigo: "",
     nombre: "",
@@ -173,11 +195,30 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
 
   const [fechaUltimaModificacion, setFechaUltimaModificacion] = useState<Date | null>(null)
 
-  const filteredRoles = roles.filter(
-    (rol) =>
+  const filteredRoles = roles.filter((rol) => {
+    if (!showResults) return false
+
+    const matchBasic =
+      searchTerm === "" ||
       rol.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rol.nombre.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      rol.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchCodigo =
+      advancedFilters.codigo === "" || rol.codigo.toLowerCase().includes(advancedFilters.codigo.toLowerCase())
+
+    const matchNombre =
+      advancedFilters.nombre === "" || rol.nombre.toLowerCase().includes(advancedFilters.nombre.toLowerCase())
+
+    const matchEstado = advancedFilters.estado === "" || rol.estado === advancedFilters.estado
+
+    const matchFechaDesde =
+      advancedFilters.fechaDesde === "" || rol.fechaModificacion >= new Date(advancedFilters.fechaDesde)
+
+    const matchFechaHasta =
+      advancedFilters.fechaHasta === "" || rol.fechaModificacion <= new Date(advancedFilters.fechaHasta)
+
+    return matchBasic && matchCodigo && matchNombre && matchEstado && matchFechaDesde && matchFechaHasta
+  })
 
   const totalPages = Math.ceil(filteredRoles.length / itemsPerPage)
   const paginatedRoles = filteredRoles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
@@ -342,6 +383,23 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
         )}
       </div>
     )
+  }
+
+  const handleBuscar = () => {
+    setCurrentPage(1)
+    setShowResults(true)
+  }
+
+  const handleLimpiarFiltros = () => {
+    setSearchTerm("")
+    setAdvancedFilters({
+      codigo: "",
+      nombre: "",
+      estado: "",
+      fechaDesde: "",
+      fechaHasta: "",
+    })
+    setShowResults(false)
   }
 
   if (showForm) {
@@ -599,116 +657,218 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
         <h2 className="text-2xl font-bold text-foreground">Gestión de Roles</h2>
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-          <input
-            type="text"
-            placeholder="Buscar rol..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
-          />
-        </div>
-        <Button onClick={handleCrearRol} className="bg-primary hover:bg-primary/90 flex items-center gap-2">
-          <Plus size={18} />
-          Crear Rol
-        </Button>
-      </div>
-
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-muted">
-            <tr>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Código</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Nombre</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Estado</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Última Modificación</th>
-              <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedRoles.map((rol) => (
-              <>
-                <tr key={rol.id} className="border-t border-border hover:bg-muted/50">
-                  <td className="px-4 py-3 text-sm text-foreground">
-                    <button
-                      onClick={() => setExpandedRol(expandedRol === rol.id ? null : rol.id)}
-                      className="flex items-center gap-2"
-                    >
-                      {expandedRol === rol.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      {rol.codigo}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-foreground">{rol.nombre}</td>
-                  <td className="px-4 py-3 text-sm">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        rol.estado === "Activo" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {rol.estado}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-foreground">
-                    {rol.fechaModificacion.toLocaleDateString("es-CO")}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditarRol(rol)}
-                      className="text-primary hover:text-primary/80"
-                    >
-                      <Edit size={16} className="mr-1" />
-                      Editar
-                    </Button>
-                  </td>
-                </tr>
-                {expandedRol === rol.id && (
-                  <tr className="bg-muted/30">
-                    <td colSpan={5} className="px-8 py-4">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-semibold">Intentos Fallidos:</span> {rol.intentosFallidos}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Periodo de Vigencia:</span> {rol.periodoVigencia} días
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-4">
-          <span className="text-sm text-muted-foreground">
-            Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
-            {Math.min(currentPage * itemsPerPage, filteredRoles.length)} de {filteredRoles.length} roles
-          </span>
+      <div className="bg-card border border-border rounded-lg p-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+            <input
+              type="text"
+              placeholder="Buscar rol..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+            />
+          </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
+              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+              className="flex items-center gap-2"
             >
-              Anterior
+              <Filter size={16} />
+              Búsqueda Avanzada
+              {showAdvancedSearch ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              Siguiente
+            <Button onClick={handleCrearRol} className="bg-primary hover:bg-primary/90 flex items-center gap-2">
+              <Plus size={18} />
+              Crear Rol
             </Button>
           </div>
+        </div>
+
+        {/* Búsqueda avanzada expandible */}
+        {showAdvancedSearch && (
+          <div className="border-t border-border pt-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Código</label>
+                <input
+                  type="text"
+                  placeholder="Buscar por código..."
+                  value={advancedFilters.codigo}
+                  onChange={(e) => setAdvancedFilters({ ...advancedFilters, codigo: e.target.value })}
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Nombre</label>
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre..."
+                  value={advancedFilters.nombre}
+                  onChange={(e) => setAdvancedFilters({ ...advancedFilters, nombre: e.target.value })}
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Estado</label>
+                <select
+                  value={advancedFilters.estado}
+                  onChange={(e) => setAdvancedFilters({ ...advancedFilters, estado: e.target.value })}
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                >
+                  <option value="">Todos</option>
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Fecha Desde</label>
+                <input
+                  type="date"
+                  value={advancedFilters.fechaDesde}
+                  onChange={(e) => setAdvancedFilters({ ...advancedFilters, fechaDesde: e.target.value })}
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Fecha Hasta</label>
+                <input
+                  type="date"
+                  value={advancedFilters.fechaHasta}
+                  onChange={(e) => setAdvancedFilters({ ...advancedFilters, fechaHasta: e.target.value })}
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Botones Buscar y Limpiar */}
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="outline" onClick={handleLimpiarFiltros}>
+            Limpiar Filtros
+          </Button>
+          <Button onClick={handleBuscar} className="bg-primary hover:bg-primary/90">
+            <Search size={16} className="mr-2" />
+            Buscar
+          </Button>
+        </div>
+      </div>
+
+      {showResults ? (
+        <>
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Código</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Nombre</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Estado</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Última Modificación</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedRoles.length > 0 ? (
+                  paginatedRoles.map((rol) => (
+                    <React.Fragment key={rol.id}>
+                      <tr className="border-t border-border hover:bg-muted/50">
+                        <td className="px-4 py-3 text-sm text-foreground">
+                          <button
+                            onClick={() => setExpandedRol(expandedRol === rol.id ? null : rol.id)}
+                            className="flex items-center gap-2"
+                          >
+                            {expandedRol === rol.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            {rol.codigo}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground">{rol.nombre}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              rol.estado === "Activo" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {rol.estado}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground">
+                          {rol.fechaModificacion.toLocaleDateString("es-CO")}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditarRol(rol)}
+                            className="text-primary hover:text-primary/80"
+                          >
+                            <Edit size={16} className="mr-1" />
+                            Editar
+                          </Button>
+                        </td>
+                      </tr>
+                      {expandedRol === rol.id && (
+                        <tr className="bg-muted/30">
+                          <td colSpan={5} className="px-8 py-4">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="font-semibold">Intentos Fallidos:</span> {rol.intentosFallidos}
+                              </div>
+                              <div>
+                                <span className="font-semibold">Periodo de Vigencia:</span> {rol.periodoVigencia} días
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                      No se encontraron roles con los criterios de búsqueda especificados.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center mt-4">
+              <span className="text-sm text-muted-foreground">
+                Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
+                {Math.min(currentPage * itemsPerPage, filteredRoles.length)} de {filteredRoles.length} roles
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="bg-card border border-border rounded-lg p-8 text-center">
+          <Search size={48} className="mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">Buscar Roles</h3>
+          <p className="text-muted-foreground">
+            Utilice los filtros de búsqueda y haga clic en "Buscar" para ver los resultados.
+          </p>
         </div>
       )}
     </div>
