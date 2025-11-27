@@ -29,7 +29,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast" // Added useToast
 import { Toaster } from "@/components/ui/toaster" // Agregado Toaster para mostrar los toasts
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+// import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip" // Eliminado import de Tooltip para evitar re-renders infinitos
 
 // Tipos para la estructura de datos
 interface ConceptNode {
@@ -852,66 +852,39 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const [rangeSearchInitial, setRangeSearchInitial] = useState("")
   const [rangeSearchFinal, setRangeSearchFinal] = useState("")
 
-  const formatDateForDisplay = (isoDate: string): string => {
-    if (!isoDate) return ""
-    // Asumiendo formato ISO YYYY-MM-DD para la entrada
-    try {
-      const [year, month, day] = isoDate.split("-")
-      return `${day}-${month}-${year}`
-    } catch (error) {
-      console.error("Error formatting date:", isoDate, error)
-      return isoDate // Devolver el valor original si hay un error
+  const convertDateToISO = (dateStr: string): string => {
+    if (!dateStr) return ""
+    const parts = dateStr.split("-")
+    if (parts.length === 3) {
+      const [day, month, year] = parts
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
     }
+    return ""
   }
 
   const convertISOToDate = (isoDate: string): string => {
     if (!isoDate) return ""
-    try {
-      const [year, month, day] = isoDate.split("-")
-      // Validar que los componentes tengan el formato esperado (pueden ser parciales)
-      return `${day}-${month}-${year}`
-    } catch (error) {
-      console.error("Error converting ISO to Date:", isoDate, error)
-      return isoDate // Devolver el valor original si hay un error
+    const parts = isoDate.split("-")
+    if (parts.length === 3) {
+      const [year, month, day] = parts
+      return `${day.padStart(2, "0")}-${month.padStart(2, "0")}-${year}`
     }
+    return ""
   }
 
-  const convertDateToISO = (dateStr: string): string => {
-    if (!dateStr) return ""
-    try {
-      const parts = dateStr.split("-")
-      if (parts.length === 3) {
-        const [day, month, year] = parts
-        // Asegurarse de que los meses y días tengan dos dígitos
-        const formattedMonth = month.padStart(2, "0")
-        const formattedDay = day.padStart(2, "0")
-        return `${year}-${formattedMonth}-${formattedDay}`
-      }
-      // Si el formato no es dd-mm-yyyy, intentar otras conversiones o devolver vacío
-      return ""
-    } catch (error) {
-      console.error("Error converting Date to ISO:", dateStr, error)
-      return dateStr // Devolver el valor original si hay un error
+  const formatDateInput = (value: string): string => {
+    // Remover todo excepto números
+    const numbers = value.replace(/[^\d]/g, "")
+
+    // Formatear con guiones automáticamente
+    if (numbers.length <= 2) {
+      return numbers
+    } else if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}-${numbers.slice(2)}`
+    } else {
+      return `${numbers.slice(0, 2)}-${numbers.slice(2, 4)}-${numbers.slice(4, 8)}`
     }
   }
-
-  const formatDateInput = useCallback((value: string): string => {
-    // Remover caracteres no numéricos
-    let cleaned = value.replace(/[^0-9]/g, "")
-
-    // Limitar a 8 dígitos (ddmmyyyy)
-    cleaned = cleaned.slice(0, 8)
-
-    // Agregar guiones automáticamente
-    if (cleaned.length >= 2) {
-      cleaned = cleaned.slice(0, 2) + "-" + cleaned.slice(2)
-    }
-    if (cleaned.length >= 5) {
-      cleaned = cleaned.slice(0, 5) + "-" + cleaned.slice(5)
-    }
-
-    return cleaned
-  }, []) // Agregando funciones para manejar fechas con formato dd-mm-yyyy
 
   const validateDateFormat = useCallback((date: string): boolean => {
     const regex = /^(\d{2})-(\d{2})-(\d{4})$/
@@ -941,15 +914,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     if (variable.type === "string") return 20
     if (variable.type === "boolean") return 1
     return undefined
-  }
-
-  const getTooltipMessage = (variable: Variable): string => {
-    if (variable.type === "numeric") return "Máximo 10 dígitos"
-    if (variable.type === "decimal") return "Máximo 8 enteros y 2 decimales"
-    if (variable.type === "string") return "Máximo 20 caracteres"
-    if (variable.type === "boolean") return "Solo S o N (1 caracter)"
-    if (variable.type === "date") return "Formato: dd-mm-yyyy"
-    return ""
   }
 
   const validateFieldLength = (variable: Variable, value: string, conceptId: string) => {
@@ -1141,6 +1105,18 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return true
   }
 
+  // Helper function to get tooltip message - this was the missing part
+  const getTooltipMessage = (variable: Variable): string | null => {
+    // Example: if you had tooltips defined for specific variables
+    if (variable.id === "var-3") {
+      return "This is a numeric variable with a max length of 10 digits."
+    }
+    if (variable.id === "var-4") {
+      return "This is a decimal variable with 8 integer and 2 decimal places."
+    }
+    return null
+  }
+
   // Actualizar lógica de renderizado de celdas para mostrar variables no editables con fondo gris
   const renderCellContent = (concept: ConceptNode, variable: Variable, isEditing: boolean) => {
     const cellKey = `${concept.id}-${variable.id}`
@@ -1189,37 +1165,36 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       // Renderizar el input según el tipo
       let inputElement
 
-      if (variable.type === "dropdown" && !isReadOnly) {
-        inputElement = (
-          <select
-            value={cellValue}
-            onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-            className={getInputClassName()}
-            disabled={isReadOnly}
-          >
-            <option value="">Seleccionar...</option>
-            {variable.opciones?.map((opcion) => (
-              <option key={opcion} value={opcion}>
-                {opcion}
-              </option>
-            ))}
-          </select>
-        )
-      } else if (variable.type === "date" && !isReadOnly) {
+      if (variable.type === "date" && !isReadOnly) {
         inputElement = (
           <input
-            type="date"
-            value={convertDateToISO(cellValue)}
+            type="text"
+            value={cellValue}
             onChange={(e) => {
-              const isoDate = e.target.value
-              const formattedDate = convertISOToDate(isoDate)
-              handleCellEdit(concept.id, variable.id, formattedDate)
+              const formatted = formatDateInput(e.target.value)
+              if (formatted.length <= 10) {
+                handleCellEdit(concept.id, variable.id, formatted)
+              }
             }}
+            placeholder="dd-mm-yyyy"
+            maxLength={10}
+            title="Formato de fecha: dd-mm-yyyy (día-mes-año)"
             className={getInputClassName()}
             disabled={isReadOnly}
           />
         )
       } else {
+        const titleText =
+          variable.type === "numeric"
+            ? "Máximo 10 dígitos"
+            : variable.type === "decimal"
+              ? "Máximo 8 enteros y 2 decimales (formato: 12345678.12)"
+              : variable.type === "string"
+                ? "Máximo 20 caracteres"
+                : variable.type === "boolean"
+                  ? "Solo S o N (1 caracter)"
+                  : ""
+
         inputElement = (
           <input
             type="text"
@@ -1233,6 +1208,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 handleCellEdit(concept.id, variable.id, newValue)
               }
             }}
+            title={titleText}
             className={getInputClassName()}
             disabled={isReadOnly}
             maxLength={variable.maxLength}
@@ -1240,31 +1216,13 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         )
       }
 
-      // Si hay tooltip, envolver el input
-      const tooltipMessage = getTooltipMessage(variable)
-      if (tooltipMessage) {
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="w-full">{inputElement}</div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{tooltipMessage}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )
-      }
-
-      // Sin tooltip, retornar solo el input
       return <div className="w-full">{inputElement}</div>
     }
 
     // Vista normal
     return (
       <div className="h-full flex items-center justify-center">
-        {variable.type === "date" && cellValue ? formatDateForDisplay(cellValue) : cellValue || "0"}
+        {variable.type === "date" && cellValue ? convertISOToDate(cellValue) : cellValue || "0"}
       </div>
     )
   }
