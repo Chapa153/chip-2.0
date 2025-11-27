@@ -1,18 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import {
-  ArrowLeft,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Edit,
-  Plus,
-  Search,
-  ChevronUp,
-  AlertCircle,
-  Filter,
-} from "lucide-react"
+import { ArrowLeft, Check, ChevronDown, ChevronRight, Edit, Plus, Search, ChevronUp, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -657,39 +646,47 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
         <h2 className="text-2xl font-bold text-foreground">Gestión de Roles</h2>
       </div>
 
-      <div className="bg-card border border-border rounded-lg p-4 mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-            <input
-              type="text"
-              placeholder="Buscar rol..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
-            />
+      <div className="bg-card border border-border rounded-lg p-6 mb-6">
+        {/* Header con título y enlace de búsqueda avanzada */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <Search size={18} className="text-muted-foreground" />
+            <span className="font-medium text-foreground">Búsqueda por Nombre de Rol</span>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-              className="flex items-center gap-2"
-            >
-              <Filter size={16} />
-              Búsqueda Avanzada
-              {showAdvancedSearch ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </Button>
-            <Button onClick={handleCrearRol} className="bg-primary hover:bg-primary/90 flex items-center gap-2">
-              <Plus size={18} />
-              Crear Rol
-            </Button>
-          </div>
+          <button
+            onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+            className="flex items-center gap-1 text-primary hover:text-primary/80 text-sm"
+          >
+            {showAdvancedSearch ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            Búsqueda avanzada
+          </button>
+        </div>
+
+        {/* Input de búsqueda y botones */}
+        <div className="flex gap-3">
+          <input
+            type="text"
+            placeholder="Nombre del rol..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+          />
+          <Button onClick={handleBuscar} className="bg-primary hover:bg-primary/90">
+            Buscar
+          </Button>
+          <Button
+            onClick={handleCrearRol}
+            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+          >
+            <Plus size={18} />
+            Nuevo Rol
+          </Button>
         </div>
 
         {/* Búsqueda avanzada expandible */}
         {showAdvancedSearch && (
           <div className="border-t border-border pt-4 mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Código</label>
                 <input
@@ -741,20 +738,16 @@ export default function GestionRolesView({ onBack }: GestionRolesViewProps) {
                 />
               </div>
             </div>
+            {/* Botón Limpiar Filtros */}
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={handleLimpiarFiltros}>
+                Limpiar Filtros
+              </Button>
+            </div>
           </div>
         )}
-
-        {/* Botones Buscar y Limpiar */}
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={handleLimpiarFiltros}>
-            Limpiar Filtros
-          </Button>
-          <Button onClick={handleBuscar} className="bg-primary hover:bg-primary/90">
-            <Search size={16} className="mr-2" />
-            Buscar
-          </Button>
-        </div>
       </div>
+      {/* Fin de la sección de búsqueda */}
 
       {showResults ? (
         <>
