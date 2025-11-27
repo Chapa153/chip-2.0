@@ -57,6 +57,7 @@ interface Variable {
   type: "numeric" | "dropdown" | "string" | "calculated" | "boolean" | "decimal" | "date" | "list" // Agregados nuevos tipos y 'list'
   maxLength?: number // Longitud máxima para validación
   opciones?: string[] // Para tipos 'dropdown' y 'list'
+  isUsedInChild?: boolean // Propiedad para 'Estado de Cambios'
 }
 
 interface DataTableProps {
@@ -329,8 +330,14 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   // - Se elimina `totalVariables` como parámetro de cálculo y se usa un valor fijo de 7.
   const allVariables: Variable[] = useMemo(() => {
     const vars: Variable[] = [
-      { id: "var-1", label: "Variable 1", type: "dropdown", opciones: ["Opción A", "Opción B", "Opción C"] },
-      { id: "var-2", label: "Variable 2", type: "string", maxLength: 20 },
+      {
+        id: "var-1",
+        label: "Variable 1",
+        type: "dropdown",
+        opciones: ["Opción A", "Opción B", "Opción C"],
+        isUsedInChild: true,
+      },
+      { id: "var-2", label: "Variable 2", type: "string", maxLength: 20, isUsedInChild: true },
       { id: "var-3", label: "Variable 3", type: "numeric", maxLength: 10 }, // 10 dígitos
       { id: "var-4", label: "Variable 4", type: "decimal", maxLength: 11 }, // 8 enteros + punto + 2 decimales
       { id: "var-5", label: "Variable 5", type: "boolean", maxLength: 1 },
@@ -1168,77 +1175,90 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
     // Modo edición con fondo amarillo
     if (isEditing && isCellEditable(concept.id, variable.id)) {
-      const isReadOnly = false // Assuming isReadOnly should be managed if it exists elsewhere
+      // La variable `isReadOnly` se está utilizando para determinar si una celda de "Estado de Cambios"
+      // debe ser de solo lectura. Aquí, `isReadOnly` solo se aplica a "Estado de Cambios" y solo para `isUsedInChild`.
+      // Si se necesita una lógica más general para `isReadOnly`, deberá definirse en otro lugar.
+      const isReadOnly = isEstadoCambiosPatrimonio && variable.isUsedInChild
 
-      const inputElement = (
-        <div className="w-full">
-          {variable.type === "dropdown" && !isReadOnly ? (
-            <select
-              value={cellValue}
-              onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-              className={`w-full px-2 py-1 border rounded ${
-                fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : ""
-              }`}
-              disabled={isReadOnly}
-            >
-              <option value="">Seleccionar...</option>
-              {variable.opciones?.map((opcion) => (
-                <option key={opcion} value={opcion}>
-                  {opcion}
-                </option>
-              ))}
-            </select>
-          ) : variable.type === "date" && !isReadOnly ? (
-            <input
-              type="date"
-              value={convertDateToISO(cellValue)}
-              onChange={(e) => {
-                const isoDate = e.target.value
-                const formattedDate = convertISOToDate(isoDate)
-                handleCellEdit(concept.id, variable.id, formattedDate)
-              }}
-              className={`w-full px-2 py-1 border rounded ${
-                fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : ""
-              }`}
-              disabled={isReadOnly}
-            />
-          ) : (
-            <input
-              type="text"
-              value={cellValue}
-              onChange={(e) => {
-                const newValue = e.target.value
-                const maxLen = variable.maxLength || Number.POSITIVE_INFINITY
+      const getInputClassName = () => {
+        return `w-full px-2 py-1 border rounded ${
+          fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : ""
+        } ${isReadOnly ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`
+      }
 
-                // Bloquear si excede el límite
-                if (newValue.length <= maxLen) {
-                  handleCellEdit(concept.id, variable.id, newValue)
-                }
-              }}
-              className={`w-full px-2 py-1 border rounded ${
-                fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : ""
-              } ${isReadOnly ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`}
-              disabled={isReadOnly}
-              maxLength={variable.maxLength}
-            />
-          )}
-        </div>
-      )
+      // Renderizar el input según el tipo
+      let inputElement
 
+      if (variable.type === "dropdown" && !isReadOnly) {
+        inputElement = (
+          <select
+            value={cellValue}
+            onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
+            className={getInputClassName()}
+            disabled={isReadOnly}
+          >
+            <option value="">Seleccionar...</option>
+            {variable.opciones?.map((opcion) => (
+              <option key={opcion} value={opcion}>
+                {opcion}
+              </option>
+            ))}
+          </select>
+        )
+      } else if (variable.type === "date" && !isReadOnly) {
+        inputElement = (
+          <input
+            type="date"
+            value={convertDateToISO(cellValue)}
+            onChange={(e) => {
+              const isoDate = e.target.value
+              const formattedDate = convertISOToDate(isoDate)
+              handleCellEdit(concept.id, variable.id, formattedDate)
+            }}
+            className={getInputClassName()}
+            disabled={isReadOnly}
+          />
+        )
+      } else {
+        inputElement = (
+          <input
+            type="text"
+            value={cellValue}
+            onChange={(e) => {
+              const newValue = e.target.value
+              const maxLen = variable.maxLength || Number.POSITIVE_INFINITY
+
+              // Bloquear si excede el límite
+              if (newValue.length <= maxLen) {
+                handleCellEdit(concept.id, variable.id, newValue)
+              }
+            }}
+            className={getInputClassName()}
+            disabled={isReadOnly}
+            maxLength={variable.maxLength}
+          />
+        )
+      }
+
+      // Si hay tooltip, envolver el input
       const tooltipMessage = getTooltipMessage(variable)
+      if (tooltipMessage) {
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="w-full">{inputElement}</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{tooltipMessage}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )
+      }
 
-      return tooltipMessage ? (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>{inputElement}</TooltipTrigger>
-            <TooltipContent>
-              <p>{tooltipMessage}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      ) : (
-        inputElement
-      )
+      // Sin tooltip, retornar solo el input
+      return <div className="w-full">{inputElement}</div>
     }
 
     // Vista normal
