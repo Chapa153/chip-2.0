@@ -29,6 +29,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast" // Added useToast
 import { Toaster } from "@/components/ui/toaster" // Agregado Toaster para mostrar los toasts
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Tipos para la estructura de datos
 interface ConceptNode {
@@ -652,6 +653,25 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   const handleCellEdit = (conceptId: string, variableId: string, value: string) => {
+    const variable = allVariables.find((v) => v.id === variableId)
+    if (!variable) return
+
+    // Validar longitud antes de actualizar
+    if (variable.type === "numeric") {
+      const numericValue = value.replace(/[^0-9]/g, "")
+      if (numericValue.length > 10) return // Bloquear entrada
+      value = numericValue
+    } else if (variable.type === "decimal") {
+      const parts = value.split(".")
+      if (parts[0]?.length > 8 || parts[1]?.length > 2) return // Bloquear entrada
+    } else if (variable.type === "string") {
+      if (value.length > 20) return // Bloquear entrada
+    } else if (variable.type === "boolean") {
+      const upper = value.toUpperCase()
+      if (upper !== "" && upper !== "S" && upper !== "N") return // Bloquear entrada
+      value = upper
+    }
+
     setEditedCells((prev) => {
       const newMap = new Map(prev)
       const key = `${conceptId}-${variableId}`
@@ -876,38 +896,61 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return variableId === CALCULATED_VAR_ID
   }
 
+  const getMaxLength = (variable: Variable): number | undefined => {
+    if (variable.type === "numeric") return 10
+    if (variable.type === "decimal") return 11 // 8 enteros + punto + 2 decimales
+    if (variable.type === "string") return 20
+    if (variable.type === "boolean") return 1
+    return undefined
+  }
+
+  const getTooltipMessage = (variable: Variable): string => {
+    if (variable.type === "numeric") return "Máximo 10 dígitos"
+    if (variable.type === "decimal") return "Máximo 8 enteros y 2 decimales"
+    if (variable.type === "string") return "Máximo 20 caracteres"
+    if (variable.type === "boolean") return "Solo S o N (1 caracter)"
+    if (variable.type === "date") return "Formato: dd-mm-yyyy"
+    return ""
+  }
+
   const validateFieldLength = (variable: Variable, value: string, conceptId: string) => {
-    if (!variable.maxLength) return
+    const maxLength = getMaxLength(variable)
+    if (maxLength === undefined) return true // No hay longitud máxima definida
 
     const fieldKey = `${conceptId}-${variable.id}`
+    let isValid = true
     let errorMessage = ""
 
     if (variable.type === "numeric") {
       const numericValue = value.replace(/[^0-9]/g, "")
-      if (numericValue.length > variable.maxLength) {
-        errorMessage = `El campo ${variable.label} permite máximo ${variable.maxLength} dígitos`
+      if (numericValue.length > maxLength) {
+        errorMessage = `El campo ${variable.label} permite máximo ${maxLength} dígitos`
+        isValid = false
       }
     } else if (variable.type === "decimal") {
       const parts = value.split(".")
       const integerPart = parts[0] || ""
       const decimalPart = parts[1] || ""
 
+      // El maxLength de 11 para decimales considera 8 enteros + punto + 2 decimales.
+      // Por lo tanto, validamos la parte entera y decimal por separado.
       if (integerPart.length > 8) {
         errorMessage = `El campo ${variable.label} permite máximo 8 dígitos enteros`
+        isValid = false
       } else if (decimalPart.length > 2) {
         errorMessage = `El campo ${variable.label} permite máximo 2 decimales`
+        isValid = false
       }
     } else if (variable.type === "string") {
-      if (value.length > variable.maxLength) {
-        errorMessage = `El campo ${variable.label} permite máximo ${variable.maxLength} caracteres`
+      if (value.length > maxLength) {
+        errorMessage = `El campo ${variable.label} permite máximo ${maxLength} caracteres`
+        isValid = false
       }
     } else if (variable.type === "boolean") {
-      if (value !== "" && value !== "S" && value !== "N") {
-        errorMessage = `El campo ${variable.label} solo acepta S o N`
-      }
+      // La validación de S/N ya se hace en handleCellEdit
     }
 
-    if (errorMessage) {
+    if (!isValid) {
       toast({
         title: "Error de validación",
         description: errorMessage,
@@ -921,6 +964,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         return newSet
       })
     }
+    return isValid
   }
 
   useEffect(() => {
@@ -1092,7 +1136,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
     // Modo edición con fondo amarillo
     if (isEditing && isCellEditable(concept.id, variable.id)) {
-      return (
+      const inputElement = (
         <>
           {variable.type === "dropdown" ? (
             <select
@@ -1109,14 +1153,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             <input
               type="text"
               value={cellValue}
-              onChange={(e) => {
-                const value = e.target.value.toUpperCase()
-                if (value === "" || value === "S" || value === "N") {
-                  handleCellEdit(concept.id, variable.id, value)
-                } else {
-                  setValidationAlert("Solo se permite S o N")
-                }
-              }}
+              onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
               onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
               className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-center uppercase ${
                 fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
@@ -1133,6 +1170,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 const formatted = convertFromISO(isoDate)
                 handleCellEdit(concept.id, variable.id, formatted)
               }}
+              onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
               className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 ${
                 fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
               }`}
@@ -1142,12 +1180,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               type="text"
               inputMode="decimal"
               value={cellValue}
-              onChange={(e) => {
-                const value = e.target.value
-                if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
-                  handleCellEdit(concept.id, variable.id, value)
-                }
-              }}
+              onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
               onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
               className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-right ${
                 fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
@@ -1159,10 +1192,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               type="text"
               inputMode="numeric"
               value={cellValue}
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^0-9]/g, "")
-                handleCellEdit(concept.id, variable.id, value)
-              }}
+              onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
               onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
               className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-right ${
                 fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
@@ -1182,6 +1212,21 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             />
           )}
         </>
+      )
+
+      const tooltipMessage = getTooltipMessage(variable)
+
+      return tooltipMessage ? (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>{inputElement}</TooltipTrigger>
+            <TooltipContent>
+              <p>{tooltipMessage}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : (
+        inputElement
       )
     }
 
@@ -1210,8 +1255,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       paginatedVariables.forEach((variable) => {
         if (isCellEditable(concept.id, variable.id)) {
           const value = getCellValue(concept.id, variable.id)
-          const validation = validateFieldLength(variable, value, concept.id)
-          if (!validation.valid) {
+          const isValid = validateFieldLength(variable, value, concept.id)
+          if (!isValid) {
             allValid = false
           }
         }
