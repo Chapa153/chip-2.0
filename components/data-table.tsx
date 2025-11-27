@@ -1072,20 +1072,23 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         )
       } else if (variable.type === "date") {
         return (
-          <input
-            type="text"
-            value={cellValue}
-            onChange={(e) => {
-              const value = e.target.value
-              // Validar formato dd-mm-aaaa
-              if (/^\d{0,2}-?\d{0,2}-?\d{0,4}$/.test(value)) {
-                handleCellEdit(concept.id, variable.id, value)
-              }
-            }}
-            className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
-            placeholder="dd-mm-aaaa"
-            maxLength={10}
-          />
+          <div className="relative w-full h-full">
+            <input
+              type="date"
+              value={cellValue ? cellValue.split("-").reverse().join("-") : ""}
+              onChange={(e) => {
+                const isoDate = e.target.value
+                if (isoDate) {
+                  const [year, month, day] = isoDate.split("-")
+                  const formattedDate = `${day}-${month}-${year}`
+                  handleCellEdit(concept.id, variable.id, formattedDate)
+                } else {
+                  handleCellEdit(concept.id, variable.id, "")
+                }
+              }}
+              className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
+            />
+          </div>
         )
       } else if (variable.type === "decimal") {
         return (
@@ -1096,8 +1099,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               const value = e.target.value
               if (/^\d{0,8}\.?\d{0,2}$/.test(value)) {
                 handleCellEdit(concept.id, variable.id, value)
-                validateFieldLength(variable, value) // Validar longitud aquí
               }
+            }}
+            onBlur={() => {
+              validateFieldLength(variable, cellValue)
             }}
             className="w-full h-full px-2 text-right border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
             placeholder="0.00"
@@ -1112,10 +1117,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               const value = e.target.value
               if (/^\d*$/.test(value)) {
                 handleCellEdit(concept.id, variable.id, value)
-                validateFieldLength(variable, value) // Validar longitud aquí
               }
             }}
-            maxLength={variable.maxLength}
+            onBlur={() => {
+              validateFieldLength(variable, cellValue)
+            }}
             className="w-full h-full px-2 text-right border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
             placeholder="0"
           />
@@ -1125,10 +1131,9 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
           <input
             type="text"
             value={cellValue}
-            onChange={(e) => {
-              const value = e.target.value
-              handleCellEdit(concept.id, variable.id, value)
-              validateFieldLength(variable, value) // Validar longitud aquí
+            onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
+            onBlur={() => {
+              validateFieldLength(variable, cellValue)
             }}
             maxLength={variable.maxLength}
             className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
