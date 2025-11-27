@@ -275,18 +275,16 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
   const [nonEditableVars, setNonEditableVars] = useState<Map<string, { var1: string; var2: string }>>(new Map())
 
-  const [selectedEncabezado, setSelectedEncabezado] = useState<string>("persona-natural")
-  const encabezadosDisponibles = [
-    { id: "persona-natural", label: "Persona Natural" },
-    { id: "persona-juridica", label: "Persona Jurídica" },
-  ]
+  // Cambiar "selectedEncabezado" y "encabezadosDisponibles" por "selectedSegmento" y "segmentos"
+  const [selectedSegmento, setSelectedSegmento] = useState<string>("Persona Natural") // Valor inicial
+  const segmentos = ["Persona Natural", "Persona Jurídica"]
 
-  // Actualizar el estado y el useEffect para usar "encabezado"
-  const [conceptosPorEncabezado, setConceptosPorEncabezado] = useState<Map<string, ConceptNode[]>>(() => {
+  // Actualizar el estado y el useEffect para usar "segmento"
+  const [conceptosPorSegmento, setConceptosPorSegmento] = useState<Map<string, ConceptNode[]>>(() => {
     if (isEstadoCambiosPatrimonio) {
       const initialMap = new Map<string, ConceptNode[]>()
-      encabezadosDisponibles.forEach((enc) => {
-        initialMap.set(enc.id, generateEstadoCambiosConceptos())
+      segmentos.forEach((seg) => {
+        initialMap.set(seg, generateEstadoCambiosConceptos())
       })
       return initialMap
     }
@@ -294,45 +292,49 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   })
 
   // These states and their setters were introduced to fix lint errors
-  const [conceptosPorSegmento, setConceptosPorSegmento] = useState<Map<string, ConceptNode[]>>(new Map())
-  const [selectedSegmento, setSelectedSegmento] = useState<string>("")
+  // const [conceptosPorSegmento, setConceptosPorSegmento] = useState<Map<string, ConceptNode[]>>(new Map())
+  // const [selectedSegmento, setSelectedSegmento] = useState<string>("")
 
   useEffect(() => {
-    if (isEstadoCambiosPatrimonio && selectedEncabezado) {
-      const conceptosEncabezado = conceptosPorEncabezado.get(selectedEncabezado)
-      if (conceptosEncabezado) {
-        setDynamicConcepts(conceptosEncabezado)
+    if (isEstadoCambiosPatrimonio && selectedSegmento) {
+      const conceptosSegmento = conceptosPorSegmento.get(selectedSegmento)
+      if (conceptosSegmento) {
+        setDynamicConcepts(conceptosSegmento)
       }
+    } else if (!isEstadoCambiosPatrimonio) {
+      // Si no es Estado de Cambios, solo se usa dynamicConcepts directamente
+      setDynamicConcepts(generateMockConcepts())
     }
-  }, [selectedEncabezado, conceptosPorEncabezado, isEstadoCambiosPatrimonio])
+  }, [selectedSegmento, conceptosPorSegmento, isEstadoCambiosPatrimonio])
+
+  // Alerta suave de validación
+  const [validationAlert, setValidationAlert] = useState<string>("")
 
   const VARIABLES_PER_PAGE = 6
   const MAX_ROWS_PER_PAGE = 100
 
-  const totalVariables = isEstadoCambiosPatrimonio ? 10 : 12 // Total de variables incluyendo la calculada
-  const CALCULATED_VAR_ID = "var-calculated-total" // Variable calculada especial
+  const totalVariables = 7 // Total de variables incluyendo la calculada
+  const CALCULATED_VAR_ID = "var-calculated" // Variable calculada especial
 
+  // Actualizar allVariables:
+  // - `var-2` (string) ahora tiene `maxLength: 20`.
+  // - `var-calculated` se renombra a `var-calculated`.
+  // - Se elimina `totalVariables` como parámetro de cálculo y se usa un valor fijo de 7.
   const allVariables: Variable[] = useMemo(() => {
-    const vars: Variable[] = []
-
-    // Variables normales con diferentes tipos
-    vars.push({ id: `var-1`, label: `Variable 1`, type: "dropdown", maxLength: 50 })
-    vars.push({ id: `var-2`, label: `Variable 2`, type: "string", maxLength: 100 })
-    vars.push({ id: `var-3`, label: `Variable 3`, type: "numeric", maxLength: 10 }) // 10 dígitos
-    vars.push({ id: `var-4`, label: `Variable 4`, type: "decimal", maxLength: 10 }) // 8 enteros + 2 decimales
-    vars.push({ id: `var-5`, label: `Variable 5`, type: "boolean", maxLength: 1 })
-    vars.push({ id: `var-6`, label: `Variable 6`, type: "date" })
-
-    // Rellenar con variables numéricas hasta totalVariables - 1
-    for (let i = 7; i <= totalVariables - 1; i++) {
-      vars.push({ id: `var-${i}`, label: `Variable ${i}`, type: "numeric", maxLength: 10 })
-    }
+    const vars: Variable[] = [
+      { id: "var-1", label: "Variable 1", type: "dropdown" },
+      { id: "var-2", label: "Variable 2", type: "string", maxLength: 20 },
+      { id: "var-3", label: "Variable 3", type: "numeric", maxLength: 10 }, // 10 dígitos
+      { id: "var-4", label: "Variable 4", type: "decimal", maxLength: 10 }, // 8 enteros + 2 decimales
+      { id: "var-5", label: "Variable 5", type: "boolean", maxLength: 1 },
+      { id: "var-6", label: "Variable 6", type: "date" },
+    ]
 
     // Variable calculada al final
     vars.push({ id: CALCULATED_VAR_ID, label: "Total Calculado", type: "calculated" })
 
     return vars
-  }, [totalVariables, isEstadoCambiosPatrimonio])
+  }, []) // No depende de totalVariables
 
   const totalVariablePages = Math.ceil(totalVariables / VARIABLES_PER_PAGE)
 
@@ -533,13 +535,27 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     // Solo calcular para conceptos hijo en Estado de Cambios
     if (!isEstadoCambiosPatrimonio) return 0
 
-    const concept = dynamicConcepts.find((c) => c.id === conceptId)
+    // Encuentra el nodo por su ID
+    const findNodeById = (nodes: ConceptNode[], id: string): ConceptNode | null => {
+      for (const node of nodes) {
+        if (node.id === id) return node
+        if (node.children) {
+          const found = findNodeById(node.children, id)
+          if (found) return found
+        }
+      }
+      return null
+    }
+
+    const concept = findNodeById(dynamicConcepts, conceptId)
+
     if (!concept || concept.level === 0) return 0
 
     let total = 0
 
     // Sumar todas las variables numéricas excepto var-1 y var-2 (las no editables)
     allVariables.forEach((variable) => {
+      // Asumiendo que las variables no editables son var-1 y var-2
       if (variable.type === "numeric" && variable.id !== "var-1" && variable.id !== "var-2") {
         const value = getCellValue(conceptId, variable.id)
         const numValue = Number.parseFloat(value)
@@ -636,7 +652,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     if (variable) {
       const validation = validateFieldLength(variable, value)
       if (!validation.valid) {
-        alert(validation.message)
+        // Alert handled by validationAlert state now
         return
       }
     }
@@ -817,55 +833,49 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return variableId === CALCULATED_VAR_ID
   }
 
-  // Función para validar longitud de campos
   const validateFieldLength = (variable: Variable, value: string): { valid: boolean; message?: string } => {
     if (!variable.maxLength) return { valid: true }
 
     if (variable.type === "numeric") {
-      // Solo dígitos permitidos
       const numericValue = value.replace(/[^0-9]/g, "")
       if (numericValue.length > variable.maxLength) {
-        return {
-          valid: false,
-          message: `El campo ${variable.label} permite máximo ${variable.maxLength} dígitos`,
-        }
+        setValidationAlert(`El campo ${variable.label} permite máximo ${variable.maxLength} dígitos`)
+        return { valid: false }
       }
     } else if (variable.type === "decimal") {
-      // 8 enteros + 2 decimales
       const parts = value.split(".")
       const integerPart = parts[0] || ""
       const decimalPart = parts[1] || ""
 
       if (integerPart.length > 8) {
-        return {
-          valid: false,
-          message: `El campo ${variable.label} permite máximo 8 dígitos enteros`,
-        }
+        setValidationAlert(`El campo ${variable.label} permite máximo 8 dígitos enteros`)
+        return { valid: false }
       }
       if (decimalPart.length > 2) {
-        return {
-          valid: false,
-          message: `El campo ${variable.label} permite máximo 2 decimales`,
-        }
+        setValidationAlert(`El campo ${variable.label} permite máximo 2 decimales`)
+        return { valid: false }
       }
     } else if (variable.type === "string") {
       if (value.length > variable.maxLength) {
-        return {
-          valid: false,
-          message: `El campo ${variable.label} permite máximo ${variable.maxLength} caracteres`,
-        }
+        setValidationAlert(`El campo ${variable.label} permite máximo ${variable.maxLength} caracteres`)
+        return { valid: false }
       }
     } else if (variable.type === "boolean") {
       if (value.length > 1) {
-        return {
-          valid: false,
-          message: `El campo ${variable.label} permite máximo 1 carácter (S/N)`,
-        }
+        setValidationAlert(`El campo ${variable.label} permite máximo 1 carácter (S/N)`)
+        return { valid: false }
       }
     }
 
     return { valid: true }
   }
+
+  useEffect(() => {
+    if (validationAlert) {
+      const timer = setTimeout(() => setValidationAlert(""), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [validationAlert])
 
   const getFilteredStartRanges = useMemo(() => {
     const filtered = getAllConceptsFlat.filter(
@@ -903,8 +913,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
     if (startIndex !== -1 && endIndex !== -1) {
       const rangeSize = endIndex - startIndex + 1
-      const shouldShowAlert = rangeSize > 30
-
+      const shouldShowAlert = rangeSize > 30 // Considerar un umbral para la alerta
       if (shouldShowAlert) {
         setShowLargeRangeAlert(true)
       } else {
@@ -982,40 +991,21 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return parent?.children || []
   }
 
+  // Modificar isCellEditable para que no tenga en cuenta nonEditableVars.has(concept.id)
+  // sino que las variables var-1 y var-2 sean siempre no editables si isEstadoCambiosPatrimonio es true.
   const isCellEditable = (conceptId: string, variableId: string): boolean => {
     if (isCalculatedVariable(variableId)) {
       return false
     }
 
-    if (isEstadoCambiosPatrimonio && nonEditableVars.has(conceptId)) {
-      // Las primeras 2 variables no son editables
-      if (variableId === "var-1" || variableId === "var-2") {
-        return false
-      }
+    // Variables var-1 y var-2 son no editables si el título es "Estado de Cambios en el Patrimonio"
+    if (isEstadoCambiosPatrimonio && (variableId === "var-1" || variableId === "var-2")) {
+      return false
     }
     return true
   }
 
-  // Modificar la lógica para obtener las variables paginadas, usando `paginatedVariables`
-  const getPaginatedConcepts = (): ConceptNode[] => {
-    const start = currentPage * MAX_ROWS_PER_PAGE
-    return allFlattenedConcepts.slice(start, start + MAX_ROWS_PER_PAGE)
-  }
-
-  const handleVerAtributos = (conceptId: string, conceptLabel: string) => {
-    // Implement handleVerAtributos logic here
-    console.log(`Ver atributos for concept ${conceptId}: ${conceptLabel}`)
-    // Assuming attributes are stored by conceptId, and we need to display the label as part of the title.
-    // This mock data needs to be adjusted to include the concept label if it's not implicitly available.
-    const conceptAttributes = atributosExtensiblesMock[conceptId] || atributosExtensiblesMock["1"]
-    // Temporarily storing the concept label with the attributes for display in the dialog title.
-    // A more robust solution would involve a separate state for the dialog title/description.
-    setSelectedConceptoAtributos(
-      conceptAttributes ? [{ id: conceptId, nombre: conceptLabel, valor: "", tipo: "texto" }] : null,
-    ) // Simplified for title display
-    setAtributosDialogOpen(true)
-  }
-
+  // Actualizar lógica de renderizado de celdas para mostrar variables no editables con fondo gris
   const renderCellContent = (concept: ConceptNode, variable: Variable, isEditing: boolean) => {
     const cellKey = `${concept.id}-${variable.id}`
     // Priorizar editedCells para mostrar el valor mientras se edita
@@ -1032,13 +1022,23 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     }
 
     // Variables no editables con fondo gris
-    const isNonEditable = isCellEditable(concept.id, variable.id) // Use isCellEditable here
-    if (!isEditing && isNonEditable) {
-      return <div className="h-full flex items-center justify-center bg-gray-100 text-gray-700">{cellValue}</div>
+    // Si es Estado de Cambios y las variables son var-1 o var-2, son no editables y se muestran con fondo gris.
+    if (isEstadoCambiosPatrimonio && (variable.id === "var-1" || variable.id === "var-2")) {
+      // Debemos obtener el valor correcto, ya sea de nonEditableVars o de cellData si fue editado previamente
+      const nonEditableData = nonEditableVars.get(concept.id)
+      const displayValue = nonEditableData
+        ? variable.id === "var-1"
+          ? nonEditableData.var1
+          : nonEditableData.var2
+        : cellValue // Fallback a cellValue si nonEditableVars no tiene el dato (esto no debería pasar si se maneja correctamente)
+
+      return (
+        <div className="h-full flex items-center justify-center bg-gray-100 text-gray-700">{displayValue || "-"}</div>
+      )
     }
 
     // Modo edición con fondo amarillo
-    if (isEditing) {
+    if (isEditing && isCellEditable(concept.id, variable.id)) {
       if (variable.type === "dropdown") {
         return (
           <select
@@ -1054,28 +1054,37 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         )
       } else if (variable.type === "boolean") {
         return (
-          <select
+          <input
+            type="text"
             value={cellValue}
-            onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-            className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
-          >
-            <option value="">-</option>
-            <option value="S">S</option>
-            <option value="N">N</option>
-          </select>
+            onChange={(e) => {
+              const value = e.target.value.toUpperCase()
+              if (value === "" || value === "S" || value === "N") {
+                handleCellEdit(concept.id, variable.id, value)
+              } else {
+                setValidationAlert("Solo se permite S o N")
+              }
+            }}
+            maxLength={1}
+            className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-center"
+            placeholder="S/N"
+          />
         )
       } else if (variable.type === "date") {
         return (
           <input
-            type="date"
+            type="text"
             value={cellValue}
             onChange={(e) => {
-              // Convertir a formato DD-MM-YYYY
-              const date = new Date(e.target.value)
-              const formattedDate = `${date.getDate().toString().padStart(2, "0")}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getFullYear()}`
-              handleCellEdit(concept.id, variable.id, formattedDate)
+              const value = e.target.value
+              // Validar formato dd-mm-aaaa
+              if (/^\d{0,2}-?\d{0,2}-?\d{0,4}$/.test(value)) {
+                handleCellEdit(concept.id, variable.id, value)
+              }
             }}
             className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
+            placeholder="dd-mm-aaaa"
+            maxLength={10}
           />
         )
       } else if (variable.type === "decimal") {
@@ -1085,9 +1094,9 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             value={cellValue}
             onChange={(e) => {
               const value = e.target.value
-              // Permitir solo números y punto decimal
-              if (/^\d*\.?\d{0,2}$/.test(value)) {
+              if (/^\d{0,8}\.?\d{0,2}$/.test(value)) {
                 handleCellEdit(concept.id, variable.id, value)
+                validateFieldLength(variable, value) // Validar longitud aquí
               }
             }}
             className="w-full h-full px-2 text-right border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
@@ -1101,22 +1110,27 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             value={cellValue}
             onChange={(e) => {
               const value = e.target.value
-              // Permitir solo números
               if (/^\d*$/.test(value)) {
                 handleCellEdit(concept.id, variable.id, value)
+                validateFieldLength(variable, value) // Validar longitud aquí
               }
             }}
+            maxLength={variable.maxLength}
             className="w-full h-full px-2 text-right border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
             placeholder="0"
           />
         )
       } else {
-        // String
         return (
           <input
             type="text"
             value={cellValue}
-            onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value
+              handleCellEdit(concept.id, variable.id, value)
+              validateFieldLength(variable, value) // Validar longitud aquí
+            }}
+            maxLength={variable.maxLength}
             className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
           />
         )
@@ -1131,8 +1145,28 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     )
   }
 
+  // Función handleEnviar
+  const handleEnviar = () => {
+    // Aquí iría la lógica para enviar los datos, por ejemplo:
+    // - Validar que todas las celdas editables tengan valores correctos.
+    // - Construir el payload con los datos de `cellData` y `editedCells`.
+    // - Realizar la llamada a la API.
+    alert("Formulario enviado correctamente")
+  }
+
+  const handleVerAtributos = (conceptId: string, conceptName: string) => {
+    setSelectedConceptoAtributos([{ id: conceptId, nombre: conceptName }])
+    setAtributosDialogOpen(true)
+  }
+
   return (
     <div className="flex flex-col gap-4 p-6 bg-white rounded-lg">
+      {validationAlert && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 rounded mb-4">
+          <p className="text-sm">{validationAlert}</p>
+        </div>
+      )}
+
       {/* Header con título y botones volver/enviar */}
       <div className="flex items-center justify-between pb-4 border-b">
         <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
@@ -1144,13 +1178,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               Volver
             </Button>
           )}
-          <Button
-            onClick={() => {
-              // Lógica de envío
-              alert("Formulario enviado correctamente")
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
+          <Button onClick={handleEnviar}>
             <Send className="mr-2 h-4 w-4" />
             Enviar
           </Button>
@@ -1158,16 +1186,20 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       </div>
 
       {isEstadoCambiosPatrimonio && (
-        <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="flex items-center gap-4 pb-4 border-b">
           <label className="text-sm font-medium text-gray-700">Encabezado:</label>
           <select
-            value={selectedEncabezado}
-            onChange={(e) => setSelectedEncabezado(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={selectedSegmento}
+            onChange={(e) => {
+              setSelectedSegmento(e.target.value)
+              setCurrentPage(0)
+              setExpandedNodes(new Set()) // Reset expanded nodes when segment changes
+            }}
+            className="border rounded px-3 py-2"
           >
-            {encabezadosDisponibles.map((enc) => (
-              <option key={enc.id} value={enc.id}>
-                {enc.label}
+            {segmentos.map((seg) => (
+              <option key={seg} value={seg}>
+                {seg}
               </option>
             ))}
           </select>
@@ -1182,10 +1214,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             value={rangeStart}
             onValueChange={(value) => {
               setRangeStart(value)
-              setRangeEnd("")
+              setRangeEnd("") // Reset rangeEnd when rangeStart changes
               setRangeSearchInitial("")
             }}
-            disabled={editingRows.size > 0}
+            disabled={editingRows.size > 0} // Deshabilitar si hay registros en edición
           >
             <SelectTrigger className="w-full bg-white">
               <SelectValue placeholder="Seleccionar concepto..." />
@@ -1226,7 +1258,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               handleRangeEndChange(value)
               setRangeSearchFinal("")
             }}
-            disabled={!rangeStart || editingRows.size > 0}
+            disabled={!rangeStart || editingRows.size > 0} // Deshabilitar si no hay rangeStart o si hay registros en edición
           >
             <SelectTrigger className="w-full bg-white">
               <SelectValue placeholder="Seleccionar concepto..." />
@@ -1359,7 +1391,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 </tr>
               </thead>
               <tbody>
-                {getPaginatedConcepts().map((concept) => {
+                {getCurrentPageConcepts().map((concept) => {
                   const isParent = isParentConcept(concept.id)
                   const isExpanded = expandedNodes.has(concept.id)
                   const isEditing = isRowEditing(concept.id)
@@ -1508,10 +1540,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                         </td>
 
                         {paginatedVariables.map((variable) => {
+                          // Si es padre Y NO es Estado de Cambios, calculamos y mostramos la suma
                           if (isParent && !isEstadoCambiosPatrimonio) {
                             const sum = calculateParentSum(concept.id, variable.id)
 
-                            // Si no es numérico, mostrar guion
+                            // Si la variable no es numérica, mostrar guion
                             if (variable.type !== "numeric") {
                               return (
                                 <td
@@ -1533,7 +1566,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                             )
                           }
 
-                          // Para Estado de Cambios en el Patrimonio, padres no muestran valores
+                          // Para Estado de Cambios en el Patrimonio, padres no muestran valores en celdas
                           if (isParent && isEstadoCambiosPatrimonio) {
                             return (
                               <td
@@ -1545,11 +1578,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                             )
                           }
 
-                          // Llamar a renderCellContent para renderizar la celda
+                          // Llamar a renderCellContent para renderizar la celda para conceptos hijo
                           return (
                             <td
                               key={variable.id}
-                              className={`border border-gray-300 px-0 py-0 ${isEditing ? "bg-yellow-50" : ""}`}
+                              className={`border border-gray-300 px-0 py-0 ${isEditing && isCellEditable(concept.id, variable.id) ? "bg-yellow-50" : ""}`}
                             >
                               {renderCellContent(concept, variable, isEditing)}
                             </td>
@@ -1572,7 +1605,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">
-              Mostrando {getPaginatedConcepts().length} de {allFlattenedConcepts.length} registros totales
+              Mostrando {getCurrentPageConcepts().length} de {allFlattenedConcepts.length} registros totales
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Button
