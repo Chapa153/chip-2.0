@@ -664,26 +664,30 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     const variable = allVariables.find((v) => v.id === variableId)
     if (!variable) return
 
-    // Validar longitud antes de actualizar
+    // Validar y ajustar valor según tipo sin bloqueo
+    let finalValue = value
+
     if (variable.type === "numeric") {
-      const numericValue = value.replace(/[^0-9]/g, "")
-      if (numericValue.length > 10) return // Bloquear entrada
-      value = numericValue
+      finalValue = value.replace(/[^0-9]/g, "").substring(0, 10)
     } else if (variable.type === "decimal") {
+      // Permitir números, punto decimal, y limitar
       const parts = value.split(".")
-      if (parts[0]?.length > 8 || parts[1]?.length > 2) return // Bloquear entrada
+      if (parts.length > 2) return // Más de un punto
+      if (parts[0] && parts[0].length > 8) parts[0] = parts[0].substring(0, 8)
+      if (parts[1] && parts[1].length > 2) parts[1] = parts[1].substring(0, 2)
+      finalValue = parts.join(".")
     } else if (variable.type === "string") {
-      if (value.length > 20) return // Bloquear entrada
+      finalValue = value.substring(0, 20)
     } else if (variable.type === "boolean") {
       const upper = value.toUpperCase()
-      if (upper !== "" && upper !== "S" && upper !== "N") return // Bloquear entrada
-      value = upper
+      if (upper !== "" && upper !== "S" && upper !== "N") return
+      finalValue = upper
     }
 
     setEditedCells((prev) => {
       const newMap = new Map(prev)
       const key = `${conceptId}-${variableId}`
-      newMap.set(key, value)
+      newMap.set(key, finalValue)
       return newMap
     })
   }
@@ -873,17 +877,9 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   const formatDateInput = (value: string): string => {
-    // Remover todo excepto números
-    const numbers = value.replace(/[^\d]/g, "")
-
-    // Formatear con guiones automáticamente
-    if (numbers.length <= 2) {
-      return numbers
-    } else if (numbers.length <= 4) {
-      return `${numbers.slice(0, 2)}-${numbers.slice(2)}`
-    } else {
-      return `${numbers.slice(0, 2)}-${numbers.slice(2, 4)}-${numbers.slice(4, 8)}`
-    }
+    // Eliminar todo excepto números y guiones
+    const cleaned = value.replace(/[^\d-]/g, "")
+    return cleaned
   }
 
   const validateDateFormat = useCallback((date: string): boolean => {
@@ -1163,17 +1159,35 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       }
 
       // Renderizar el input según el tipo
-      let inputElement
+      let inputElement: React.ReactNode
 
-      if (variable.type === "date" && !isReadOnly) {
+      if (variable.type === "dropdown" && variable.opciones) {
+        inputElement = (
+          <select
+            value={cellValue}
+            onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
+            className={getInputClassName()}
+            disabled={isReadOnly}
+            title="Seleccione una opción de la lista"
+          >
+            <option value="">Seleccionar...</option>
+            {variable.opciones.map((opcion) => (
+              <option key={opcion} value={opcion}>
+                {opcion}
+              </option>
+            ))}
+          </select>
+        )
+      } else if (variable.type === "date") {
         inputElement = (
           <input
             type="text"
             value={cellValue}
             onChange={(e) => {
-              const formatted = formatDateInput(e.target.value)
-              if (formatted.length <= 10) {
-                handleCellEdit(concept.id, variable.id, formatted)
+              const value = e.target.value.replace(/[^\d-]/g, "")
+              // Limitar a 10 caracteres
+              if (value.length <= 10) {
+                handleCellEdit(concept.id, variable.id, value)
               }
             }}
             placeholder="dd-mm-yyyy"
@@ -1200,18 +1214,12 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             type="text"
             value={cellValue}
             onChange={(e) => {
-              const newValue = e.target.value
-              const maxLen = variable.maxLength || Number.POSITIVE_INFINITY
-
-              // Bloquear si excede el límite
-              if (newValue.length <= maxLen) {
-                handleCellEdit(concept.id, variable.id, newValue)
-              }
+              handleCellEdit(concept.id, variable.id, e.target.value)
             }}
             title={titleText}
             className={getInputClassName()}
             disabled={isReadOnly}
-            maxLength={variable.maxLength}
+            maxLength={variable.maxLength} // Usar maxLength del prop de la variable
           />
         )
       }
@@ -1235,12 +1243,12 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
     setFieldsWithError(new Set()) // Limpiar errores previos
 
-    currentConcepts.forEach((concept) => {
-      if (isRowEditing(concept.id)) {
-        // Si una fila está en edición, intentar guardarla primero
-        saveEditingRow(concept.id)
-      }
+    // Intentar guardar filas en edición primero
+    editingRows.forEach((conceptId) => {
+      saveEditingRow(conceptId)
+    })
 
+    currentConcepts.forEach((concept) => {
       paginatedVariables.forEach((variable) => {
         if (isCellEditable(concept.id, variable.id)) {
           const value = getCellValue(concept.id, variable.id)
