@@ -651,15 +651,14 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     setTempRowData(newTempData)
   }
 
-  // Cambiar el nombre de la función y la lógica para usar `editedCells` y validaciones
-  const handleCellEdit = useCallback((conceptId: string, variableId: string, value: string) => {
+  const handleCellEdit = (conceptId: string, variableId: string, value: string) => {
     setEditedCells((prev) => {
       const newMap = new Map(prev)
       const key = `${conceptId}-${variableId}`
       newMap.set(key, value)
       return newMap
     })
-  }, []) // Optimizando handleCellEdit con useCallback
+  }
 
   const hasUnsavedChanges = () => {
     return editingRows.size > 0
@@ -869,60 +868,61 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return variableId === CALCULATED_VAR_ID
   }
 
-  const validateFieldLength = useCallback(
-    (variable: Variable, value: string, conceptId: string): { valid: boolean; message?: string } => {
-      if (!variable.maxLength) return { valid: true }
+  const validateFieldLength = (
+    variable: Variable,
+    value: string,
+    conceptId: string,
+  ): { valid: boolean; message?: string } => {
+    if (!variable.maxLength) return { valid: true }
 
-      const fieldKey = `${conceptId}-${variable.id}`
-      let errorMessage = ""
+    const fieldKey = `${conceptId}-${variable.id}`
+    let errorMessage = ""
 
-      if (variable.type === "numeric") {
-        const numericValue = value.replace(/[^0-9]/g, "")
-        if (numericValue.length > variable.maxLength) {
-          errorMessage = `El campo ${variable.label} permite máximo ${variable.maxLength} dígitos`
-        }
-      } else if (variable.type === "decimal") {
-        const parts = value.split(".")
-        const integerPart = parts[0] || ""
-        const decimalPart = parts[1] || ""
-
-        if (integerPart.length > 8) {
-          errorMessage = `El campo ${variable.label} permite máximo 8 dígitos enteros`
-        } else if (decimalPart.length > 2) {
-          errorMessage = `El campo ${variable.label} permite máximo 2 decimales`
-        }
-      } else if (variable.type === "string") {
-        if (value.length > variable.maxLength) {
-          errorMessage = `El campo ${variable.label} permite máximo ${variable.maxLength} caracteres`
-        }
-      } else if (variable.type === "boolean") {
-        if (value.length > 1) {
-          errorMessage = `El campo ${variable.label} permite máximo 1 carácter (S/N)`
-        }
-        if (value !== "" && value !== "S" && value !== "N") {
-          errorMessage = `El campo ${variable.label} solo acepta S o N`
-        }
+    if (variable.type === "numeric") {
+      const numericValue = value.replace(/[^0-9]/g, "")
+      if (numericValue.length > variable.maxLength) {
+        errorMessage = `El campo ${variable.label} permite máximo ${variable.maxLength} dígitos`
       }
+    } else if (variable.type === "decimal") {
+      const parts = value.split(".")
+      const integerPart = parts[0] || ""
+      const decimalPart = parts[1] || ""
 
-      if (errorMessage) {
-        toast({
-          title: "Validación de campo",
-          description: errorMessage,
-          variant: "destructive",
-        })
-        setFieldsWithError((prev) => new Set(prev).add(fieldKey))
-        return { valid: false, message: errorMessage }
-      } else {
-        setFieldsWithError((prev) => {
-          const newSet = new Set(prev)
-          newSet.delete(fieldKey)
-          return newSet
-        })
-        return { valid: true }
+      if (integerPart.length > 8) {
+        errorMessage = `El campo ${variable.label} permite máximo 8 dígitos enteros`
+      } else if (decimalPart.length > 2) {
+        errorMessage = `El campo ${variable.label} permite máximo 2 decimales`
       }
-    },
-    [toast],
-  ) // Optimizando validateFieldLength con useCallback
+    } else if (variable.type === "string") {
+      if (value.length > variable.maxLength) {
+        errorMessage = `El campo ${variable.label} permite máximo ${variable.maxLength} caracteres`
+      }
+    } else if (variable.type === "boolean") {
+      if (value.length > 1) {
+        errorMessage = `El campo ${variable.label} permite máximo 1 carácter (S/N)`
+      }
+      if (value !== "" && value !== "S" && value !== "N") {
+        errorMessage = `El campo ${variable.label} solo acepta S o N`
+      }
+    }
+
+    if (errorMessage) {
+      toast({
+        title: "Validación de campo",
+        description: errorMessage,
+        variant: "destructive",
+      })
+      setFieldsWithError((prev) => new Set(prev).add(fieldKey))
+      return { valid: false, message: errorMessage }
+    } else {
+      setFieldsWithError((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(fieldKey)
+        return newSet
+      })
+      return { valid: true }
+    }
+  }
 
   useEffect(() => {
     if (validationAlert) {
@@ -1131,34 +1131,16 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       } else if (variable.type === "date") {
         return (
           <input
-            type="text"
-            value={cellValue}
+            type="date"
+            value={convertToISO(cellValue)}
             onChange={(e) => {
-              const formatted = formatDateInput(e.target.value)
+              const isoDate = e.target.value
+              const formatted = convertFromISO(isoDate)
               handleCellEdit(concept.id, variable.id, formatted)
             }}
-            onBlur={(e) => {
-              const value = e.target.value
-              if (value && !validateDateFormat(value)) {
-                toast({
-                  title: "Formato de fecha inválido",
-                  description: "Use el formato dd-mm-yyyy",
-                  variant: "destructive",
-                })
-                setFieldsWithError((prev) => new Set(prev).add(cellKey))
-              } else {
-                setFieldsWithError((prev) => {
-                  const newSet = new Set(prev)
-                  newSet.delete(cellKey)
-                  return newSet
-                })
-              }
-            }}
-            placeholder="dd-mm-yyyy"
             className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 ${
-              fieldsWithError.has(cellKey) ? "ring-2 ring-red-500" : ""
+              fieldsWithError.has(cellKey) ? "ring-2 ring-red-500 bg-red-50" : ""
             }`}
-            maxLength={10}
           />
         )
       } else if (variable.type === "decimal") {
@@ -1220,7 +1202,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     // Vista normal
     return (
       <div className="h-full flex items-center justify-center">
-        {variable.type === "date" && cellValue ? cellValue : cellValue || "0"}
+        {variable.type === "date" && cellValue ? formatDateForDisplay(cellValue) : cellValue || "0"}
       </div>
     )
   }
@@ -1271,6 +1253,20 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const handleVerAtributos = (conceptId: string, conceptName: string) => {
     setSelectedConceptoAtributos([{ id: conceptId, nombre: conceptName }])
     setAtributosDialogOpen(true)
+  }
+
+  const convertToISO = (dateStr: string): string => {
+    if (!dateStr || dateStr.length !== 10) return ""
+    const parts = dateStr.split("-")
+    if (parts.length !== 3) return ""
+    return `${parts[2]}-${parts[1]}-${parts[0]}` // yyyy-mm-dd
+  }
+
+  const convertFromISO = (isoStr: string): string => {
+    if (!isoStr || isoStr.length !== 10) return ""
+    const parts = isoStr.split("-")
+    if (parts.length !== 3) return ""
+    return `${parts[2]}-${parts[1]}-${parts[0]}` // dd-mm-yyyy
   }
 
   return (
