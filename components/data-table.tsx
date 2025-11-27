@@ -830,11 +830,19 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return `${day}-${month}-${year}`
   }
 
-  const formatDateForInput = useCallback((displayDate: string): string => {
-    if (!displayDate) return ""
-    const [day, month, year] = displayDate.split("-")
+  const convertToISO = (dateStr: string): string => {
+    if (!dateStr || dateStr.length < 10) return ""
+    const parts = dateStr.split("-")
+    if (parts.length !== 3) return ""
+    const [day, month, year] = parts
     return `${year}-${month}-${day}`
-  }, []) // Agregando funciones para manejar fechas con formato dd-mm-yyyy
+  }
+
+  const convertFromISO = (isoDate: string): string => {
+    if (!isoDate) return ""
+    const [year, month, day] = isoDate.split("-")
+    return `${day}-${month}-${year}`
+  }
 
   const formatDateInput = useCallback((value: string): string => {
     // Remover caracteres no numéricos
@@ -868,12 +876,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return variableId === CALCULATED_VAR_ID
   }
 
-  const validateFieldLength = (
-    variable: Variable,
-    value: string,
-    conceptId: string,
-  ): { valid: boolean; message?: string } => {
-    if (!variable.maxLength) return { valid: true }
+  const validateFieldLength = (variable: Variable, value: string, conceptId: string) => {
+    if (!variable.maxLength) return
 
     const fieldKey = `${conceptId}-${variable.id}`
     let errorMessage = ""
@@ -898,9 +902,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         errorMessage = `El campo ${variable.label} permite máximo ${variable.maxLength} caracteres`
       }
     } else if (variable.type === "boolean") {
-      if (value.length > 1) {
-        errorMessage = `El campo ${variable.label} permite máximo 1 carácter (S/N)`
-      }
       if (value !== "" && value !== "S" && value !== "N") {
         errorMessage = `El campo ${variable.label} solo acepta S o N`
       }
@@ -908,19 +909,17 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
     if (errorMessage) {
       toast({
-        title: "Validación de campo",
+        title: "Error de validación",
         description: errorMessage,
         variant: "destructive",
       })
       setFieldsWithError((prev) => new Set(prev).add(fieldKey))
-      return { valid: false, message: errorMessage }
     } else {
       setFieldsWithError((prev) => {
         const newSet = new Set(prev)
         newSet.delete(fieldKey)
         return newSet
       })
-      return { valid: true }
     }
   }
 
@@ -1093,110 +1092,97 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
     // Modo edición con fondo amarillo
     if (isEditing && isCellEditable(concept.id, variable.id)) {
-      if (variable.type === "dropdown") {
-        return (
-          <select
-            value={cellValue}
-            onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-            className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
-          >
-            <option value="">Seleccionar...</option>
-            <option value="Opción A">Opción A</option>
-            <option value="Opción B">Opción B</option>
-            <option value="Opción C">Opción C</option>
-          </select>
-        )
-      } else if (variable.type === "boolean") {
-        return (
-          <input
-            type="text"
-            value={cellValue}
-            onChange={(e) => {
-              const value = e.target.value.toUpperCase()
-              if (value === "" || value === "S" || value === "N") {
+      return (
+        <>
+          {variable.type === "dropdown" ? (
+            <select
+              value={cellValue}
+              onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
+              className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
+            >
+              <option value="">Seleccionar...</option>
+              <option value="Opción A">Opción A</option>
+              <option value="Opción B">Opción B</option>
+              <option value="Opción C">Opción C</option>
+            </select>
+          ) : variable.type === "boolean" ? (
+            <input
+              type="text"
+              value={cellValue}
+              onChange={(e) => {
+                const value = e.target.value.toUpperCase()
+                if (value === "" || value === "S" || value === "N") {
+                  handleCellEdit(concept.id, variable.id, value)
+                } else {
+                  setValidationAlert("Solo se permite S o N")
+                }
+              }}
+              onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
+              className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-center uppercase ${
+                fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
+              }`}
+              maxLength={1}
+              placeholder="S/N"
+            />
+          ) : variable.type === "date" ? (
+            <input
+              type="date"
+              value={convertToISO(cellValue)}
+              onChange={(e) => {
+                const isoDate = e.target.value
+                const formatted = convertFromISO(isoDate)
+                handleCellEdit(concept.id, variable.id, formatted)
+              }}
+              className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 ${
+                fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
+              }`}
+            />
+          ) : variable.type === "decimal" ? (
+            <input
+              type="text"
+              inputMode="decimal"
+              value={cellValue}
+              onChange={(e) => {
+                const value = e.target.value
+                if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
+                  handleCellEdit(concept.id, variable.id, value)
+                }
+              }}
+              onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
+              className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-right ${
+                fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
+              }`}
+              placeholder="0.00"
+            />
+          ) : variable.type === "numeric" ? (
+            <input
+              type="text"
+              inputMode="numeric"
+              value={cellValue}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, "")
                 handleCellEdit(concept.id, variable.id, value)
-              } else {
-                setValidationAlert("Solo se permite S o N")
-              }
-            }}
-            onBlur={(e) => {
-              validateFieldLength(variable, e.target.value, concept.id)
-            }}
-            className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-center uppercase ${
-              fieldsWithError.has(cellKey) ? "ring-2 ring-red-500" : ""
-            }`}
-            maxLength={1}
-          />
-        )
-      } else if (variable.type === "date") {
-        return (
-          <input
-            type="date"
-            value={convertToISO(cellValue)}
-            onChange={(e) => {
-              const isoDate = e.target.value
-              const formatted = convertFromISO(isoDate)
-              handleCellEdit(concept.id, variable.id, formatted)
-            }}
-            className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 ${
-              fieldsWithError.has(cellKey) ? "ring-2 ring-red-500 bg-red-50" : ""
-            }`}
-          />
-        )
-      } else if (variable.type === "decimal") {
-        return (
-          <input
-            type="text"
-            inputMode="decimal"
-            value={cellValue}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
-                handleCellEdit(concept.id, variable.id, value)
-              }
-            }}
-            onBlur={(e) => {
-              validateFieldLength(variable, e.target.value, concept.id)
-            }}
-            className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-right ${
-              fieldsWithError.has(cellKey) ? "ring-2 ring-red-500" : ""
-            }`}
-          />
-        )
-      } else if (variable.type === "numeric") {
-        return (
-          <input
-            type="text"
-            inputMode="numeric"
-            value={cellValue}
-            onChange={(e) => {
-              const value = e.target.value.replace(/[^0-9]/g, "")
-              handleCellEdit(concept.id, variable.id, value)
-            }}
-            onBlur={(e) => {
-              validateFieldLength(variable, e.target.value, concept.id)
-            }}
-            className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-right ${
-              fieldsWithError.has(cellKey) ? "ring-2 ring-red-500" : ""
-            }`}
-          />
-        )
-      } else {
-        return (
-          <input
-            type="text"
-            value={cellValue}
-            onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-            onBlur={(e) => {
-              validateFieldLength(variable, e.target.value, concept.id)
-            }}
-            className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 ${
-              fieldsWithError.has(cellKey) ? "ring-2 ring-red-500" : ""
-            }`}
-            maxLength={variable.maxLength}
-          />
-        )
-      }
+              }}
+              onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
+              className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-right ${
+                fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
+              }`}
+              placeholder="0"
+            />
+          ) : (
+            <input
+              type="text"
+              value={cellValue}
+              onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
+              onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
+              className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 ${
+                fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
+              }`}
+              maxLength={variable.maxLength}
+            />
+          )}
+        </>
+      )
     }
 
     // Vista normal
@@ -1255,22 +1241,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     setAtributosDialogOpen(true)
   }
 
-  const convertToISO = (dateStr: string): string => {
-    if (!dateStr || dateStr.length !== 10) return ""
-    const parts = dateStr.split("-")
-    if (parts.length !== 3) return ""
-    return `${parts[2]}-${parts[1]}-${parts[0]}` // yyyy-mm-dd
-  }
-
-  const convertFromISO = (isoStr: string): string => {
-    if (!isoStr || isoStr.length !== 10) return ""
-    const parts = isoStr.split("-")
-    if (parts.length !== 3) return ""
-    return `${parts[2]}-${parts[1]}-${parts[0]}` // dd-mm-yyyy
-  }
-
   return (
-    <div className="flex flex-col gap-4 p-6 bg-white rounded-lg">
+    <div className="w-full space-y-4">
       {/* Header con título y botones volver/enviar */}
       <div className="flex items-center justify-between pb-4 border-b">
         <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
@@ -1813,6 +1785,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         </DialogContent>
       </Dialog>
 
+      {/* Agregando Toaster al final del componente */}
       <Toaster />
     </div>
   )
