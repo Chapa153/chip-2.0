@@ -79,6 +79,7 @@ export default function Page() {
   }
 
   const goToHome = () => {
+    setFiltrosGestionFormularios({})
     setNavigationStack({ view: null })
   }
 
