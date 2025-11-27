@@ -1073,12 +1073,14 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 setValidationAlert("Solo se permite S o N")
               }
             }}
-            onBlur={() => {
-              validateFieldLength(variable, cellValue)
+            onBlur={(e) => {
+              const value = e.target.value.toUpperCase()
+              if (value !== "" && value !== "S" && value !== "N") {
+                setValidationAlert(`El campo ${variable.label} solo acepta S o N`)
+              }
             }}
+            className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-center uppercase"
             maxLength={1}
-            className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
-            placeholder="S/N"
           />
         )
       } else if (variable.type === "date") {
@@ -1088,8 +1090,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               type="date"
               value={formatDateForInput(cellValue)}
               onChange={(e) => {
-                const isoDate = e.target.value
-                const formattedDate = formatDateForDisplay(isoDate)
+                const isoDate = e.target.value // yyyy-mm-dd
+                const formattedDate = formatDateForDisplay(isoDate) // dd-mm-yyyy
                 handleCellEdit(concept.id, variable.id, formattedDate)
               }}
               className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
@@ -1100,36 +1102,40 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         return (
           <input
             type="text"
+            inputMode="decimal"
             value={cellValue}
             onChange={(e) => {
               const value = e.target.value
-              if (/^\d{0,8}\.?\d{0,2}$/.test(value)) {
+              if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
                 handleCellEdit(concept.id, variable.id, value)
               }
             }}
-            onBlur={() => {
-              validateFieldLength(variable, cellValue)
+            onBlur={(e) => {
+              const validation = validateFieldLength(variable, e.target.value)
+              if (!validation.valid) {
+                console.log("[v0] Validación fallida:", validation.message)
+              }
             }}
-            className="w-full h-full px-2 text-right border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
-            placeholder="0.00"
+            className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-right"
           />
         )
       } else if (variable.type === "numeric") {
         return (
           <input
             type="text"
+            inputMode="numeric"
             value={cellValue}
             onChange={(e) => {
-              const value = e.target.value
-              if (/^\d*$/.test(value)) {
-                handleCellEdit(concept.id, variable.id, value)
+              const value = e.target.value.replace(/[^0-9]/g, "")
+              handleCellEdit(concept.id, variable.id, value)
+            }}
+            onBlur={(e) => {
+              const validation = validateFieldLength(variable, e.target.value)
+              if (!validation.valid) {
+                console.log("[v0] Validación fallida:", validation.message)
               }
             }}
-            onBlur={() => {
-              validateFieldLength(variable, cellValue)
-            }}
-            className="w-full h-full px-2 text-right border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
-            placeholder="0"
+            className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-right"
           />
         )
       } else {
@@ -1138,11 +1144,14 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             type="text"
             value={cellValue}
             onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-            onBlur={() => {
-              validateFieldLength(variable, cellValue)
+            onBlur={(e) => {
+              const validation = validateFieldLength(variable, e.target.value)
+              if (!validation.valid) {
+                console.log("[v0] Validación fallida:", validation.message)
+              }
             }}
-            maxLength={variable.maxLength}
             className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
+            maxLength={variable.maxLength}
           />
         )
       }
