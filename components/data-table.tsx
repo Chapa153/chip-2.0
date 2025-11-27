@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, useEffect, useCallback } from "react" // Corrected import of React // Agregado useCallback para optimización
+import React, { useState, useMemo, useEffect } from "react" // Corrected import of React // Agregado useCallback para optimización
 import {
   ChevronRight,
   ChevronDown,
@@ -882,7 +882,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return cleaned
   }
 
-  const validateDateFormat = useCallback((date: string): boolean => {
+  const validateDateFormat = (date: string): boolean => {
     const regex = /^(\d{2})-(\d{2})-(\d{4})$/
     if (!regex.test(date)) return false
 
@@ -898,7 +898,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     }
 
     return true
-  }, []) // Agregando funciones para manejar fechas con formato dd-mm-yyyy
+  } // Agregando funciones para manejar fechas con formato dd-mm-yyyy
 
   const isCalculatedVariable = (variableId: string): boolean => {
     return variableId === CALCULATED_VAR_ID
@@ -1206,7 +1206,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               : variable.type === "string"
                 ? "Máximo 20 caracteres"
                 : variable.type === "boolean"
-                  ? "Solo S o N (1 caracter)"
+                  ? "Máximo 1 carácter (S o N)"
                   : ""
 
         inputElement = (
@@ -1219,7 +1219,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             title={titleText}
             className={getInputClassName()}
             disabled={isReadOnly}
-            maxLength={variable.maxLength} // Usar maxLength del prop de la variable
+            maxLength={variable.maxLength}
           />
         )
       }
@@ -1228,11 +1228,14 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     }
 
     // Vista normal
-    return (
-      <div className="h-full flex items-center justify-center">
-        {variable.type === "date" && cellValue ? convertISOToDate(cellValue) : cellValue || "0"}
-      </div>
-    )
+    const displayValue =
+      variable.type === "date" && cellValue
+        ? convertISOToDate(cellValue)
+        : cellValue && cellValue !== "null" && cellValue !== "NULL"
+          ? cellValue
+          : "0"
+
+    return <div className="h-full flex items-center justify-center">{displayValue}</div>
   }
 
   // Función handleEnviar
