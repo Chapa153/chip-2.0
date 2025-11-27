@@ -56,6 +56,7 @@ interface Variable {
   label: string
   type: "numeric" | "dropdown" | "string" | "calculated" | "boolean" | "decimal" | "date" | "list" // Agregados nuevos tipos y 'list'
   maxLength?: number // Longitud máxima para validación
+  opciones?: string[] // Para tipos 'dropdown' y 'list'
 }
 
 interface DataTableProps {
@@ -263,7 +264,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const [showLargeRangeAlert, setShowLargeRangeAlert] = useState(false) // Unificando estados de rango
   const [searchGlobal, setSearchGlobal] = useState("")
   const [atributosDialogOpen, setAtributosDialogOpen] = useState(false)
-  const [selectedConceptoAtributos, setSelectedConceptoAtributos] = useState<{ id: string; nombre: string } | null>(
+  const [selectedConceptoAtributos, setSelectedConceptoAtributos] = useState<{ id: string; nombre: string }[] | null>(
     null,
   )
   const [editingRows, setEditingRows] = useState<Set<string>>(new Set())
@@ -328,10 +329,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   // - Se elimina `totalVariables` como parámetro de cálculo y se usa un valor fijo de 7.
   const allVariables: Variable[] = useMemo(() => {
     const vars: Variable[] = [
-      { id: "var-1", label: "Variable 1", type: "dropdown" },
+      { id: "var-1", label: "Variable 1", type: "dropdown", opciones: ["Opción A", "Opción B", "Opción C"] },
       { id: "var-2", label: "Variable 2", type: "string", maxLength: 20 },
       { id: "var-3", label: "Variable 3", type: "numeric", maxLength: 10 }, // 10 dígitos
-      { id: "var-4", label: "Variable 4", type: "decimal", maxLength: 10 }, // 8 enteros + 2 decimales
+      { id: "var-4", label: "Variable 4", type: "decimal", maxLength: 11 }, // 8 enteros + punto + 2 decimales
       { id: "var-5", label: "Variable 5", type: "boolean", maxLength: 1 },
       { id: "var-6", label: "Variable 6", type: "date" },
     ]
@@ -846,22 +847,45 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
   const formatDateForDisplay = (isoDate: string): string => {
     if (!isoDate) return ""
-    const [year, month, day] = isoDate.split("-")
-    return `${day}-${month}-${year}`
+    // Asumiendo formato ISO YYYY-MM-DD para la entrada
+    try {
+      const [year, month, day] = isoDate.split("-")
+      return `${day}-${month}-${year}`
+    } catch (error) {
+      console.error("Error formatting date:", isoDate, error)
+      return isoDate // Devolver el valor original si hay un error
+    }
   }
 
-  const convertToISO = (dateStr: string): string => {
-    if (!dateStr || dateStr.length < 10) return ""
-    const parts = dateStr.split("-")
-    if (parts.length !== 3) return ""
-    const [day, month, year] = parts
-    return `${year}-${month}-${day}`
-  }
-
-  const convertFromISO = (isoDate: string): string => {
+  const convertISOToDate = (isoDate: string): string => {
     if (!isoDate) return ""
-    const [year, month, day] = isoDate.split("-")
-    return `${day}-${month}-${year}`
+    try {
+      const [year, month, day] = isoDate.split("-")
+      // Validar que los componentes tengan el formato esperado (pueden ser parciales)
+      return `${day}-${month}-${year}`
+    } catch (error) {
+      console.error("Error converting ISO to Date:", isoDate, error)
+      return isoDate // Devolver el valor original si hay un error
+    }
+  }
+
+  const convertDateToISO = (dateStr: string): string => {
+    if (!dateStr) return ""
+    try {
+      const parts = dateStr.split("-")
+      if (parts.length === 3) {
+        const [day, month, year] = parts
+        // Asegurarse de que los meses y días tengan dos dígitos
+        const formattedMonth = month.padStart(2, "0")
+        const formattedDay = day.padStart(2, "0")
+        return `${year}-${formattedMonth}-${formattedDay}`
+      }
+      // Si el formato no es dd-mm-yyyy, intentar otras conversiones o devolver vacío
+      return ""
+    } catch (error) {
+      console.error("Error converting Date to ISO:", dateStr, error)
+      return dateStr // Devolver el valor original si hay un error
+    }
   }
 
   const formatDateInput = useCallback((value: string): string => {
@@ -888,6 +912,14 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
     const [day, month, year] = date.split("-").map(Number)
     if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900) return false
+
+    // Validaciones más específicas para meses con menos de 31 días
+    if ((month === 4 || month === 6 || month === 9 || month === 11) && day > 30) return false
+    if (month === 2) {
+      const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
+      if (isLeap && day > 29) return false
+      if (!isLeap && day > 28) return false
+    }
 
     return true
   }, []) // Agregando funciones para manejar fechas con formato dd-mm-yyyy
@@ -1136,82 +1168,61 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
     // Modo edición con fondo amarillo
     if (isEditing && isCellEditable(concept.id, variable.id)) {
+      const isReadOnly = false // Assuming isReadOnly should be managed if it exists elsewhere
+
       const inputElement = (
-        <>
-          {variable.type === "dropdown" ? (
+        <div className="w-full">
+          {variable.type === "dropdown" && !isReadOnly ? (
             <select
               value={cellValue}
               onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-              className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
+              className={`w-full px-2 py-1 border rounded ${
+                fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : ""
+              }`}
+              disabled={isReadOnly}
             >
               <option value="">Seleccionar...</option>
-              <option value="Opción A">Opción A</option>
-              <option value="Opción B">Opción B</option>
-              <option value="Opción C">Opción C</option>
+              {variable.opciones?.map((opcion) => (
+                <option key={opcion} value={opcion}>
+                  {opcion}
+                </option>
+              ))}
             </select>
-          ) : variable.type === "boolean" ? (
-            <input
-              type="text"
-              value={cellValue}
-              onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-              onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
-              className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-center uppercase ${
-                fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
-              }`}
-              maxLength={1}
-              placeholder="S/N"
-            />
-          ) : variable.type === "date" ? (
+          ) : variable.type === "date" && !isReadOnly ? (
             <input
               type="date"
-              value={convertToISO(cellValue)}
+              value={convertDateToISO(cellValue)}
               onChange={(e) => {
                 const isoDate = e.target.value
-                const formatted = convertFromISO(isoDate)
-                handleCellEdit(concept.id, variable.id, formatted)
+                const formattedDate = convertISOToDate(isoDate)
+                handleCellEdit(concept.id, variable.id, formattedDate)
               }}
-              onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
-              className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 ${
-                fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
+              className={`w-full px-2 py-1 border rounded ${
+                fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : ""
               }`}
-            />
-          ) : variable.type === "decimal" ? (
-            <input
-              type="text"
-              inputMode="decimal"
-              value={cellValue}
-              onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-              onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
-              className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-right ${
-                fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
-              }`}
-              placeholder="0.00"
-            />
-          ) : variable.type === "numeric" ? (
-            <input
-              type="text"
-              inputMode="numeric"
-              value={cellValue}
-              onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-              onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
-              className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-right ${
-                fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
-              }`}
-              placeholder="0"
+              disabled={isReadOnly}
             />
           ) : (
             <input
               type="text"
               value={cellValue}
-              onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-              onBlur={() => validateFieldLength(variable, cellValue, concept.id)}
-              className={`w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 ${
-                fieldsWithError.has(cellKey) ? "!bg-red-50 !ring-2 !ring-red-500 !border-red-500" : ""
-              }`}
+              onChange={(e) => {
+                const newValue = e.target.value
+                const maxLen = variable.maxLength || Number.POSITIVE_INFINITY
+
+                // Bloquear si excede el límite
+                if (newValue.length <= maxLen) {
+                  handleCellEdit(concept.id, variable.id, newValue)
+                }
+              }}
+              className={`w-full px-2 py-1 border rounded ${
+                fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : ""
+              } ${isReadOnly ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`}
+              disabled={isReadOnly}
               maxLength={variable.maxLength}
             />
           )}
-        </>
+        </div>
       )
 
       const tooltipMessage = getTooltipMessage(variable)
