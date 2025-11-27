@@ -650,11 +650,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const handleCellEdit = (conceptId: string, variableId: string, value: string) => {
     const variable = allVariables.find((v) => v.id === variableId)
     if (variable) {
-      const validation = validateFieldLength(variable, value)
-      if (!validation.valid) {
-        // Alert handled by validationAlert state now
-        return
-      }
+      validateFieldLength(variable, value) // Solo muestra alerta, no bloquea
     }
 
     setEditedCells((prev) => {
@@ -828,6 +824,18 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const MAX_DROPDOWN_OPTIONS = 100 // Limitar opciones visibles para mejor rendimiento
   const [rangeSearchInitial, setRangeSearchInitial] = useState("")
   const [rangeSearchFinal, setRangeSearchFinal] = useState("")
+
+  const formatDateForDisplay = (isoDate: string): string => {
+    if (!isoDate) return ""
+    const [year, month, day] = isoDate.split("-")
+    return `${day}-${month}-${year}`
+  }
+
+  const formatDateForInput = (displayDate: string): string => {
+    if (!displayDate) return ""
+    const [day, month, year] = displayDate.split("-")
+    return `${year}-${month}-${day}`
+  }
 
   const isCalculatedVariable = (variableId: string): boolean => {
     return variableId === CALCULATED_VAR_ID
@@ -1065,8 +1073,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 setValidationAlert("Solo se permite S o N")
               }
             }}
+            onBlur={() => {
+              validateFieldLength(variable, cellValue)
+            }}
             maxLength={1}
-            className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50 text-center"
+            className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
             placeholder="S/N"
           />
         )
@@ -1075,16 +1086,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
           <div className="relative w-full h-full">
             <input
               type="date"
-              value={cellValue ? cellValue.split("-").reverse().join("-") : ""}
+              value={formatDateForInput(cellValue)}
               onChange={(e) => {
                 const isoDate = e.target.value
-                if (isoDate) {
-                  const [year, month, day] = isoDate.split("-")
-                  const formattedDate = `${day}-${month}-${year}`
-                  handleCellEdit(concept.id, variable.id, formattedDate)
-                } else {
-                  handleCellEdit(concept.id, variable.id, "")
-                }
+                const formattedDate = formatDateForDisplay(isoDate)
+                handleCellEdit(concept.id, variable.id, formattedDate)
               }}
               className="w-full h-full px-2 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-yellow-50"
             />
