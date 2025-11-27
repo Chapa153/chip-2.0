@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast" // Added useToast
 
 // Tipos para la estructura de datos
 interface ConceptNode {
@@ -51,7 +52,7 @@ interface AtributoExtensible {
 interface Variable {
   id: string
   label: string
-  type: "numeric" | "dropdown" | "string" | "calculated" | "boolean" | "decimal" | "date" // Agregados nuevos tipos
+  type: "numeric" | "dropdown" | "string" | "calculated" | "boolean" | "decimal" | "date" | "list" // Agregados nuevos tipos y 'list'
   maxLength?: number // Longitud máxima para validación
 }
 
@@ -237,6 +238,9 @@ const generateMockConcepts = (): ConceptNode[] => {
 // const mockConcepts: ConceptNode[] = generateMockConcepts() // Obsoleta, se usa dynamicConcepts
 
 function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: DataTableProps) {
+  const { toast } = useToast()
+  const [fieldsWithError, setFieldsWithError] = useState<Set<string>>(new Set())
+
   const isEstadoCambiosPatrimonio = title === "Estado de Cambios en el Patrimonio"
 
   console.log("[v0] DataTable renderizado - title:", title)
@@ -650,7 +654,8 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const handleCellEdit = (conceptId: string, variableId: string, value: string) => {
     const variable = allVariables.find((v) => v.id === variableId)
     if (variable) {
-      validateFieldLength(variable, value) // Solo muestra alerta, no bloquea
+      // No se llama validateFieldLength aquí para no mostrar toast en cada key press
+      // Se llama en onBlur
     }
 
     setEditedCells((prev) => {
@@ -837,18 +842,52 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     return `${year}-${month}-${day}`
   }
 
+  const formatDateInput = (value: string): string => {
+    // Remover caracteres no numéricos
+    let cleaned = value.replace(/[^0-9]/g, "")
+
+    // Limitar a 8 dígitos (ddmmyyyy)
+    cleaned = cleaned.slice(0, 8)
+
+    // Agregar guiones automáticamente
+    if (cleaned.length >= 2) {
+      cleaned = cleaned.slice(0, 2) + "-" + cleaned.slice(2)
+    }
+    if (cleaned.length >= 5) {
+      cleaned = cleaned.slice(0, 5) + "-" + cleaned.slice(5)
+    }
+
+    return cleaned
+  }
+
+  const validateDateFormat = (date: string): boolean => {
+    const regex = /^(\d{2})-(\d{2})-(\d{4})$/
+    if (!regex.test(date)) return false
+
+    const [day, month, year] = date.split("-").map(Number)
+    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900) return false
+
+    return true
+  }
+
   const isCalculatedVariable = (variableId: string): boolean => {
     return variableId === CALCULATED_VAR_ID
   }
 
-  const validateFieldLength = (variable: Variable, value: string): { valid: boolean; message?: string } => {
+  const validateFieldLength = (
+    variable: Variable,
+    value: string,
+    conceptId: string,
+  ): { valid: boolean; message?: string } => {
     if (!variable.maxLength) return { valid: true }
+
+    const fieldKey = `${conceptId}-${variable.id}`
+    let errorMessage = ""
 
     if (variable.type === "numeric") {
       const numericValue = value.replace(/[^0-9]/g, "")
       if (numericValue.length > variable.maxLength) {
-        setValidationAlert(`El campo ${variable.label} permite máximo ${variable.maxLength} dígitos`)
-        return { valid: false }
+        errorMessage = `El campo ${variable.label} permite máximo ${variable.maxLength} dígitos`
       }
     } else if (variable.type === "decimal") {
       const parts = value.split(".")
@@ -856,26 +895,39 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       const decimalPart = parts[1] || ""
 
       if (integerPart.length > 8) {
-        setValidationAlert(`El campo ${variable.label} permite máximo 8 dígitos enteros`)
-        return { valid: false }
-      }
-      if (decimalPart.length > 2) {
-        setValidationAlert(`El campo ${variable.label} permite máximo 2 decimales`)
-        return { valid: false }
+        errorMessage = `El campo ${variable.label} permite máximo 8 dígitos enteros`
+      } else if (decimalPart.length > 2) {
+        errorMessage = `El campo ${variable.label} permite máximo 2 decimales`
       }
     } else if (variable.type === "string") {
       if (value.length > variable.maxLength) {
-        setValidationAlert(`El campo ${variable.label} permite máximo ${variable.maxLength} caracteres`)
-        return { valid: false }
+        errorMessage = `El campo ${variable.label} permite máximo ${variable.maxLength} caracteres`
       }
     } else if (variable.type === "boolean") {
       if (value.length > 1) {
-        setValidationAlert(`El campo ${variable.label} permite máximo 1 carácter (S/N)`)
-        return { valid: false }
+        errorMessage = `El campo ${variable.label} permite máximo 1 carácter (S/N)`
+      }
+      if (value !== "" && value !== "S" && value !== "N") {
+        errorMessage = `El campo ${variable.label} solo acepta S o N`
       }
     }
 
-    return { valid: true }
+    if (errorMessage) {
+      toast({
+        title: "Validación de campo",
+        description: errorMessage,
+        variant: "destructive",
+      })
+      setFieldsWithError((prev) => new Set(prev).add(fieldKey))
+      return { valid: false, message: errorMessage }
+    } else {
+      setFieldsWithError((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(fieldKey)
+        return newSet
+      })
+      return { valid: true }
+    }
   }
 
   useEffect(() => {
@@ -1167,11 +1219,45 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
   // Función handleEnviar
   const handleEnviar = () => {
-    // Aquí iría la lógica para enviar los datos, por ejemplo:
-    // - Validar que todas las celdas editables tengan valores correctos.
-    // - Construir el payload con los datos de `cellData` y `editedCells`.
-    // - Realizar la llamada a la API.
-    alert("Formulario enviado correctamente")
+    // Validar todos los campos editables antes de enviar
+    let allValid = true
+    const currentConcepts = getCurrentPageConcepts()
+
+    setFieldsWithError(new Set()) // Limpiar errores previos
+
+    currentConcepts.forEach((concept) => {
+      if (isRowEditing(concept.id)) {
+        // Si una fila está en edición, intentar guardarla primero
+        saveEditingRow(concept.id)
+      }
+
+      paginatedVariables.forEach((variable) => {
+        if (isCellEditable(concept.id, variable.id)) {
+          const value = getCellValue(concept.id, variable.id)
+          const validation = validateFieldLength(variable, value, concept.id)
+          if (!validation.valid) {
+            allValid = false
+          }
+        }
+      })
+    })
+
+    if (allValid) {
+      toast({
+        title: "¡Éxito!",
+        description: "Todos los datos son válidos. Enviando formulario...",
+      })
+      // Aquí iría la lógica para enviar los datos, por ejemplo:
+      // - Construir el payload con los datos de `cellData`.
+      // - Realizar la llamada a la API.
+      alert("Formulario enviado correctamente")
+    } else {
+      toast({
+        title: "Error de validación",
+        description: "Por favor, corrija los campos marcados en rojo.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleVerAtributos = (conceptId: string, conceptName: string) => {
@@ -1181,12 +1267,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
   return (
     <div className="flex flex-col gap-4 p-6 bg-white rounded-lg">
-      {validationAlert && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 rounded mb-4">
-          <p className="text-sm">{validationAlert}</p>
-        </div>
-      )}
-
       {/* Header con título y botones volver/enviar */}
       <div className="flex items-center justify-between pb-4 border-b">
         <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
@@ -1602,7 +1682,9 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                           return (
                             <td
                               key={variable.id}
-                              className={`border border-gray-300 px-0 py-0 ${isEditing && isCellEditable(concept.id, variable.id) ? "bg-yellow-50" : ""}`}
+                              className={`border border-gray-300 px-0 py-0 ${isEditing && isCellEditable(concept.id, variable.id) ? "bg-yellow-50" : ""} ${
+                                fieldsWithError.has(`${concept.id}-${variable.id}`) ? "ring-2 ring-red-500" : ""
+                              }`}
                             >
                               {renderCellContent(concept, variable, isEditing)}
                             </td>
