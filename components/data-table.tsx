@@ -70,6 +70,9 @@ interface DataTableProps {
   }
 }
 
+// Declaración de isEstadoCambiosPatrimonio como una variable global o importada si es necesario
+const isEstadoCambiosPatrimonio: boolean = true // O implementa la lógica para obtener este valor dinámicamente
+
 const AddChildDialog = ({
   open,
   onOpenChange,
@@ -242,10 +245,19 @@ const generateMockConcepts = (): ConceptNode[] => {
 // const mockConcepts: ConceptNode[] = generateMockConcepts() // Obsoleta, se usa dynamicConcepts
 
 function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: DataTableProps) {
-  const { toast } = useToast()
+  const [isEditing, setIsEditing] = useState<string | null>(null)
   const [fieldsWithError, setFieldsWithError] = useState<Set<string>>(new Set())
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean
+    childId: string | null
+    childLabel: string
+  }>({
+    isOpen: false,
+    childId: null,
+    childLabel: "",
+  })
 
-  const isEstadoCambiosPatrimonio = title === "Estado de Cambios en el Patrimonio"
+  const { toast } = useToast()
 
   console.log("[v0] DataTable renderizado - title:", title)
   console.log("[v0] isEstadoCambiosPatrimonio:", isEstadoCambiosPatrimonio)
@@ -949,7 +961,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       const decimalPart = parts[1] || ""
 
       // El maxLength de 11 para decimales considera 8 enteros + punto + 2 decimales.
-      // Por lo tanto, validamos la parte entera y decimal por separado.
+      // Por loTherefore, validamos la parte entera y decimal por separado.
       if (integerPart.length > 8) {
         errorMessage = `El campo ${variable.label} permite máximo 8 dígitos enteros`
         isValid = false
@@ -1070,6 +1082,25 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     const newNonEditableVars = new Map(nonEditableVars)
     newNonEditableVars.set(conceptId, { var1: var1Value, var2: var2Value })
     setNonEditableVars(newNonEditableVars)
+  }
+
+  const handleDeleteChildClick = (childId: string, childLabel: string) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      childId,
+      childLabel,
+    })
+  }
+
+  const confirmDeleteChild = () => {
+    if (deleteConfirmation.childId) {
+      handleDeleteChild(deleteConfirmation.childId)
+    }
+    setDeleteConfirmation({ isOpen: false, childId: null, childLabel: "" })
+  }
+
+  const cancelDeleteChild = () => {
+    setDeleteConfirmation({ isOpen: false, childId: null, childLabel: "" })
   }
 
   const handleDeleteChild = (childId: string) => {
@@ -1731,7 +1762,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                       size="sm"
                                       variant="ghost"
                                       className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                      onClick={() => handleDeleteChild(concept.id)}
+                                      onClick={() => handleDeleteChildClick(concept.id, concept.label)}
                                       title="Eliminar concepto hijo"
                                     >
                                       <X className="h-4 w-4" />
@@ -1991,6 +2022,32 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         </DialogContent>
       </Dialog>
 
+      <Dialog open={deleteConfirmation.isOpen} onOpenChange={(open) => !open && cancelDeleteChild()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Eliminación</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              ¿Está seguro que desea eliminar el concepto hijo{" "}
+              <span className="font-semibold">{deleteConfirmation.childLabel}</span>?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Esta acción eliminará todos los datos asociados a este concepto.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={cancelDeleteChild}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteChild}>
+              Eliminar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de atributos */}
       {/* Agregando Toaster al final del componente */}
       <Toaster />
     </div>
