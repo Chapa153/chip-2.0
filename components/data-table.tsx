@@ -661,11 +661,19 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   const handleCellEdit = (conceptId: string, variableId: string, value: string) => {
-    const variable = allVariables.find((v) => v.id === variableId)
-    if (!variable) return
-
     // Validar y ajustar valor según tipo sin bloqueo
     let finalValue = value
+
+    if (variableId === "var-1" || variableId === "var-2") {
+      // Para estas variables, si es Estado de Cambios, solo actualizamos los datos temporales
+      if (isEstadoCambiosPatrimonio) {
+        handleTempCellChange(conceptId, variableId, value)
+        return // Salir temprano, la lógica de handleUpdateChildName se encargará de la actualización
+      }
+    }
+
+    const variable = allVariables.find((v) => v.id === variableId)
+    if (!variable) return
 
     if (variable.type === "numeric") {
       finalValue = value.replace(/[^0-9]/g, "").substring(0, 10)
@@ -690,6 +698,15 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       newMap.set(key, finalValue)
       return newMap
     })
+
+    if (isEstadoCambiosPatrimonio && (variableId === "var-1" || variableId === "var-2")) {
+      const nonEditableData = nonEditableVars.get(conceptId)
+      if (nonEditableData) {
+        const updatedVar1 = variableId === "var-1" ? finalValue : nonEditableData.var1
+        const updatedVar2 = variableId === "var-2" ? finalValue : nonEditableData.var2
+        handleUpdateChildName(conceptId, updatedVar1, updatedVar2)
+      }
+    }
   }
 
   const hasUnsavedChanges = () => {
@@ -1024,6 +1041,70 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       setExpandedNodes(new Set())
     }
   }, [rangeStart, rangeEnd])
+
+  const handleUpdateChildName = (conceptId: string, var1Value: string, var2Value: string) => {
+    const newName = `${var1Value}, ${var2Value}`
+
+    const updatedConcepts = dynamicConcepts.map((c) => {
+      if (c.children && c.children.length > 0) {
+        const updatedChildren = c.children.map((child) => {
+          if (child.id === conceptId) {
+            return { ...child, label: newName }
+          }
+          return child
+        })
+        return { ...c, children: updatedChildren }
+      }
+      return c
+    })
+
+    if (isEstadoCambiosPatrimonio) {
+      const newConceptosPorSegmento = new Map(conceptosPorSegmento)
+      newConceptosPorSegmento.set(selectedSegmento, updatedConcepts)
+      setConceptosPorSegmento(newConceptosPorSegmento)
+    }
+
+    setDynamicConcepts(updatedConcepts)
+
+    // Actualizar nonEditableVars
+    const newNonEditableVars = new Map(nonEditableVars)
+    newNonEditableVars.set(conceptId, { var1: var1Value, var2: var2Value })
+    setNonEditableVars(newNonEditableVars)
+  }
+
+  const handleDeleteChild = (childId: string) => {
+    const updatedConcepts = dynamicConcepts.map((c) => {
+      if (c.children && c.children.length > 0) {
+        const filteredChildren = c.children.filter((child) => child.id !== childId)
+        return { ...c, children: filteredChildren }
+      }
+      return c
+    })
+
+    if (isEstadoCambiosPatrimonio) {
+      const newConceptosPorSegmento = new Map(conceptosPorSegmento)
+      newConceptosPorSegmento.set(selectedSegmento, updatedConcepts)
+      setConceptosPorSegmento(newConceptosPorSegmento)
+    }
+
+    setDynamicConcepts(updatedConcepts)
+
+    // Eliminar de nonEditableVars
+    const newNonEditableVars = new Map(nonEditableVars)
+    newNonEditableVars.delete(childId)
+    setNonEditableVars(newNonEditableVars)
+
+    // Eliminar datos de celda del concepto hijo
+    const newCellData = new Map(cellData)
+    const keysToDelete: string[] = []
+    cellData.forEach((value, key) => {
+      if (key.startsWith(childId + "-")) {
+        keysToDelete.push(key)
+      }
+    })
+    keysToDelete.forEach((key) => newCellData.delete(key))
+    setCellData(newCellData)
+  }
 
   const handleAddChild = () => {
     if (!newChildVar1.trim() || !newChildVar2.trim()) {
@@ -1640,7 +1721,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                             )}
                           </div>
                         </td>
-                        <td className="border border-gray-300 px-4 py-2">
+                        <td className="border border-gray-300 px-2 py-2">
                           <div className="flex items-center gap-2" style={{ paddingLeft: `${concept.level * 24}px` }}>
                             {isParent && (
                               <button
