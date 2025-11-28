@@ -1073,13 +1073,15 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   const handleDeleteChild = (childId: string) => {
-    const updatedConcepts = dynamicConcepts.map((c) => {
-      if (c.children && c.children.length > 0) {
-        const filteredChildren = c.children.filter((child) => child.id !== childId)
-        return { ...c, children: filteredChildren }
+    const updatedConcepts = dynamicConcepts.map((concept) => {
+      if (concept.children && concept.children.length > 0) {
+        const updatedChildren = concept.children.filter((child) => child.id !== childId)
+        return { ...concept, children: updatedChildren }
       }
-      return c
+      return concept
     })
+
+    setDynamicConcepts(updatedConcepts)
 
     if (isEstadoCambiosPatrimonio) {
       const newConceptosPorSegmento = new Map(conceptosPorSegmento)
@@ -1087,22 +1089,28 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       setConceptosPorSegmento(newConceptosPorSegmento)
     }
 
-    setDynamicConcepts(updatedConcepts)
-
-    // Eliminar de nonEditableVars
+    // Limpiar datos del hijo eliminado
     const newNonEditableVars = new Map(nonEditableVars)
     newNonEditableVars.delete(childId)
     setNonEditableVars(newNonEditableVars)
 
-    // Eliminar datos de celda del concepto hijo
+    const newEditedCells = new Map(editedCells)
     const newCellData = new Map(cellData)
-    const keysToDelete: string[] = []
-    cellData.forEach((value, key) => {
+
+    // Eliminar todas las celdas relacionadas con este concepto
+    Array.from(newEditedCells.keys()).forEach((key) => {
       if (key.startsWith(childId + "-")) {
-        keysToDelete.push(key)
+        newEditedCells.delete(key)
       }
     })
-    keysToDelete.forEach((key) => newCellData.delete(key))
+
+    Array.from(newCellData.keys()).forEach((key) => {
+      if (key.startsWith(childId + "-")) {
+        newCellData.delete(key)
+      }
+    })
+
+    setEditedCells(newEditedCells)
     setCellData(newCellData)
   }
 
@@ -1175,10 +1183,30 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       return false
     }
 
-    // Variables var-1 y var-2 son no editables si el título es "Estado de Cambios en el Patrimonio"
+    // En Estado de Cambios en el Patrimonio:
+    // - var-1 y var-2 son EDITABLES para conceptos hijos (level > 0)
+    // - var-1 y var-2 son NO EDITABLES para conceptos padres (level === 0)
     if (isEstadoCambiosPatrimonio && (variableId === "var-1" || variableId === "var-2")) {
-      return false
+      // Buscar el concepto para determinar su level
+      let conceptLevel = 0
+      for (const concept of dynamicConcepts) {
+        if (concept.id === conceptId) {
+          conceptLevel = concept.level
+          break
+        }
+        if (concept.children) {
+          const child = concept.children.find((c) => c.id === conceptId)
+          if (child) {
+            conceptLevel = child.level
+            break
+          }
+        }
+      }
+
+      // Si es concepto hijo (level > 0), permitir edición de var-1 y var-2
+      return conceptLevel > 0
     }
+
     return true
   }
 
@@ -1210,113 +1238,154 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       )
     }
 
-    // Variables no editables con fondo gris
-    // Si es Estado de Cambios y las variables son var-1 o var-2, son no editables y se muestran con fondo gris.
-    if (isEstadoCambiosPatrimonio && (variable.id === "var-1" || variable.id === "var-2")) {
-      // Debemos obtener el valor correcto, ya sea de nonEditableVars o de cellData si fue editado previamente
+    // Variables var-1 y var-2 en conceptos hijos: editables con fondo verde claro
+    if (isEstadoCambiosPatrimonio && (variable.id === "var-1" || variable.id === "var-2") && concept.level > 0) {
       const nonEditableData = nonEditableVars.get(concept.id)
-      const displayValue = nonEditableData
-        ? variable.id === "var-1"
-          ? nonEditableData.var1
-          : nonEditableData.var2
-        : cellValue // Fallback a cellValue si nonEditableVars no tiene el dato (esto no debería pasar si se maneja correctamente)
+      let displayValue = cellValue
 
+      if (nonEditableData) {
+        displayValue = variable.id === "var-1" ? nonEditableData.var1 : nonEditableData.var2
+      }
+
+      // Si está en modo edición, mostrar input editable
+      if (isEditing) {
+        let inputElement
+
+        if (variable.type === "dropdown" && variable.opciones) {
+          inputElement = (
+            <select
+              value={displayValue}
+              onChange={(e) => {
+                handleCellEdit(concept.id, variable.id, e.target.value)
+                handleUpdateChildName(
+                  concept.id,
+                  variable.id === "var-1" ? e.target.value : nonEditableData?.var1 || "",
+                  variable.id === "var-2" ? e.target.value : nonEditableData?.var2 || "",
+                )
+              }}
+              className="w-full h-full px-2 py-1 border-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-green-50"
+              title={`Actualiza el nombre del concepto hijo`}
+            >
+              <option value="">Seleccionar...</option>
+              {variable.opciones.map((opcion) => (
+                <option key={opcion} value={opcion}>
+                  {opcion}
+                </option>
+              ))}
+            </select>
+          )
+        } else {
+          inputElement = (
+            <input
+              type="text"
+              value={displayValue}
+              onChange={(e) => {
+                handleCellEdit(concept.id, variable.id, e.target.value)
+                handleUpdateChildName(
+                  concept.id,
+                  variable.id === "var-1" ? e.target.value : nonEditableData?.var1 || "",
+                  variable.id === "var-2" ? e.target.value : nonEditableData?.var2 || "",
+                )
+              }}
+              className="w-full h-full px-2 py-1 border-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-green-50"
+              maxLength={variable.maxLength || 50}
+              title={`Máximo ${variable.maxLength || 50} caracteres - Actualiza el nombre del concepto hijo`}
+            />
+          )
+        }
+
+        return <div className="h-full">{inputElement}</div>
+      }
+
+      // Modo solo lectura con fondo verde claro
       return (
-        <div className="h-full flex items-center justify-center bg-gray-100 text-gray-700">{displayValue || "-"}</div>
+        <div
+          className="h-full flex items-center justify-center bg-green-50 text-gray-700"
+          title="Editable - Actualiza el nombre del concepto hijo"
+        >
+          {displayValue || "-"}
+        </div>
       )
     }
 
-    // Modo edición con fondo amarillo
-    if (isEditing && isCellEditable(concept.id, variable.id)) {
-      // La variable `isReadOnly` se está utilizando para determinar si una celda de "Estado de Cambios"
-      // debe ser de solo lectura. Aquí, `isReadOnly` solo se aplica a "Estado de Cambios" y solo para `isUsedInChild`.
-      // Si se necesita una lógica más general para `isReadOnly`, deberá definirse en otro lugar.
-      const isReadOnly = isEstadoCambiosPatrimonio && variable.isUsedInChild
-
-      const getInputClassName = () => {
-        return `w-full px-2 py-1 border rounded ${
-          fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : ""
-        } ${isReadOnly ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`
-      }
-
-      // Renderizar el input según el tipo
-      let inputElement: React.ReactNode
-
-      if (variable.type === "dropdown" && variable.opciones) {
-        inputElement = (
-          <select
-            value={cellValue}
-            onChange={(e) => handleCellEdit(concept.id, variable.id, e.target.value)}
-            className={getInputClassName()}
-            disabled={isReadOnly}
-            title="Seleccione una opción de la lista"
-          >
-            <option value="">Seleccionar...</option>
-            {variable.opciones.map((opcion) => (
-              <option key={opcion} value={opcion}>
-                {opcion}
-              </option>
-            ))}
-          </select>
-        )
-      } else if (variable.type === "date") {
-        inputElement = (
-          <input
-            type="text"
-            value={cellValue}
-            onChange={(e) => {
-              const value = e.target.value.replace(/[^\d-]/g, "")
-              // Limitar a 10 caracteres
-              if (value.length <= 10) {
-                handleCellEdit(concept.id, variable.id, value)
-              }
-            }}
-            placeholder="dd-mm-yyyy"
-            maxLength={10}
-            title="Formato de fecha: dd-mm-yyyy (día-mes-año)"
-            className={getInputClassName()}
-            disabled={isReadOnly}
-          />
-        )
-      } else {
-        const titleText =
-          variable.type === "numeric"
-            ? "Máximo 10 dígitos"
-            : variable.type === "decimal"
-              ? "Máximo 8 enteros y 2 decimales (formato: 12345678.12)"
-              : variable.type === "string"
-                ? "Máximo 20 caracteres"
-                : variable.type === "boolean"
-                  ? "Máximo 1 carácter (S o N)"
-                  : ""
-
-        inputElement = (
-          <input
-            type="text"
-            value={cellValue}
-            onChange={(e) => {
-              handleCellEdit(concept.id, variable.id, e.target.value)
-            }}
-            title={titleText}
-            className={getInputClassName()}
-            disabled={isReadOnly}
-            maxLength={variable.maxLength}
-          />
-        )
-      }
-
-      return <div className="w-full">{inputElement}</div>
+    // Variables var-1 y var-2 en conceptos padres: no editables con fondo gris
+    if (isEstadoCambiosPatrimonio && (variable.id === "var-1" || variable.id === "var-2")) {
+      return <div className="h-full flex items-center justify-center bg-gray-100 text-gray-700">{cellValue || "-"}</div>
     }
 
-    // Vista normal
-    const displayValue =
-      variable.type === "date" && cellValue
-        ? convertISOToDate(cellValue)
-        : cellValue && cellValue !== "null" && cellValue !== "NULL"
-          ? cellValue
-          : "0"
+    // Renderizar el input según el tipo
+    let inputElement: React.ReactNode
 
-    return <div className="h-full flex items-center justify-center">{displayValue}</div>
+    if (variable.type === "dropdown" && variable.opciones) {
+      inputElement = (
+        <select
+          value={cellValue}
+          onChange={(e) => handleCellChange(concept.id, variable.id, e.target.value)}
+          className={cn(
+            "w-full px-2 py-1 border rounded",
+            fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : "",
+          )}
+          title="Seleccione una opción de la lista"
+        >
+          <option value="">Seleccionar...</option>
+          {variable.opciones.map((opcion) => (
+            <option key={opcion} value={opcion}>
+              {opcion}
+            </option>
+          ))}
+        </select>
+      )
+    } else if (variable.type === "date") {
+      inputElement = (
+        <input
+          type="text"
+          value={cellValue}
+          onChange={(e) => {
+            const value = e.target.value.replace(/[^\d-]/g, "")
+            // Limitar a 10 caracteres
+            if (value.length <= 10) {
+              handleCellChange(concept.id, variable.id, value)
+            }
+          }}
+          placeholder="dd-mm-yyyy"
+          maxLength={10}
+          title="Formato de fecha: dd-mm-yyyy (día-mes-año)"
+          className={cn(
+            "w-full px-2 py-1 border rounded",
+            fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : "",
+          )}
+        />
+      )
+    } else {
+      const titleText =
+        variable.type === "numeric"
+          ? "Máximo 10 dígitos"
+          : variable.type === "decimal"
+            ? "Máximo 8 enteros y 2 decimales (formato: 12345678.12)"
+            : variable.type === "string"
+              ? "Máximo 20 caracteres"
+              : variable.type === "boolean"
+                ? "Máximo 1 carácter (S o N)"
+                : ""
+
+      inputElement = (
+        <input
+          type="text"
+          value={cellValue}
+          onChange={(e) => {
+            handleCellChange(concept.id, variable.id, e.target.value)
+          }}
+          title={titleText}
+          className={cn(
+            "w-full px-2 py-1 border rounded",
+            fieldsWithError.has(`${concept.id}-${variable.id}`) ? "!bg-red-50 !ring-2 !ring-red-500" : "",
+          )}
+          maxLength={variable.maxLength}
+        />
+      )
+    }
+
+    return <div className="w-full">{inputElement}</div>
   }
 
   // Función handleEnviar
@@ -1627,7 +1696,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                 </Button>
                               </>
                             ) : isChild && isEstadoCambiosPatrimonio ? (
-                              // Editar e info para hijos en Estado de Cambios
+                              // Editar, eliminar e info para hijos en Estado de Cambios
                               <>
                                 {isEditing ? (
                                   <>
@@ -1649,14 +1718,25 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                     </Button>
                                   </>
                                 ) : (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => startEditingRow(concept.id)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0"
+                                      onClick={() => startEditingRow(concept.id)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => handleDeleteChild(concept.id)}
+                                      title="Eliminar concepto hijo"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </>
                                 )}
                                 <Button
                                   size="sm"
