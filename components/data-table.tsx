@@ -245,6 +245,11 @@ const generateMockConcepts = (): ConceptNode[] => {
 // const mockConcepts: ConceptNode[] = generateMockConcepts() // Obsoleta, se usa dynamicConcepts
 
 function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: DataTableProps) {
+  const isEstadoCambiosPatrimonio = title === "Estado de Cambios en el Patrimonio"
+
+  console.log("[v0] DataTable renderizado - title:", title)
+  console.log("[v0] isEstadoCambiosPatrimonio:", isEstadoCambiosPatrimonio)
+
   const [isEditing, setIsEditing] = useState<string | null>(null)
   const [fieldsWithError, setFieldsWithError] = useState<Set<string>>(new Set())
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
