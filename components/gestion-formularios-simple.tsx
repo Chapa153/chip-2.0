@@ -555,16 +555,16 @@ export default function GestionFormulariosSimple({
           <AlertDialogHeader>
             <AlertDialogTitle className="text-green-600">Validación exitosa</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
-              <p className="text-gray-700 font-medium">Los formularios validados son:</p>
+              <div className="text-gray-700 font-medium">Los formularios validados son:</div>
               {validationResult?.formularios.map((form, index) => (
                 <div key={index} className="bg-gray-50 p-3 rounded-md">
-                  <p className="text-sm">
+                  <div className="text-sm">
                     <span className="font-semibold">{form.nombre}:</span> {form.registros} registros
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
                     Estado: <span className="text-green-600 font-medium">Validado</span> | Tipo:{" "}
                     <span className="font-medium">Formulario</span>
-                  </p>
+                  </div>
                 </div>
               ))}
             </AlertDialogDescription>
