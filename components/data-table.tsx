@@ -1528,7 +1528,13 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               Volver
             </Button>
           )}
-          <Button onClick={handleEnviar} disabled={isSubmitting}>
+          <Button
+            onClick={() => {
+              console.log("[v0] Click detectado en botón Enviar")
+              handleEnviar()
+            }}
+            disabled={isSubmitting}
+          >
             {isSubmitting ? (
               <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
