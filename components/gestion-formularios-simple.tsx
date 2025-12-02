@@ -2,9 +2,29 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Filter, Upload, Send, FileDown, MoreVertical, Search, Edit, FileSpreadsheet, HelpCircle } from "lucide-react"
+import {
+  Filter,
+  Upload,
+  Send,
+  FileDown,
+  MoreVertical,
+  Search,
+  Edit,
+  FileSpreadsheet,
+  HelpCircle,
+  Loader2,
+} from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -32,6 +52,11 @@ export default function GestionFormulariosSimple({
   const [searchTerm, setSearchTerm] = useState("")
   const [filtrosModificados, setFiltrosModificados] = useState(false)
   const [selectedFormularios, setSelectedFormularios] = useState<string[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  const [validationResult, setValidationResult] = useState<{
+    formularios: { nombre: string; registros: number }[]
+  } | null>(null)
 
   const categorias = ["INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA", "INFORMACIÓN PRESUPUESTAL", "INFORMACIÓN FINANCIERA"]
 
@@ -134,6 +159,34 @@ export default function GestionFormulariosSimple({
       f.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  const handleEnviar = async () => {
+    console.log("[v0] Botón Enviar clickeado en GestionFormulariosSimple")
+    console.log("[v0] Formularios seleccionados:", selectedFormularios)
+    console.log("[v0] Categoría actual:", categoria)
+
+    setIsSubmitting(true)
+
+    // Simular proceso de validación (2 segundos)
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    // Si es categoría de Información Contable Convergencia, mostrar mensaje específico
+    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
+      const formulariosEnviados = formularios
+        .filter((f) => selectedFormularios.includes(f.id))
+        .map((f) => ({
+          nombre: f.nombre,
+          registros: Math.floor(Math.random() * 200) + 50, // Simular cantidad de registros
+        }))
+
+      setValidationResult({ formularios: formulariosEnviados })
+      setShowSuccessDialog(true)
+      console.log("[v0] Mostrando diálogo de validación exitosa")
+    }
+
+    setIsSubmitting(false)
+    console.log("[v0] Proceso de envío finalizado")
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -255,11 +308,21 @@ export default function GestionFormulariosSimple({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={selectedFormularios.length === 0}
-                className={selectedFormularios.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+                disabled={selectedFormularios.length === 0 || isSubmitting}
+                onClick={handleEnviar}
+                className={selectedFormularios.length === 0 && !isSubmitting ? "opacity-50 cursor-not-allowed" : ""}
               >
-                <Send className="w-4 h-4 mr-2" />
-                Enviar
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Enviar
+                  </>
+                )}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -485,6 +548,39 @@ export default function GestionFormulariosSimple({
           </div>
         </div>
       )}
+
+      {/* Diálogo de validación exitosa */}
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-green-600">Validación exitosa</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p className="text-gray-700 font-medium">Los formularios validados son:</p>
+              {validationResult?.formularios.map((form, index) => (
+                <div key={index} className="bg-gray-50 p-3 rounded-md">
+                  <p className="text-sm">
+                    <span className="font-semibold">{form.nombre}:</span> {form.registros} registros
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Estado: <span className="text-green-600 font-medium">Validado</span> | Tipo:{" "}
+                    <span className="font-medium">Formulario</span>
+                  </p>
+                </div>
+              ))}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                setShowSuccessDialog(false)
+                setSelectedFormularios([])
+              }}
+            >
+              Aceptar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
