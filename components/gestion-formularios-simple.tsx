@@ -57,19 +57,7 @@ export default function GestionFormulariosSimple({
   const [validationResult, setValidationResult] = useState<{
     formularios: { nombre: string; registros: number }[]
   } | null>(null)
-
-  const categorias = ["INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA", "INFORMACIÓN PRESUPUESTAL", "INFORMACIÓN FINANCIERA"]
-
-  const anos = ["2024", "2025", "2026"]
-
-  const getPeriodos = () => {
-    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
-      return ["Enero - Marzo", "Abril - Junio", "Julio - Septiembre", "Octubre - Diciembre"]
-    }
-    return ["Enero - Diciembre"]
-  }
-
-  const formularios = [
+  const [formulariosState, setFormularios] = useState([
     {
       id: "CGN-2025-01",
       nombre: "Balance General",
@@ -110,7 +98,18 @@ export default function GestionFormulariosSimple({
       fecha: "5/11/2024",
       estadoColor: "red",
     },
-  ]
+  ])
+
+  const categorias = ["INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA", "INFORMACIÓN PRESUPUESTAL", "INFORMACIÓN FINANCIERA"]
+
+  const anos = ["2024", "2025", "2026"]
+
+  const getPeriodos = () => {
+    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
+      return ["Enero - Marzo", "Abril - Junio", "Julio - Septiembre", "Octubre - Diciembre"]
+    }
+    return ["Enero - Diciembre"]
+  }
 
   const handleAplicarFiltros = () => {
     if (categoria && ano && periodo) {
@@ -132,10 +131,10 @@ export default function GestionFormulariosSimple({
   }
 
   const toggleSelectAll = () => {
-    if (selectedFormularios.length === formularios.length) {
+    if (selectedFormularios.length === formulariosState.length) {
       setSelectedFormularios([])
     } else {
-      setSelectedFormularios(formularios.map((f) => f.id))
+      setSelectedFormularios(formulariosState.map((f) => f.id))
     }
   }
 
@@ -154,7 +153,7 @@ export default function GestionFormulariosSimple({
     }
   }
 
-  const filteredFormularios = formularios.filter(
+  const filteredFormularios = formulariosState.filter(
     (f) =>
       f.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -172,12 +171,14 @@ export default function GestionFormulariosSimple({
 
     // Si es categoría de Información Contable Convergencia, mostrar mensaje específico
     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
-      const formulariosEnviados = formularios
+      const formulariosEnviados = formulariosState
         .filter((f) => selectedFormularios.includes(f.id))
         .map((f) => ({
           nombre: f.nombre,
           registros: Math.floor(Math.random() * 200) + 50, // Simular cantidad de registros
         }))
+
+      setFormularios((prev) => prev.map((f) => (selectedFormularios.includes(f.id) ? { ...f, estado: "Validado" } : f)))
 
       setValidationResult({ formularios: formulariosEnviados })
       setShowSuccessDialog(true)
@@ -446,7 +447,7 @@ export default function GestionFormulariosSimple({
                     <input
                       type="checkbox"
                       className="rounded"
-                      checked={selectedFormularios.length === formularios.length}
+                      checked={selectedFormularios.length === formulariosState.length}
                       onChange={toggleSelectAll}
                     />
                   </th>
@@ -581,6 +582,20 @@ export default function GestionFormulariosSimple({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-4 max-w-md">
+            <Loader2 className="w-16 h-16 animate-spin text-primary" />
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold text-gray-900">Enviando a validación</h3>
+              <p className="text-sm text-gray-600">
+                Por favor espere mientras se procesa la información del formulario...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
