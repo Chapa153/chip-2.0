@@ -1434,6 +1434,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
 
   // Función handleEnviar
   const handleEnviar = async () => {
+    console.log("[v0] Botón Enviar clickeado")
     // Validar todos los campos editables antes de enviar
     let allValid = true
     const currentConcepts = getCurrentPageConcepts()
@@ -1458,6 +1459,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     })
 
     if (!allValid) {
+      console.log("[v0] Validación fallida, hay campos con error")
       toast({
         title: "Error de validación",
         description: "Por favor, corrija los campos marcados en rojo.",
@@ -1467,17 +1469,21 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     }
 
     // Iniciar proceso de envío con capa de carga
+    console.log("[v0] Iniciando proceso de envío, isSubmitting = true")
     setIsSubmitting(true)
 
     try {
       // Simular proceso de validación (2 segundos)
+      console.log("[v0] Esperando 2 segundos para simular validación...")
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       // Contar registros válidos
       const recordCount = dynamicConcepts.length
+      console.log("[v0] Validación completada. Registros:", recordCount)
 
       // Para Balance General, mostrar diálogo de validación exitosa
       if (title === "Balance General") {
+        console.log("[v0] Mostrando diálogo de validación exitosa para Balance General")
         setValidationResult({
           formName: title,
           recordCount: recordCount,
@@ -1485,18 +1491,21 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         setShowSuccessDialog(true)
       } else {
         // Para otros formularios, mostrar toast de éxito
+        console.log("[v0] Mostrando toast de éxito para:", title)
         toast({
           title: "¡Éxito!",
           description: `Formulario ${title} enviado correctamente. ${recordCount} registros validados.`,
         })
       }
     } catch (error) {
+      console.log("[v0] Error en proceso de envío:", error)
       toast({
         title: "Error",
         description: "Ocurrió un error al enviar el formulario. Intente nuevamente.",
         variant: "destructive",
       })
     } finally {
+      console.log("[v0] Finalizando proceso de envío, isSubmitting = false")
       setIsSubmitting(false)
     }
   }
