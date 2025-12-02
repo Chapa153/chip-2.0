@@ -80,7 +80,7 @@ export default function GestionFormulariosSimple({
     {
       id: "CGN-2025-05",
       nombre: "Notas a los Estados Financieros",
-      tipo: "Formulario",
+      tipo: "Reporte",
       estado: "Rechazado por Deficiencia",
       fecha: "5/11/2024",
       estadoColor: "red",
