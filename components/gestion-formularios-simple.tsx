@@ -48,14 +48,23 @@ export default function GestionFormulariosSimple({
     {
       id: "CGN-2025-01",
       nombre: "Balance General",
+      tipo: "Formulario",
       estado: "Pendiente en validar",
       fecha: "9/11/2024",
       estadoColor: "yellow",
     },
-    { id: "CGN-2025-02", nombre: "Estado de Resultados", estado: "Aceptado", fecha: "8/11/2024", estadoColor: "green" },
+    {
+      id: "CGN-2025-02",
+      nombre: "Estado de Resultados",
+      tipo: "Formulario",
+      estado: "Aceptado",
+      fecha: "8/11/2024",
+      estadoColor: "green",
+    },
     {
       id: "CGN-2025-03",
       nombre: "Flujo de Efectivo",
+      tipo: "Formulario",
       estado: "En Validación",
       fecha: "7/11/2024",
       estadoColor: "blue",
@@ -63,6 +72,7 @@ export default function GestionFormulariosSimple({
     {
       id: "CGN-2025-04",
       nombre: "Estado de Cambios en el Patrimonio",
+      tipo: "Formulario",
       estado: "Rechazado por Formato",
       fecha: "6/11/2024",
       estadoColor: "red",
@@ -70,6 +80,7 @@ export default function GestionFormulariosSimple({
     {
       id: "CGN-2025-05",
       nombre: "Notas a los Estados Financieros",
+      tipo: "Formulario",
       estado: "Rechazado por Deficiencia",
       fecha: "5/11/2024",
       estadoColor: "red",
@@ -383,6 +394,9 @@ export default function GestionFormulariosSimple({
                     NOMBRE DEL FORMULARIO ↕
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    TIPO ↕
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ESTADO DE VALIDACIÓN ↕
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -406,6 +420,7 @@ export default function GestionFormulariosSimple({
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}

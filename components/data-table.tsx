@@ -886,6 +886,13 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   // const [startRange, setStartRange] = useState<string | null>(null) // Removed as rangeStart is used
   // const [endRange, setEndRange] = useState<string | null>(null) // Removed as rangeEnd is used
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [validationResults, setValidationResults] = useState<{
+    formName: string
+    recordCount: number
+  } | null>(null)
+
   const MAX_DROPDOWN_OPTIONS = 100 // Limitar opciones visibles para mejor rendimiento
   const [rangeSearchInitial, setRangeSearchInitial] = useState("")
   const [rangeSearchFinal, setRangeSearchFinal] = useState("")
@@ -966,7 +973,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       const decimalPart = parts[1] || ""
 
       // El maxLength de 11 para decimales considera 8 enteros + punto + 2 decimales.
-      // Por loTherefore, validamos la parte entera y decimal por separado.
+      // PorTherefore, validamos la parte entera y decimal por separado.
       if (integerPart.length > 8) {
         errorMessage = `El campo ${variable.label} permite máximo 8 dígitos enteros`
         isValid = false
@@ -1425,7 +1432,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   // Función handleEnviar
-  const handleEnviar = () => {
+  const handleEnviar = async () => {
     // Validar todos los campos editables antes de enviar
     let allValid = true
     const currentConcepts = getCurrentPageConcepts()
@@ -1450,14 +1457,31 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     })
 
     if (allValid) {
-      toast({
-        title: "¡Éxito!",
-        description: "Todos los datos son válidos. Enviando formulario...",
-      })
-      // Aquí iría la lógica para enviar los datos, por ejemplo:
-      // - Construir el payload con los datos de `cellData`.
-      // - Realizar la llamada a la API.
-      alert("Formulario enviado correctamente")
+      setIsSubmitting(true)
+
+      // Simular proceso de envío
+      setTimeout(() => {
+        // Contar registros con datos
+        const recordCount = dynamicConcepts.filter((concept) => {
+          return paginatedVariables.some((variable) => {
+            const value = getCellValue(concept.id, variable.id)
+            return value !== "" && value !== "0" && value !== null
+          })
+        }).length
+
+        setValidationResults({
+          formName: title,
+          recordCount,
+        })
+
+        setIsSubmitting(false)
+        setShowSuccessMessage(true)
+
+        toast({
+          title: "¡Éxito!",
+          description: "Formulario validado correctamente",
+        })
+      }, 2000) // Simulando 2 segundos de carga
     } else {
       toast({
         title: "Error de validación",
@@ -1470,6 +1494,11 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   const handleVerAtributos = (conceptId: string, conceptName: string) => {
     setSelectedConceptoAtributos([{ id: conceptId, nombre: conceptName }])
     setAtributosDialogOpen(true)
+  }
+
+  const handleCloseSuccessMessage = () => {
+    setShowSuccessMessage(false)
+    setValidationResults(null)
   }
 
   return (
@@ -1485,10 +1514,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               Volver
             </Button>
           )}
-          <Button onClick={handleEnviar}>
+          {/* <Button onClick={handleEnviar}>
             <Send className="mr-2 h-4 w-4" />
             Enviar
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -2052,7 +2081,54 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
         </DialogContent>
       </Dialog>
 
-      {/* Modal de atributos */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold mb-2">Enviando a validación</h3>
+            <p className="text-gray-600">
+              Se ha iniciado el proceso de envío a validación de la información del formulario seleccionado...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {showSuccessMessage && validationResults && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-center mb-4">Validación exitosa</h3>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-gray-700 mb-2">Los formularios validados son:</p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-900">
+                  {validationResults.formName}: {validationResults.recordCount} registros
+                </p>
+                <div className="flex items-center gap-2 text-xs text-gray-600 mt-2">
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded">Estado: Validado</span>
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">Tipo: Formulario</span>
+                </div>
+              </div>
+            </div>
+            <Button onClick={handleCloseSuccessMessage} className="w-full bg-blue-600 hover:bg-blue-700">
+              Aceptar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Botones de acción */}
+      <div className="flex justify-end gap-4">
+        <Button onClick={handleEnviar} disabled={isSubmitting}>
+          <Send className="mr-2 h-4 w-4" />
+          {isSubmitting ? "Enviando..." : "Enviar"}
+        </Button>
+      </div>
+
       {/* Agregando Toaster al final del componente */}
       <Toaster />
     </div>
