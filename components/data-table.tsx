@@ -246,7 +246,7 @@ const generateMockConcepts = (): ConceptNode[] => {
 // const mockConcepts: ConceptNode[] = generateMockConcepts() // Obsoleta, se usa dynamicConcepts
 
 function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: DataTableProps) {
-  const isEstadoCambiosPatrimonio = title === "Estado de Cambios en el Patrimonio"
+  const isEstadoCambiosPatrimonio: boolean = title === "Estado de Cambios en el Patrimonio"
 
   console.log("[v0] DataTable renderizado - title:", title)
   console.log("[v0] isEstadoCambiosPatrimonio:", isEstadoCambiosPatrimonio)
@@ -264,9 +264,6 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   })
 
   const { toast } = useToast()
-
-  console.log("[v0] DataTable renderizado - title:", title)
-  console.log("[v0] isEstadoCambiosPatrimonio:", isEstadoCambiosPatrimonio)
 
   const [dynamicConcepts, setDynamicConcepts] = useState<ConceptNode[]>(() =>
     isEstadoCambiosPatrimonio ? generateEstadoCambiosConceptos() : generateMockConcepts(),
@@ -974,7 +971,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       const decimalPart = parts[1] || ""
 
       // El maxLength de 11 para decimales considera 8 enteros + punto + 2 decimales.
-      // Por loTherefore, validamos la parte entera y decimal por separado.
+      // PorTherefore, validamos la parte entera y decimal por separado.
       if (integerPart.length > 8) {
         errorMessage = `El campo ${variable.label} permite máximo 8 dígitos enteros`
         isValid = false
@@ -1516,7 +1513,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
   }
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4 p-6 bg-white rounded-lg shadow">
       {/* Header con título y botones volver/enviar */}
       <div className="flex items-center justify-between pb-4 border-b">
         <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
