@@ -28,7 +28,7 @@ export default function GestionFormulariosSimple({
   const [categoriaState, setCategoria] = useState(categoria || "")
   const [ano, setAno] = useState("")
   const [periodo, setPeriodo] = useState("")
-  const [entidad, setEntidad] = useState("")
+  const [entidad, setEntidad] = useState("Entidad 1")
   const [mostrarTabla, setMostrarTabla] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filtrosModificados, setFiltrosModificados] = useState(false)
@@ -237,6 +237,20 @@ export default function GestionFormulariosSimple({
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
+            <label className="block text-sm font-medium mb-2">Entidad</label>
+            <Select value={entidad} onValueChange={(value) => handleFilterChange(setEntidad, value)} disabled>
+              <SelectTrigger className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50">
+                <SelectValue placeholder="Seleccione entidad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Entidad 1">Entidad 1</SelectItem>
+                <SelectItem value="Entidad 2">Entidad 2</SelectItem>
+                <SelectItem value="Entidad 3">Entidad 3</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium mb-2">Categoría</label>
             <Select value={categoriaState} onValueChange={(value) => handleFilterChange(setCategoria, value)}>
               <SelectTrigger className="w-full px-3 py-2 border border-input rounded-md bg-background">
@@ -249,21 +263,6 @@ export default function GestionFormulariosSimple({
                     {cat}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Entidad</label>
-            <Select value={entidad} onValueChange={(value) => handleFilterChange(setEntidad, value)}>
-              <SelectTrigger className="w-full px-3 py-2 border border-input rounded-md bg-background">
-                <SelectValue placeholder="Seleccione entidad" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Seleccione entidad</SelectItem>
-                <SelectItem value="Entidad 1">Entidad 1</SelectItem>
-                <SelectItem value="Entidad 2">Entidad 2</SelectItem>
-                <SelectItem value="Entidad 3">Entidad 3</SelectItem>
               </SelectContent>
             </Select>
           </div>
