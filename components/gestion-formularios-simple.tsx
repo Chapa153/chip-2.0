@@ -2,57 +2,39 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Filter,
-  Upload,
-  Send,
-  FileDown,
-  MoreVertical,
-  Search,
-  Edit,
-  FileSpreadsheet,
-  HelpCircle,
-  Loader2,
-} from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Filter, Upload, MoreVertical, FileDown, Loader2, Send, ChevronDown, Search } from "lucide-react"
 
 interface GestionFormulariosSimpleProps {
-  onEditForm?: (formId: string, formName: string) => void
-  filtrosPrevios?: {
-    entidad?: string
-    categoria?: string
-    ano?: string
-    periodo?: string
-  }
-  onFiltrosChange?: (filtros: { categoria?: string; ano?: string; periodo?: string }) => void
+  categoria?: string
+  onBack?: () => void
+  onSelectFormulario?: (formId: string) => void
 }
 
 export default function GestionFormulariosSimple({
-  onEditForm,
-  filtrosPrevios,
-  onFiltrosChange,
+  categoria,
+  onBack,
+  onSelectFormulario,
 }: GestionFormulariosSimpleProps) {
-  const [entidad] = useState(filtrosPrevios?.entidad || "Contaduría General de la Nación")
-  const [categoria, setCategoria] = useState(filtrosPrevios?.categoria || "")
-  const [ano, setAno] = useState(filtrosPrevios?.ano || "")
-  const [periodo, setPeriodo] = useState(filtrosPrevios?.periodo || "")
-  const [mostrarTabla, setMostrarTabla] = useState(
-    !!filtrosPrevios?.categoria && !!filtrosPrevios?.ano && !!filtrosPrevios?.periodo,
-  )
+  const [categoriaState, setCategoria] = useState(categoria || "")
+  const [ano, setAno] = useState("")
+  const [periodo, setPeriodo] = useState("")
+  const [mostrarTabla, setMostrarTabla] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filtrosModificados, setFiltrosModificados] = useState(false)
   const [selectedFormularios, setSelectedFormularios] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [currentPhase, setCurrentPhase] = useState(0)
+  const [completedPhases, setCompletedPhases] = useState<number[]>([])
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [validationResult, setValidationResult] = useState<{
     formularios: { nombre: string; registros: number }[]
@@ -105,17 +87,16 @@ export default function GestionFormulariosSimple({
   const anos = ["2024", "2025", "2026"]
 
   const getPeriodos = () => {
-    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
+    if (categoriaState === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
       return ["Enero - Marzo", "Abril - Junio", "Julio - Septiembre", "Octubre - Diciembre"]
     }
     return ["Enero - Diciembre"]
   }
 
   const handleAplicarFiltros = () => {
-    if (categoria && ano && periodo) {
+    if (categoriaState && ano && periodo) {
       setMostrarTabla(true)
       setFiltrosModificados(false)
-      onFiltrosChange?.({ categoria, ano, periodo })
     }
   }
 
@@ -138,10 +119,25 @@ export default function GestionFormulariosSimple({
     }
   }
 
-  const getEstadoBadgeClass = (color: string) => {
+  const getEstadoColor = (estado: string): string => {
+    const estadoLower = estado.toLowerCase()
+    if (estadoLower.includes("pendiente")) return "yellow" // P - Pendiente en validar
+    if (estadoLower.includes("error")) return "orange" // E - Error de validación
+    if (estadoLower.includes("excepción")) return "purple" // X - Excepción de validación
+    if (estadoLower.includes("aceptado") || estadoLower.includes("validado")) return "green"
+    if (estadoLower.includes("validación") && estadoLower.includes("en")) return "blue" // En validación
+    if (estadoLower.includes("rechazado")) return "red"
+    return "gray"
+  }
+
+  const getEstadoBadgeClass = (color: string): string => {
     switch (color) {
       case "yellow":
         return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "orange":
+        return "bg-orange-100 text-orange-800 border-orange-200"
+      case "purple":
+        return "bg-purple-100 text-purple-800 border-purple-200"
       case "green":
         return "bg-green-100 text-green-800 border-green-200"
       case "blue":
@@ -159,23 +155,55 @@ export default function GestionFormulariosSimple({
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
+  const canSendFormulario = (estado: string): boolean => {
+    const estadoLower = estado.toLowerCase()
+    return (
+      estadoLower.includes("pendiente") || // P
+      (estadoLower.includes("error") && !estadoLower.includes("validación")) || // E
+      estadoLower.includes("excepción") // X
+    )
+  }
+
   const handleEnviar = async () => {
     console.log("[v0] Botón Enviar clickeado en GestionFormulariosSimple")
     console.log("[v0] Formularios seleccionados:", selectedFormularios)
-    console.log("[v0] Categoría actual:", categoria)
+
+    // Verificar que todos los formularios seleccionados pueden ser enviados
+    const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+    const formulariosNoValidos = formulariosSeleccionados.filter((f) => !canSendFormulario(f.estado))
+
+    if (formulariosNoValidos.length > 0) {
+      alert(`No se pueden enviar formularios en estado: ${formulariosNoValidos.map((f) => f.estado).join(", ")}`)
+      return
+    }
 
     setIsSubmitting(true)
+    setCurrentPhase(0)
+    setCompletedPhases([])
 
-    // Simular proceso de validación (2 segundos)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    // Simular proceso de validación en fases
+    const validationPhases = [
+      "Validando contenido de variables",
+      "Validando completitud",
+      "Ejecutando validaciones generales",
+      "Verificando expresiones de validación locales",
+    ]
+
+    for (let i = 0; i < validationPhases.length; i++) {
+      setCurrentPhase(i)
+      console.log(`[v0] Fase ${i + 1}: ${validationPhases[i]}`)
+      await new Promise((resolve) => setTimeout(resolve, 1500)) // 1.5 segundos por fase
+      setCompletedPhases((prev) => [...prev, i])
+      console.log(`[v0] Fase ${i + 1} completada`)
+    }
 
     // Si es categoría de Información Contable Convergencia, mostrar mensaje específico
-    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
+    if (categoriaState === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
       const formulariosEnviados = formulariosState
         .filter((f) => selectedFormularios.includes(f.id))
         .map((f) => ({
           nombre: f.nombre,
-          registros: Math.floor(Math.random() * 200) + 50, // Simular cantidad de registros
+          registros: Math.floor(Math.random() * 200) + 50,
         }))
 
       setFormularios((prev) => prev.map((f) => (selectedFormularios.includes(f.id) ? { ...f, estado: "Validado" } : f)))
@@ -186,11 +214,13 @@ export default function GestionFormulariosSimple({
     }
 
     setIsSubmitting(false)
+    setCurrentPhase(0)
+    setCompletedPhases([])
     console.log("[v0] Proceso de envío finalizado")
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Filtros de Búsqueda */}
       <div className="bg-white rounded-lg border border-border p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
@@ -206,67 +236,58 @@ export default function GestionFormulariosSimple({
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Entidad</label>
-            <input
-              value={entidad}
-              disabled
-              className="w-full px-3 py-2 border border-input rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
-            />
+            <label className="block text-sm font-medium mb-2">Categoría</label>
+            <Select value={categoriaState} onValueChange={(value) => handleFilterChange(setCategoria, value)}>
+              <SelectTrigger className="w-full px-3 py-2 border border-input rounded-md bg-background">
+                <SelectValue placeholder="Seleccione categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Seleccione categoría</SelectItem>
+                {categorias.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Categoría <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={categoria}
-              onChange={(e) => handleFilterChange(setCategoria, e.target.value)}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            >
-              <option value="">Seleccione categoría</option>
-              {categorias.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium mb-2">Año</label>
+            <Select value={ano} onValueChange={(value) => handleFilterChange(setAno, value)}>
+              <SelectTrigger className="w-full px-3 py-2 border border-input rounded-md bg-background">
+                <SelectValue placeholder="Seleccione año" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Seleccione año</SelectItem>
+                {anos.map((a) => (
+                  <SelectItem key={a} value={a}>
+                    {a}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Año <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={ano}
-              onChange={(e) => handleFilterChange(setAno, e.target.value)}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
-            >
-              <option value="">Seleccione año</option>
-              {anos.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Periodo <span className="text-red-500">*</span>
-            </label>
-            <select
+            <label className="block text-sm font-medium mb-2">Periodo</label>
+            <Select
               value={periodo}
-              onChange={(e) => handleFilterChange(setPeriodo, e.target.value)}
-              disabled={!categoria}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50"
+              onValueChange={(value) => handleFilterChange(setPeriodo, value)}
+              disabled={!categoriaState}
             >
-              <option value="">Seleccione periodo</option>
-              {getPeriodos().map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50">
+                <SelectValue placeholder="Seleccione periodo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Seleccione periodo</SelectItem>
+                {getPeriodos().map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -274,7 +295,7 @@ export default function GestionFormulariosSimple({
           <Button
             onClick={handleAplicarFiltros}
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={!categoria || !ano || !periodo}
+            disabled={!categoriaState || !ano || !periodo}
           >
             Aplicar Filtros
           </Button>
@@ -309,9 +330,22 @@ export default function GestionFormulariosSimple({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={selectedFormularios.length === 0 || isSubmitting}
+                disabled={
+                  selectedFormularios.length === 0 ||
+                  isSubmitting ||
+                  !formulariosState
+                    .filter((f) => selectedFormularios.includes(f.id))
+                    .every((f) => canSendFormulario(f.estado))
+                }
                 onClick={handleEnviar}
-                className={selectedFormularios.length === 0 && !isSubmitting ? "opacity-50 cursor-not-allowed" : ""}
+                className={
+                  selectedFormularios.length === 0 ||
+                  !formulariosState
+                    .filter((f) => selectedFormularios.includes(f.id))
+                    .every((f) => canSendFormulario(f.estado))
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }
               >
                 {isSubmitting ? (
                   <>
@@ -325,105 +359,10 @@ export default function GestionFormulariosSimple({
                   </>
                 )}
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={selectedFormularios.length === 0}
-                    className={selectedFormularios.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
-                  >
-                    <FileDown className="w-4 h-4 mr-2" />
-                    Exportar
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <TooltipProvider>
-                    <Tooltip delayDuration={0}>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuItem className="cursor-pointer">
-                          <FileSpreadsheet className="w-4 h-4 mr-2" />
-                          CSV
-                          <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                        </DropdownMenuItem>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-xs">
-                        <div className="text-xs space-y-1">
-                          <p className="font-semibold">CSV - Sin límite de filas</p>
-                          <ul className="list-disc pl-4 space-y-0.5">
-                            <li>Encoding UTF-8</li>
-                            <li>Encabezados incluidos</li>
-                          </ul>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <TooltipProvider>
-                    <Tooltip delayDuration={0}>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuItem className="cursor-pointer">
-                          <FileSpreadsheet className="w-4 h-4 mr-2" />
-                          Excel (XLSX)
-                          <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                        </DropdownMenuItem>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-xs">
-                        <div className="text-xs space-y-1">
-                          <p className="font-semibold">Excel (XLSX)</p>
-                          <ul className="list-disc pl-4 space-y-0.5">
-                            <li>Máximo 50 MB por archivo</li>
-                            <li>Hasta 1.048.576 filas por hoja</li>
-                            <li>Múltiples hojas permitidas</li>
-                          </ul>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <TooltipProvider>
-                    <Tooltip delayDuration={0}>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuItem className="cursor-pointer">
-                          <FileDown className="w-4 h-4 mr-2" />
-                          PDF
-                          <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                        </DropdownMenuItem>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-xs">
-                        <div className="text-xs space-y-1">
-                          <p className="font-semibold">PDF</p>
-                          <ul className="list-disc pl-4 space-y-0.5">
-                            <li>Máximo 10.000 líneas por archivo</li>
-                            <li>División automática si excede límite</li>
-                          </ul>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <TooltipProvider>
-                    <Tooltip delayDuration={0}>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuItem className="cursor-pointer">
-                          <FileDown className="w-4 h-4 mr-2" />
-                          TXT
-                          <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                        </DropdownMenuItem>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-xs">
-                        <div className="text-xs space-y-1">
-                          <p className="font-semibold">TXT - Sin límite de filas</p>
-                          <ul className="list-disc pl-4 space-y-0.5">
-                            <li>Encoding UTF-8</li>
-                            <li>Delimitador: punto y coma (;)</li>
-                          </ul>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button variant="outline" size="sm" onClick={onBack}>
+                <ChevronDown className="w-4 h-4 mr-2" />
+                Atrás
+              </Button>
             </div>
 
             {/* Barra de Búsqueda */}
@@ -444,9 +383,7 @@ export default function GestionFormulariosSimple({
               <thead className="bg-gray-50 border-b border-border">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                    <input
-                      type="checkbox"
-                      className="rounded"
+                    <Checkbox
                       checked={selectedFormularios.length === formulariosState.length}
                       onChange={toggleSelectAll}
                     />
@@ -475,42 +412,29 @@ export default function GestionFormulariosSimple({
                 {filteredFormularios.map((form) => (
                   <tr key={form.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        className="rounded"
+                      <Checkbox
                         checked={selectedFormularios.includes(form.id)}
                         onChange={() => toggleFormularioSelection(form.id)}
+                        onClick={() => onSelectFormulario?.(form.id)}
                       />
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
+                        className={`px-2 py-1 text-xs font-medium rounded-md border ${getEstadoBadgeClass(
+                          getEstadoColor(form.estado),
+                        )}`}
                       >
                         {form.estado}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
                     <td className="px-4 py-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onEditForm?.(form.id, form.nombre)}>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Registro manual
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <FileSpreadsheet className="w-4 h-4 mr-2" />
-                            Generar protocolo importación
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button variant="ghost" size="sm" onClick={() => onSelectFormulario?.(form.id)}>
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -522,11 +446,16 @@ export default function GestionFormulariosSimple({
           <div className="p-4 border-t border-border flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Registros por página:</span>
-              <select className="px-2 py-1 border border-input rounded-md text-sm">
-                <option>10</option>
-                <option>25</option>
-                <option>50</option>
-              </select>
+              <Select>
+                <SelectTrigger className="px-2 py-1 border border-input rounded-md text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
               <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
             </div>
             <div className="flex gap-2">
@@ -571,27 +500,62 @@ export default function GestionFormulariosSimple({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction
+            <Button
               onClick={() => {
                 setShowSuccessDialog(false)
                 setSelectedFormularios([])
               }}
             >
               Aceptar
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {isSubmitting && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-4 max-w-md">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-6 max-w-lg w-full mx-4">
             <Loader2 className="w-16 h-16 animate-spin text-primary" />
-            <div className="text-center space-y-2">
-              <h3 className="text-lg font-semibold text-gray-900">Enviando a validación</h3>
-              <p className="text-sm text-gray-600">
-                Por favor espere mientras se procesa la información del formulario...
-              </p>
+            <div className="text-center space-y-2 w-full">
+              <h3 className="text-lg font-semibold text-gray-900">Validando formulario</h3>
+              <p className="text-sm text-gray-600">Procesando información en múltiples fases...</p>
+            </div>
+
+            {/* Fases de validación */}
+            <div className="w-full space-y-3">
+              {[
+                "Validando contenido de variables",
+                "Validando completitud",
+                "Ejecutando validaciones generales",
+                "Verificando expresiones de validación locales",
+              ].map((phase, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    {completedPhases.includes(index) ? (
+                      <div className="w-5 h-5 rounded-full bg-green-600 text-white flex items-center justify-center">
+                        ✓
+                      </div>
+                    ) : currentPhase === index ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p
+                      className={`text-sm ${
+                        completedPhases.includes(index)
+                          ? "text-green-700 font-medium"
+                          : currentPhase === index
+                            ? "text-primary font-medium"
+                            : "text-gray-500"
+                      }`}
+                    >
+                      {phase}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
