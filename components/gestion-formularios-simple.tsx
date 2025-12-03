@@ -13,6 +13,7 @@ import {
   FileSpreadsheet,
   HelpCircle,
   Loader2,
+  CheckCircle2,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -54,6 +55,7 @@ export default function GestionFormulariosSimple({
   const [selectedFormularios, setSelectedFormularios] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  const [validationPhase, setValidationPhase] = useState(0)
   const [validationResult, setValidationResult] = useState<{
     formularios: { nombre: string; registros: number }[]
   } | null>(null)
@@ -183,9 +185,23 @@ export default function GestionFormulariosSimple({
     console.log("[v0] Categoría actual:", categoria)
 
     setIsSubmitting(true)
+    setValidationPhase(0)
 
-    // Simular proceso de validación (2 segundos)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    // Fase 1: Contenido de variables
+    setValidationPhase(1)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    // Fase 2: Completitud
+    setValidationPhase(2)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    // Fase 3: Validaciones generales
+    setValidationPhase(3)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    // Fase 4: Expresiones de validación locales
+    setValidationPhase(4)
+    await new Promise((resolve) => setTimeout(resolve, 800))
 
     // Si es categoría de Información Contable Convergencia, mostrar mensaje específico
     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
@@ -204,6 +220,7 @@ export default function GestionFormulariosSimple({
     }
 
     setIsSubmitting(false)
+    setValidationPhase(0)
     console.log("[v0] Proceso de envío finalizado")
   }
 
@@ -603,13 +620,52 @@ export default function GestionFormulariosSimple({
 
       {isSubmitting && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-4 max-w-md">
+          <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-6 max-w-md">
             <Loader2 className="w-16 h-16 animate-spin text-primary" />
-            <div className="text-center space-y-2">
-              <h3 className="text-lg font-semibold text-gray-900">Enviando a validación</h3>
-              <p className="text-sm text-gray-600">
-                Por favor espere mientras se procesa la información del formulario...
-              </p>
+            <div className="text-center space-y-4 w-full">
+              <h3 className="text-lg font-semibold text-gray-900">Validando formulario</h3>
+              <div className="space-y-3 text-left">
+                <div className={`flex items-center gap-3 ${validationPhase >= 1 ? "text-gray-900" : "text-gray-400"}`}>
+                  {validationPhase > 1 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  ) : validationPhase === 1 ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                  )}
+                  <span className="text-sm">1. Contenido de variables</span>
+                </div>
+                <div className={`flex items-center gap-3 ${validationPhase >= 2 ? "text-gray-900" : "text-gray-400"}`}>
+                  {validationPhase > 2 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  ) : validationPhase === 2 ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                  )}
+                  <span className="text-sm">2. Completitud</span>
+                </div>
+                <div className={`flex items-center gap-3 ${validationPhase >= 3 ? "text-gray-900" : "text-gray-400"}`}>
+                  {validationPhase > 3 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  ) : validationPhase === 3 ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                  )}
+                  <span className="text-sm">3. Validaciones generales</span>
+                </div>
+                <div className={`flex items-center gap-3 ${validationPhase >= 4 ? "text-gray-900" : "text-gray-400"}`}>
+                  {validationPhase > 4 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  ) : validationPhase === 4 ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                  )}
+                  <span className="text-sm">4. Expresiones de validación locales</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
