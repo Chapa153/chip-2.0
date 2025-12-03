@@ -28,6 +28,7 @@ export default function GestionFormulariosSimple({
   const [categoriaState, setCategoria] = useState(categoria || "")
   const [ano, setAno] = useState("")
   const [periodo, setPeriodo] = useState("")
+  const [entidad, setEntidad] = useState("")
   const [mostrarTabla, setMostrarTabla] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filtrosModificados, setFiltrosModificados] = useState(false)
@@ -94,7 +95,7 @@ export default function GestionFormulariosSimple({
   }
 
   const handleAplicarFiltros = () => {
-    if (categoriaState && ano && periodo) {
+    if (categoriaState && ano && periodo && entidad) {
       setMostrarTabla(true)
       setFiltrosModificados(false)
     }
@@ -253,6 +254,21 @@ export default function GestionFormulariosSimple({
           </div>
 
           <div>
+            <label className="block text-sm font-medium mb-2">Entidad</label>
+            <Select value={entidad} onValueChange={(value) => handleFilterChange(setEntidad, value)}>
+              <SelectTrigger className="w-full px-3 py-2 border border-input rounded-md bg-background">
+                <SelectValue placeholder="Seleccione entidad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Seleccione entidad</SelectItem>
+                <SelectItem value="Entidad 1">Entidad 1</SelectItem>
+                <SelectItem value="Entidad 2">Entidad 2</SelectItem>
+                <SelectItem value="Entidad 3">Entidad 3</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium mb-2">Año</label>
             <Select value={ano} onValueChange={(value) => handleFilterChange(setAno, value)}>
               <SelectTrigger className="w-full px-3 py-2 border border-input rounded-md bg-background">
@@ -295,7 +311,7 @@ export default function GestionFormulariosSimple({
           <Button
             onClick={handleAplicarFiltros}
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={!categoriaState || !ano || !periodo}
+            disabled={!categoriaState || !ano || !periodo || !entidad}
           >
             Aplicar Filtros
           </Button>
@@ -308,7 +324,7 @@ export default function GestionFormulariosSimple({
           <Filter className="w-16 h-16 mx-auto text-gray-300 mb-4" />
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Seleccione los filtros de búsqueda</h3>
           <p className="text-gray-500">
-            Para visualizar los formularios disponibles, debe seleccionar Categoría, Año y Periodo
+            Para visualizar los formularios disponibles, debe seleccionar Categoría, Año, Periodo y Entidad
           </p>
         </div>
       )}
