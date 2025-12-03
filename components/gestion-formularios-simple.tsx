@@ -157,12 +157,8 @@ export default function GestionFormulariosSimple({
   )
 
   const canSendFormulario = (estado: string): boolean => {
-    const estadoLower = estado.toLowerCase()
-    return (
-      estadoLower.includes("pendiente") || // P
-      (estadoLower.includes("error") && !estadoLower.includes("validación")) || // E
-      estadoLower.includes("excepción") // X
-    )
+    const estadoUpper = estado.toUpperCase()
+    return estadoUpper === "P" || estadoUpper === "E" || estadoUpper === "X"
   }
 
   const handleEnviar = async () => {
