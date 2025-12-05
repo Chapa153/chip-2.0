@@ -14,6 +14,9 @@ import {
   ArrowLeft,
   Send,
   Check,
+  Loader2,
+  CheckCircle2,
+  Download,
 } from "lucide-react" // Added ArrowLeft and Send
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +34,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast" // Added useToast
 import { Toaster } from "@/components/ui/toaster" // Agregado Toaster para mostrar los toasts
 // import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip" // Eliminado import de Tooltip para evitar re-renders infinitos
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog" // Added AlertDialog and related components
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // Tipos para la estructura de datos
 interface ConceptNode {
@@ -891,6 +905,14 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     recordCount: number
   } | null>(null)
 
+  const [validationPhase, setValidationPhase] = useState(0)
+  const [showErrorAlert, setShowErrorAlert] = useState(false)
+  const [errorData, setErrorData] = useState<{
+    formulario: string
+    detalles: Array<{ concepto: string; mensaje: string }>
+  } | null>(null)
+  const [showErrorsView, setShowErrorsView] = useState(false)
+
   const MAX_DROPDOWN_OPTIONS = 100 // Limitar opciones visibles para mejor rendimiento
   const [rangeSearchInitial, setRangeSearchInitial] = useState("")
   const [rangeSearchFinal, setRangeSearchFinal] = useState("")
@@ -1468,11 +1490,81 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     // Iniciar proceso de envío con capa de carga
     console.log("[v0] Iniciando proceso de envío, isSubmitting = true")
     setIsSubmitting(true)
+    setValidationPhase(1)
 
     try {
-      // Simular proceso de validación (2 segundos)
-      console.log("[v0] Esperando 2 segundos para simular validación...")
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      // Fase 1: Contenido de variables
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      // Detectar errores según el formulario
+      const tieneNotasEstadosFinancieros = title === "Notas a los Estados Financieros"
+      const tieneEstadoCambios = title === "Estado de Cambios en el Patrimonio"
+
+      if (tieneNotasEstadosFinancieros || tieneEstadoCambios) {
+        setIsSubmitting(false)
+        setValidationPhase(0)
+
+        const errores: Array<{ concepto: string; mensaje: string }> = []
+
+        // Errores de datos para Notas a los Estados Financieros
+        if (tieneNotasEstadosFinancieros) {
+          errores.push(
+            {
+              concepto: "1105 - Efectivo y equivalentes al efectivo",
+              mensaje: "var-3: Contenido malicioso detectado",
+            },
+            {
+              concepto: "2105 - Cuentas por pagar",
+              mensaje: "var-5: Formato numérico inválido",
+            },
+            {
+              concepto: "3605 - Resultado del ejercicio",
+              mensaje: "var-2: Dato fuera del rango permitido",
+            },
+          )
+        }
+
+        // Fase 2: Completitud (solo si es Estado de Cambios)
+        if (tieneEstadoCambios) {
+          setValidationPhase(2)
+          await new Promise((resolve) => setTimeout(resolve, 800))
+
+          errores.push(
+            {
+              concepto: "3105 - Capital social",
+              mensaje: "var-1: Campo requerido sin completar",
+            },
+            {
+              concepto: "3205 - Reservas",
+              mensaje: "var-4: Campo requerido sin completar",
+            },
+            {
+              concepto: "3305 - Resultados acumulados",
+              mensaje: "var-2: Campo requerido sin completar",
+            },
+          )
+        }
+
+        setErrorData({
+          formulario: title,
+          detalles: errores,
+        })
+
+        setShowErrorAlert(true)
+        return
+      }
+
+      // Fase 2: Completitud (si no hay errores)
+      setValidationPhase(2)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      // Fase 3: Validaciones generales
+      setValidationPhase(3)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      // Fase 4: Expresiones de validación locales
+      setValidationPhase(4)
+      await new Promise((resolve) => setTimeout(resolve, 800))
 
       // Contar registros válidos
       const recordCount = dynamicConcepts.length
@@ -1504,12 +1596,137 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     } finally {
       console.log("[v0] Finalizando proceso de envío, isSubmitting = false")
       setIsSubmitting(false)
+      setValidationPhase(0)
     }
   }
 
   const handleVerAtributos = (conceptId: string, conceptName: string) => {
     setSelectedConceptoAtributos([{ id: conceptId, nombre: conceptName }])
     setAtributosDialogOpen(true)
+  }
+
+  const handleViewErrors = () => {
+    setShowErrorAlert(false)
+    setShowErrorsView(true)
+  }
+
+  const handleExportErrors = (format: "csv" | "excel" | "pdf" | "txt") => {
+    if (!errorData) return
+
+    const data = errorData.detalles.map((d) => ({
+      Formulario: errorData.formulario,
+      Concepto: d.concepto,
+      Mensaje: d.mensaje,
+    }))
+
+    toast({
+      title: `Exportando a ${format.toUpperCase()}`,
+      description: `Se exportarán ${data.length} errores.`,
+    })
+  }
+
+  if (showErrorsView && errorData) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Encabezado con información */}
+        <div className="mb-6 bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-800">Detalle de Errores</h2>
+            <Button variant="outline" onClick={() => setShowErrorsView(false)}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Regresar
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <div className="text-gray-500 font-medium">Entidad</div>
+              <div className="text-gray-900">Entidad 1</div>
+            </div>
+            <div>
+              <div className="text-gray-500 font-medium">Categoría</div>
+              <div className="text-gray-900">
+                {filtrosPrevios?.categoria || "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA"}
+              </div>
+            </div>
+            <div>
+              <div className="text-gray-500 font-medium">Periodo</div>
+              <div className="text-gray-900">{filtrosPrevios?.periodo || "Anual"}</div>
+            </div>
+            <div>
+              <div className="text-gray-500 font-medium">Año</div>
+              <div className="text-gray-900">{filtrosPrevios?.ano || "2024"}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabla de errores */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="text-lg font-semibold">Errores del formulario: {errorData.formulario}</h3>
+
+            {/* Botones de exportación */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => handleExportErrors("csv")}>
+                  <div className="flex flex-col items-start w-full">
+                    <span className="font-medium">CSV</span>
+                    <span className="text-xs text-muted-foreground">Archivo de valores separados por comas</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportErrors("excel")}>
+                  <div className="flex flex-col items-start w-full">
+                    <span className="font-medium">Excel</span>
+                    <span className="text-xs text-muted-foreground">Libro de trabajo de Microsoft Excel</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportErrors("pdf")}>
+                  <div className="flex flex-col items-start w-full">
+                    <span className="font-medium">PDF</span>
+                    <span className="text-xs text-muted-foreground">Documento portátil Adobe</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportErrors("txt")}>
+                  <div className="flex flex-col items-start w-full">
+                    <span className="font-medium">TXT</span>
+                    <span className="text-xs text-muted-foreground">Archivo de texto plano</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Concepto
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Mensaje
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {errorData.detalles.map((error, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm text-gray-900">{error.concepto}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{error.mensaje}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -2141,6 +2358,78 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
           </div>
         </DialogContent>
       </Dialog>
+
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex flex-col items-center gap-4 mb-6">
+              <Loader2 className="w-12 h-12 animate-spin text-primary" />
+              <h3 className="text-lg font-semibold text-gray-900">Enviando a validación</h3>
+              <p className="text-sm text-gray-600 text-center">
+                Por favor espere mientras se valida la información del formulario
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className={`flex items-center gap-3 ${validationPhase >= 1 ? "text-gray-900" : "text-gray-400"}`}>
+                {validationPhase > 1 ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                ) : validationPhase === 1 ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                )}
+                <span className="text-sm">1. Contenido de variables</span>
+              </div>
+              <div className={`flex items-center gap-3 ${validationPhase >= 2 ? "text-gray-900" : "text-gray-400"}`}>
+                {validationPhase > 2 ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                ) : validationPhase === 2 ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                )}
+                <span className="text-sm">2. Completitud</span>
+              </div>
+              <div className={`flex items-center gap-3 ${validationPhase >= 3 ? "text-gray-900" : "text-gray-400"}`}>
+                {validationPhase > 3 ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                ) : validationPhase === 3 ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                )}
+                <span className="text-sm">3. Validaciones generales</span>
+              </div>
+              <div className={`flex items-center gap-3 ${validationPhase >= 4 ? "text-gray-900" : "text-gray-400"}`}>
+                {validationPhase > 4 ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                ) : validationPhase === 4 ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                )}
+                <span className="text-sm">4. Expresiones de validación locales</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AlertDialog open={showErrorAlert} onOpenChange={setShowErrorAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Error en validación</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hubo errores en el envío a validar. ¿Desea ver el listado de errores?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleViewErrors}>Ver errores</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Agregando Toaster al final del componente */}
       <Toaster />
