@@ -16,6 +16,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   FileText,
+  ArrowLeft,
+  Download,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -95,9 +97,9 @@ export default function GestionFormulariosSimple({
       id: "CGN-2025-04",
       nombre: "Estado de Cambios en el Patrimonio",
       tipo: "Formulario",
-      estado: "Rechazado por Formato",
+      estado: "Pendiente en validar",
       fecha: "6/11/2024",
-      estadoColor: "red",
+      estadoColor: "yellow",
     },
     {
       id: "CGN-2025-05",
@@ -189,7 +191,6 @@ export default function GestionFormulariosSimple({
   const handleEnviar = async () => {
     console.log("[v0] Botón Enviar clickeado en GestionFormulariosSimple")
     console.log("[v0] Formularios seleccionados:", selectedFormularios)
-    console.log("[v0] Categoría actual:", categoria)
 
     setIsSubmitting(true)
     setValidationPhase(0)
@@ -202,40 +203,71 @@ export default function GestionFormulariosSimple({
     const tieneNotasEstadosFinancieros = formulariosSeleccionados.some(
       (f) => f.nombre === "Notas a los Estados Financieros",
     )
+    const tieneEstadoCambios = formulariosSeleccionados.some((f) => f.nombre === "Estado de Cambios en el Patrimonio")
 
-    if (tieneNotasEstadosFinancieros) {
+    // Si hay errores en los formularios seleccionados
+    if (tieneNotasEstadosFinancieros || tieneEstadoCambios) {
       setIsSubmitting(false)
       setValidationPhase(0)
 
-      setErrorData({
-        formularios: ["Notas a los Estados Financieros"],
-        detalles: [
+      const errores: Array<{ formulario: string; concepto: string; mensaje: string }> = []
+
+      // Errores de datos para Notas a los Estados Financieros
+      if (tieneNotasEstadosFinancieros) {
+        errores.push(
           {
             formulario: "Notas a los Estados Financieros",
             concepto: "1105 - Efectivo y equivalentes al efectivo",
-            variable: "var-3",
-            error: "Error de datos: contenido malicioso detectado",
+            mensaje: "var-3: Contenido malicioso detectado",
           },
           {
             formulario: "Notas a los Estados Financieros",
             concepto: "2105 - Cuentas por pagar",
-            variable: "var-5",
-            error: "Error de completitud: campo requerido sin completar",
+            mensaje: "var-5: Formato numérico inválido",
           },
           {
             formulario: "Notas a los Estados Financieros",
             concepto: "3605 - Resultado del ejercicio",
-            variable: "var-2",
-            error: "Error de datos: formato numérico inválido",
+            mensaje: "var-2: Dato fuera del rango permitido",
           },
-        ],
+        )
+      }
+
+      // Fase 2: Completitud
+      setValidationPhase(2)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      // Errores de completitud para Estado de Cambios en el Patrimonio
+      if (tieneEstadoCambios) {
+        errores.push(
+          {
+            formulario: "Estado de Cambios en el Patrimonio",
+            concepto: "3105 - Capital social",
+            mensaje: "var-1: Campo requerido sin completar",
+          },
+          {
+            formulario: "Estado de Cambios en el Patrimonio",
+            concepto: "3205 - Reservas",
+            mensaje: "var-4: Campo requerido sin completar",
+          },
+          {
+            formulario: "Estado de Cambios en el Patrimonio",
+            concepto: "3305 - Resultados acumulados",
+            mensaje: "var-2: Campo requerido sin completar",
+          },
+        )
+      }
+
+      setErrorData({
+        formularios: formulariosSeleccionados.map((f) => f.nombre),
+        detalles: errores,
       })
 
       setShowErrorAlert(true)
       return
     }
 
-    // Fase 2: Completitud
+    // Fase 2: Completitud (si no hay errores)
     setValidationPhase(2)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
@@ -260,32 +292,31 @@ export default function GestionFormulariosSimple({
 
       setValidationResult({ formularios: formulariosEnviados })
       setShowSuccessDialog(true)
-      console.log("[v0] Mostrando diálogo de validación exitosa")
     }
 
     setIsSubmitting(false)
     setValidationPhase(0)
-    console.log("[v0] Proceso de envío finalizado")
+    setSelectedFormularios([])
   }
-
-  const [showErrorAlert, setShowErrorAlert] = useState(false)
-  const [showErrorDetails, setShowErrorDetails] = useState(false)
-  const [errorData, setErrorData] = useState<{
-    formularios: string[]
-    detalles: Array<{ formulario: string; concepto: string; variable: string; error: string }>
-  } | null>(null)
 
   const handleViewErrorDetails = () => {
     setShowErrorAlert(false)
-    setShowErrorDetails(true)
+    setShowErrorsView(true)
 
+    // Actualizar estados de formularios con errores
     setFormularios((prev) =>
-      prev.map((f) =>
-        f.nombre === "Notas a los Estados Financieros"
-          ? { ...f, estado: "Rechazado por Deficiencia", tipo: "Formulario" }
-          : f,
-      ),
+      prev.map((f) => {
+        if (errorData?.formularios.includes(f.nombre)) {
+          return { ...f, estado: "Rechazado por Deficiencia", tipo: "Formulario" }
+        }
+        return f
+      }),
     )
+  }
+
+  const handleBackFromErrors = () => {
+    setShowErrorsView(false)
+    setErrorData(null)
   }
 
   const handleExportErrors = (format: "csv" | "excel" | "pdf" | "txt") => {
@@ -294,46 +325,136 @@ export default function GestionFormulariosSimple({
     const data = errorData.detalles.map((d) => ({
       Formulario: d.formulario,
       Concepto: d.concepto,
-      Variable: d.variable,
-      Error: d.error,
+      Mensaje: d.mensaje,
     }))
 
     console.log(`[v0] Exportando errores en formato ${format}`, data)
 
-    // Simular descarga
     const timestamp = new Date().toISOString().split("T")[0]
     const filename = `errores-validacion-${timestamp}.${format}`
 
     if (format === "txt") {
-      const txtContent = `Reporte de Errores de Validación\n${"=".repeat(50)}\n\nEntidad: ${entidad}\nCategoría: ${categoria}\nPeríodo: ${ano}\nAño: ${periodo}\n\n${"=".repeat(50)}\n\nErrores Detectados:\n\n${data.map((row, idx) => `${idx + 1}. Formulario: ${row.Formulario}\n   Concepto: ${row.Concepto}\n   Variable: ${row.Variable}\n   Error: ${row.Error}\n`).join("\n")}`
+      const txtContent = `Reporte de Errores de Validación\n${"=".repeat(50)}\n\nEntidad: ${entidad}\nCategoría: ${categoria}\nPeríodo: ${periodo}\nAño: ${ano}\n\n${"=".repeat(50)}\n\nErrores Detectados:\n\n${data.map((row, idx) => `${idx + 1}. Formulario: ${row.Formulario}\n   Concepto: ${row.Concepto}\n   ${row.Mensaje}\n`).join("\n")}`
       const blob = new Blob([txtContent], { type: "text/plain;charset=utf-8" })
       const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = filename
-      a.click()
+      const link = document.createElement("a")
+      link.href = url
+      link.download = filename
+      link.click()
       URL.revokeObjectURL(url)
     } else if (format === "csv") {
-      const headers = ["Formulario", "Concepto", "Variable", "Error"]
+      const headers = ["Formulario", "Concepto", "Mensaje"]
       const csvContent = [
         headers.join(","),
-        ...data.map((row) =>
-          [row.Formulario, row.Concepto, row.Variable, row.Error].map((cell) => `"${cell}"`).join(","),
-        ),
+        ...data.map((row) => [row.Formulario, row.Concepto, row.Mensaje].map((cell) => `"${cell}"`).join(",")),
       ].join("\n")
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" })
       const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = filename
-      a.click()
+      const link = document.createElement("a")
+      link.href = url
+      link.download = filename
+      link.click()
       URL.revokeObjectURL(url)
     }
 
     toast({
       title: "Exportación exitosa",
-      description: `Los errores se han exportado en formato ${format.toUpperCase()}.`,
+      description: `Los errores se han exportado en formato ${format.toUpperCase()}`,
     })
+  }
+
+  const [showErrorAlert, setShowErrorAlert] = useState(false)
+  const [showErrorsView, setShowErrorsView] = useState(false)
+  const [errorData, setErrorData] = useState<{
+    formularios: string[]
+    detalles: Array<{ formulario: string; concepto: string; mensaje: string }>
+  } | null>(null)
+  const [showErrorDetails, setShowErrorDetails] = useState(false)
+
+  if (showErrorsView && errorData) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="mb-6">
+          <Button variant="outline" onClick={handleBackFromErrors} className="mb-4 bg-transparent">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver
+          </Button>
+
+          <div className="bg-white border rounded-lg p-6">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Errores de Validación</h2>
+
+            <div className="grid grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <div className="text-sm text-gray-600">Entidad</div>
+                <div className="font-semibold">{entidad}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Categoría</div>
+                <div className="font-semibold">{categoria}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Período</div>
+                <div className="font-semibold">{periodo}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Año</div>
+                <div className="font-semibold">{ano}</div>
+              </div>
+            </div>
+
+            <div className="flex justify-end mb-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleExportErrors("csv")}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    CSV - Valores separados por comas
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportErrors("excel")}>
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Excel - Hoja de cálculo
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportErrors("pdf")}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    PDF - Documento portable
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportErrors("txt")}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    TXT - Texto plano
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100 border-b-2">
+                    <th className="p-3 text-left font-semibold text-gray-700">Formulario</th>
+                    <th className="p-3 text-left font-semibold text-gray-700">Concepto</th>
+                    <th className="p-3 text-left font-semibold text-gray-700">Mensaje</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {errorData.detalles.map((detalle, index) => (
+                    <tr key={index} className="border-t hover:bg-gray-50">
+                      <td className="p-3">{detalle.formulario}</td>
+                      <td className="p-3 font-mono text-xs">{detalle.concepto}</td>
+                      <td className="p-3 text-red-600">{detalle.mensaje}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -702,31 +823,14 @@ export default function GestionFormulariosSimple({
       <AlertDialog open={showErrorAlert} onOpenChange={setShowErrorAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-orange-600">
-              <AlertTriangle className="w-5 h-5" />
-              Error de validación
-            </AlertDialogTitle>
-            <div className="text-sm text-muted-foreground space-y-2">
-              <p>Hubo errores en el envío a validar.</p>
-              <p className="text-sm">¿Desea ver el listado de errores?</p>
-            </div>
+            <AlertDialogTitle>Errores en el envío a validar</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hubo errores en el envío a validar. ¿Desea ver el listado de errores?
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setShowErrorAlert(false)
-                setFormularios((prev) =>
-                  prev.map((f) =>
-                    f.nombre === "Notas a los Estados Financieros"
-                      ? { ...f, estado: "Rechazado por Deficiencia", tipo: "Formulario" }
-                      : f,
-                  ),
-                )
-              }}
-            >
-              No
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleViewErrorDetails}>Sí</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setShowErrorAlert(false)}>No</AlertDialogCancel>
+            <AlertDialogAction onClick={handleViewErrorDetails}>Sí, ver errores</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -774,8 +878,8 @@ export default function GestionFormulariosSimple({
                     <td className="p-3">{detalle.formulario}</td>
                     <td className="p-3 font-mono text-xs">{detalle.concepto}</td>
                     <td className="p-3">
-                      <span className="font-semibold text-gray-700">{detalle.variable}:</span>{" "}
-                      <span className="text-red-600">{detalle.error}</span>
+                      <span className="font-semibold text-gray-700">{detalle.concepto}:</span>{" "}
+                      <span className="text-red-600">{detalle.mensaje}</span>
                     </td>
                   </tr>
                 ))}
