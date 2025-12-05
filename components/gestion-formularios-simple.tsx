@@ -92,9 +92,9 @@ export default function GestionFormulariosSimple({
       id: "CGN-2025-03",
       nombre: "Flujo de Efectivo",
       tipo: "Formulario",
-      estado: "En Validación",
+      estado: "Pendiente en validar",
       fecha: "7/11/2024",
-      estadoColor: "blue",
+      estadoColor: "yellow",
     },
     {
       id: "CGN-2025-04",
@@ -209,8 +209,9 @@ export default function GestionFormulariosSimple({
       (f) => f.nombre === "Notas a los Estados Financieros",
     )
     const tieneEstadoCambios = formulariosSeleccionados.some((f) => f.nombre === "Estado de Cambios en el Patrimonio")
+    const tieneFlujoEfectivo = formulariosSeleccionados.some((f) => f.nombre === "Flujo de Efectivo")
 
-    // If there are errors in the selected forms
+    // If there are errors in the selected forms (Phase 1 and 2)
     if (tieneNotasEstadosFinancieros || tieneEstadoCambios) {
       setIsSubmitting(false)
       setValidationPhase(0)
@@ -272,13 +273,44 @@ export default function GestionFormulariosSimple({
       return
     }
 
-    // Fase 2: Completitud (if no errors)
+    // Fase 2: Completitud (if no errors in Phase 1)
     setValidationPhase(2)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
     // Fase 3: Validaciones generales
     setValidationPhase(3)
     await new Promise((resolve) => setTimeout(resolve, 800))
+
+    if (tieneFlujoEfectivo) {
+      setIsSubmitting(false)
+      setValidationPhase(0)
+
+      const errores: Array<{ formulario: string; concepto: string; mensaje: string }> = [
+        {
+          formulario: "Flujo de Efectivo",
+          concepto: "4105 - Actividades de operación",
+          mensaje: "La suma de flujos de operación no coincide con el total declarado",
+        },
+        {
+          formulario: "Flujo de Efectivo",
+          concepto: "4205 - Actividades de inversión",
+          mensaje: "El saldo de flujo de inversión supera el límite establecido",
+        },
+        {
+          formulario: "Flujo de Efectivo",
+          concepto: "4305 - Actividades de financiación",
+          mensaje: "Inconsistencia entre flujos de financiación y movimientos bancarios",
+        },
+      ]
+
+      setErrorData({
+        formularios: formulariosSeleccionados.map((f) => f.nombre),
+        detalles: errores,
+      })
+
+      setShowErrorAlert(true)
+      return
+    }
 
     // Fase 4: Expresiones de validación locales
     setValidationPhase(4)
