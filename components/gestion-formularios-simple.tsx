@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/use-toast"
+import DataTable from "@/components/data-table" // Assuming DataTable is imported here
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -363,6 +364,17 @@ export default function GestionFormulariosSimple({
     })
   }
 
+  const handleUpdateFormularioEstado = (nombreFormulario: string) => {
+    setFormularios((prev) =>
+      prev.map((f) => {
+        if (f.nombre === nombreFormulario) {
+          return { ...f, estado: "Rechazado por Deficiencia", tipo: "Formulario" }
+        }
+        return f
+      }),
+    )
+  }
+
   const [showErrorAlert, setShowErrorAlert] = useState(false)
   const [showErrorsView, setShowErrorsView] = useState(false)
   const [errorData, setErrorData] = useState<{
@@ -370,6 +382,13 @@ export default function GestionFormulariosSimple({
     detalles: Array<{ formulario: string; concepto: string; mensaje: string }>
   } | null>(null)
   const [showErrorDetails, setShowErrorDetails] = useState(false)
+  const [currentView, setCurrentView] = useState("dataTable")
+  const [selectedFormulario, setSelectedFormulario] = useState<{ nombre: string } | null>(null)
+
+  const handleBackToList = () => {
+    setCurrentView("list")
+    setSelectedFormulario(null)
+  }
 
   if (showErrorsView && errorData) {
     return (
@@ -748,7 +767,11 @@ export default function GestionFormulariosSimple({
                           type="checkbox"
                           className="rounded"
                           checked={selectedFormularios.includes(form.id)}
-                          onChange={() => handleToggleSelectFormulario(form.id)}
+                          onChange={() => {
+                            handleToggleSelectFormulario(form.id)
+                            setSelectedFormulario(form)
+                            setCurrentView("dataTable")
+                          }}
                         />
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
@@ -817,6 +840,15 @@ export default function GestionFormulariosSimple({
               </div>
             </div>
           </div>
+        )}
+
+        {!showErrorsView && currentView === "dataTable" && selectedFormulario && (
+          <DataTable
+            title={selectedFormulario.nombre}
+            onBack={handleBackToList}
+            filtrosPrevios={{ categoria, periodo, ano }}
+            onUpdateEstado={handleUpdateFormularioEstado}
+          />
         )}
       </div>
 
