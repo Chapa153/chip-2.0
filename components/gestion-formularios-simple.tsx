@@ -69,6 +69,7 @@ export default function GestionFormulariosSimple({
   const [validationPhase, setValidationPhase] = useState(0)
   const [validationResult, setValidationResult] = useState<{
     formularios: { nombre: string; registros: number }[]
+    formulariosCalculados?: { nombre: string; registros: number }[]
   } | null>(null)
   const [formulariosState, setFormulariosState] = useState([
     // Renombrado a setFormulariosState para evitar conflicto
@@ -304,18 +305,33 @@ export default function GestionFormulariosSimple({
 
     // If it's Información Contable Convergencia category, show specific message
     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
-      const formulariosEnviados = formulariosState
-        .filter((f) => selectedFormularios.includes(f.id))
-        .map((f) => ({
-          nombre: f.nombre,
-          registros: Math.floor(Math.random() * 200) + 50,
-        }))
+      // Renombrado selectedForms a selectedFormularios para consistencia
+      const selectedForms = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+      const formulariosEnviados = selectedForms.map((f) => ({
+        nombre: f.nombre,
+        registros: Math.floor(Math.random() * 200) + 50,
+      }))
+
+      const balanceGeneralEnviado = selectedForms.some((f) => f.nombre === "Balance General")
+      let formulariosCalculados: { nombre: string; registros: number }[] = []
+
+      if (balanceGeneralEnviado) {
+        // Generar formularios calculados automáticamente
+        formulariosCalculados = [
+          { nombre: "Indicadores Financieros", registros: 24 },
+          { nombre: "Análisis Horizontal", registros: 134 },
+          { nombre: "Análisis Vertical", registros: 134 },
+        ]
+      }
 
       setFormulariosState((prev) =>
         prev.map((f) => (selectedFormularios.includes(f.id) ? { ...f, estado: "Validado" } : f)),
       )
 
-      setValidationResult({ formularios: formulariosEnviados })
+      setValidationResult({
+        formularios: formulariosEnviados,
+        formulariosCalculados: formulariosCalculados.length > 0 ? formulariosCalculados : undefined,
+      })
       setShowSuccessDialog(true)
     }
 
@@ -1111,6 +1127,25 @@ export default function GestionFormulariosSimple({
                   </div>
                 </div>
               ))}
+
+              {validationResult?.formulariosCalculados && validationResult.formulariosCalculados.length > 0 && (
+                <>
+                  <div className="text-gray-700 font-medium mt-4 pt-3 border-t">
+                    Se generaron automáticamente los siguientes formularios calculados:
+                  </div>
+                  {validationResult.formulariosCalculados.map((form, index) => (
+                    <div key={`calc-${index}`} className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                      <div className="text-sm">
+                        <span className="font-semibold">{form.nombre}:</span> {form.registros} registros
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        Estado: <span className="text-blue-600 font-medium">Generado</span> | Tipo:{" "}
+                        <span className="font-medium">Calculado</span>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
