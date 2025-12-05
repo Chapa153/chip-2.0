@@ -335,10 +335,10 @@ export default function GestionFormulariosSimple({
           const nuevosFormulariosCalculados = formulariosCalculados.map((fc, index) => ({
             id: `CALC-${Date.now()}-${index}`,
             nombre: fc.nombre,
-            tipo: "Calculado",
-            estado: "Generado",
+            tipo: "Formulario",
+            estado: "Pendiente en validar",
             fecha: new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }),
-            estadoColor: "blue",
+            estadoColor: "yellow",
           }))
 
           return [...updatedFormularios, ...nuevosFormulariosCalculados]
@@ -1158,8 +1158,8 @@ export default function GestionFormulariosSimple({
                         <span className="font-semibold">{form.nombre}:</span> {form.registros} registros
                       </div>
                       <div className="text-xs text-gray-600 mt-1">
-                        Estado: <span className="text-blue-600 font-medium">Generado</span> | Tipo:{" "}
-                        <span className="font-medium">Calculado</span>
+                        Estado: <span className="text-yellow-600 font-medium">Pendiente en validar</span> | Tipo:{" "}
+                        <span className="font-medium">Formulario</span>
                       </div>
                     </div>
                   ))}
