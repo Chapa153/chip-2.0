@@ -701,18 +701,20 @@ export default function GestionFormulariosSimple({
               <AlertTriangle className="w-5 h-5" />
               Error en validación de contenido
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Se detectaron errores o contenido malicioso en la fase de <strong>contenido de variables</strong> en los
-              siguientes formularios:
-              <ul className="mt-2 list-disc list-inside">
+            <div className="text-sm text-muted-foreground space-y-2">
+              <p>
+                Se detectaron errores o contenido malicioso en la fase de <strong>contenido de variables</strong> en los
+                siguientes formularios:
+              </p>
+              <ul className="list-disc list-inside">
                 {errorData?.formularios.map((f, i) => (
                   <li key={i} className="text-sm font-medium text-gray-700">
                     {f}
                   </li>
                 ))}
               </ul>
-              <div className="mt-3 text-sm">¿Desea ver el detalle de los errores encontrados?</div>
-            </AlertDialogDescription>
+              <p className="text-sm">¿Desea ver el detalle de los errores encontrados?</p>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel
