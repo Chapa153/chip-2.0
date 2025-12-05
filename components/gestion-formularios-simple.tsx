@@ -34,6 +34,7 @@ import {
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/use-toast"
 import DataTable from "@/components/data-table" // Assuming DataTable is imported here
+import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -803,14 +804,11 @@ export default function GestionFormulariosSimple({
                   {filteredFormularios.map((form) => (
                     <tr key={form.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
-                        <input
-                          type="checkbox"
-                          className="rounded"
+                        <Checkbox
                           checked={selectedFormularios.includes(form.id)}
-                          onChange={() => {
+                          onCheckedChange={() => {
                             handleToggleSelectFormulario(form.id)
-                            setSelectedFormulario(form)
-                            setCurrentView("dataTable")
+                            // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
                           }}
                         />
                       </td>
