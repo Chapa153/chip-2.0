@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   FileText,
-  FileJson,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -284,7 +283,7 @@ export default function GestionFormulariosSimple({
     )
   }
 
-  const handleExportErrors = (format: "csv" | "excel" | "pdf" | "json") => {
+  const handleExportErrors = (format: "csv" | "excel" | "pdf" | "txt") => {
     if (!errorData) return
 
     const data = errorData.detalles.map((d) => ({
@@ -300,9 +299,9 @@ export default function GestionFormulariosSimple({
     const timestamp = new Date().toISOString().split("T")[0]
     const filename = `errores-validacion-${timestamp}.${format}`
 
-    if (format === "json") {
-      const jsonContent = JSON.stringify({ entidad, categoria, periodo: ano, año: periodo, errores: data }, null, 2)
-      const blob = new Blob([jsonContent], { type: "application/json" })
+    if (format === "txt") {
+      const txtContent = `Reporte de Errores de Validación\n${"=".repeat(50)}\n\nEntidad: ${entidad}\nCategoría: ${categoria}\nPeríodo: ${ano}\nAño: ${periodo}\n\n${"=".repeat(50)}\n\nErrores Detectados:\n\n${data.map((row, idx) => `${idx + 1}. Formulario: ${row.Formulario}\n   Concepto: ${row.Concepto}\n   Variable: ${row.Variable}\n   Error: ${row.Error}\n`).join("\n")}`
+      const blob = new Blob([txtContent], { type: "text/plain;charset=utf-8" })
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -317,7 +316,7 @@ export default function GestionFormulariosSimple({
           [row.Formulario, row.Concepto, row.Variable, row.Error].map((cell) => `"${cell}"`).join(","),
         ),
       ].join("\n")
-      const blob = new Blob([csvContent], { type: "text/csv" })
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" })
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -485,7 +484,7 @@ export default function GestionFormulariosSimple({
                     <TooltipProvider>
                       <Tooltip delayDuration={0}>
                         <TooltipTrigger asChild>
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("csv")}>
                             <FileSpreadsheet className="w-4 h-4 mr-2" />
                             CSV
                             <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
@@ -506,7 +505,7 @@ export default function GestionFormulariosSimple({
                     <TooltipProvider>
                       <Tooltip delayDuration={0}>
                         <TooltipTrigger asChild>
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("excel")}>
                             <FileSpreadsheet className="w-4 h-4 mr-2" />
                             Excel (XLSX)
                             <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
@@ -528,7 +527,7 @@ export default function GestionFormulariosSimple({
                     <TooltipProvider>
                       <Tooltip delayDuration={0}>
                         <TooltipTrigger asChild>
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("pdf")}>
                             <FileText className="w-4 h-4 mr-2" />
                             PDF
                             <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
@@ -549,18 +548,18 @@ export default function GestionFormulariosSimple({
                     <TooltipProvider>
                       <Tooltip delayDuration={0}>
                         <TooltipTrigger asChild>
-                          <DropdownMenuItem className="cursor-pointer">
-                            <FileJson className="w-4 h-4 mr-2" />
-                            JSON
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            TXT
                             <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
                           </DropdownMenuItem>
                         </TooltipTrigger>
                         <TooltipContent side="left" className="max-w-xs">
                           <div className="text-xs space-y-1">
-                            <p className="font-semibold">JSON - Sin límite de filas</p>
+                            <p className="font-semibold">TXT - Sin límite de filas</p>
                             <ul className="list-disc pl-4 space-y-0.5">
                               <li>Encoding UTF-8</li>
-                              <li>Formato JSON</li>
+                              <li>Formato de texto plano</li>
                             </ul>
                           </div>
                         </TooltipContent>
@@ -789,24 +788,100 @@ export default function GestionFormulariosSimple({
           {/* Botones de exportación */}
           <div className="flex items-center justify-between pt-4 border-t">
             <div className="text-sm text-gray-600">Exportar errores:</div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleExportErrors("csv")}>
-                <FileText className="w-4 h-4 mr-2" />
-                CSV
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleExportErrors("excel")}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Excel
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleExportErrors("pdf")}>
-                <FileText className="w-4 h-4 mr-2" />
-                PDF
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleExportErrors("json")}>
-                <FileJson className="w-4 h-4 mr-2" />
-                JSON
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("csv")}>
+                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                        CSV
+                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                      </DropdownMenuItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <div className="text-xs space-y-1">
+                        <p className="font-semibold">CSV - Sin límite de filas</p>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          <li>Encoding UTF-8</li>
+                          <li>Encabezados incluidos</li>
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("excel")}>
+                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                        Excel (XLSX)
+                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                      </DropdownMenuItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <div className="text-xs space-y-1">
+                        <p className="font-semibold">Excel (XLSX)</p>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          <li>Máximo 50 MB por archivo</li>
+                          <li>Hasta 1.048.576 filas por hoja</li>
+                          <li>Múltiples hojas permitidas</li>
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("pdf")}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        PDF
+                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                      </DropdownMenuItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <div className="text-xs space-y-1">
+                        <p className="font-semibold">PDF</p>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          <li>Máximo 10.000 líneas por archivo</li>
+                          <li>División automática si excede límite</li>
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        TXT
+                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                      </DropdownMenuItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <div className="text-xs space-y-1">
+                        <p className="font-semibold">TXT - Sin límite de filas</p>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          <li>Encoding UTF-8</li>
+                          <li>Formato de texto plano</li>
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <DialogFooter>
