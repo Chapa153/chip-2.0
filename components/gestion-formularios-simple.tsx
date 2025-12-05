@@ -193,6 +193,9 @@ export default function GestionFormulariosSimple({
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
+  const [showSimpleAlert, setShowSimpleAlert] = useState(false)
+  const [simpleAlertMessage, setSimpleAlertMessage] = useState("")
+
   const handleEnviar = async () => {
     console.log("[v0] Botón Enviar clickeado en GestionFormulariosSimple")
     console.log("[v0] Formularios seleccionados:", selectedFormularios)
@@ -285,30 +288,22 @@ export default function GestionFormulariosSimple({
       setIsSubmitting(false)
       setValidationPhase(0)
 
-      const errores: Array<{ formulario: string; concepto: string; mensaje: string }> = [
-        {
-          formulario: "Flujo de Efectivo",
-          concepto: "4105 - Actividades de operación",
-          mensaje: "La suma de flujos de operación no coincide con el total declarado",
-        },
-        {
-          formulario: "Flujo de Efectivo",
-          concepto: "4205 - Actividades de inversión",
-          mensaje: "El saldo de flujo de inversión supera el límite establecido",
-        },
-        {
-          formulario: "Flujo de Efectivo",
-          concepto: "4305 - Actividades de financiación",
-          mensaje: "Inconsistencia entre flujos de financiación y movimientos bancarios",
-        },
-      ]
+      // Actualizar estado a Rechazado por Deficiencia
+      setFormulariosState((prev) =>
+        prev.map((f) => {
+          if (f.nombre === "Flujo de Efectivo") {
+            return {
+              ...f,
+              estado: "Rechazado por Deficiencia",
+              estadoColor: getColorForEstado("Rechazado por Deficiencia"),
+            }
+          }
+          return f
+        }),
+      )
 
-      setErrorData({
-        formularios: formulariosSeleccionados.map((f) => f.nombre),
-        detalles: errores,
-      })
-
-      setShowErrorAlert(true)
+      setSimpleAlertMessage("Se encontraron errores en las validaciones generales del formulario Flujo de Efectivo.")
+      setShowSimpleAlert(true)
       return
     }
 
@@ -922,6 +917,19 @@ export default function GestionFormulariosSimple({
         )}
       </div>
 
+      <AlertDialog open={showSimpleAlert} onOpenChange={setShowSimpleAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Errores en validaciones generales</AlertDialogTitle>
+            <AlertDialogDescription>{simpleAlertMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowSimpleAlert(false)}>Aceptar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Alerta con opción de ver errores para otros formularios */}
       <AlertDialog open={showErrorAlert} onOpenChange={setShowErrorAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
