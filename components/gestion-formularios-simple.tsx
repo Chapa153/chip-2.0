@@ -69,7 +69,8 @@ export default function GestionFormulariosSimple({
   const [validationResult, setValidationResult] = useState<{
     formularios: { nombre: string; registros: number }[]
   } | null>(null)
-  const [formulariosState, setFormularios] = useState([
+  const [formulariosState, setFormulariosState] = useState([
+    // Renombrado a setFormulariosState para evitar conflicto
     {
       id: "CGN-2025-01",
       nombre: "Balance General",
@@ -170,14 +171,16 @@ export default function GestionFormulariosSimple({
 
   const getEstadoBadgeClass = (color: string) => {
     switch (color) {
-      case "yellow":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "green":
+      case "green": // Exitosos: Aceptado, Validado
         return "bg-green-100 text-green-800 border-green-200"
-      case "blue":
+      case "blue": // En proceso: En Validación
         return "bg-blue-100 text-blue-800 border-blue-200"
-      case "red":
+      case "yellow": // En proceso: Pendiente en validar
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "red": // Errores: Rechazado por Deficiencia, Rechazado por Formato
         return "bg-red-100 text-red-800 border-red-200"
+      case "orange": // Errores: Excepción en Validación
+        return "bg-orange-100 text-orange-800 border-orange-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
@@ -206,14 +209,14 @@ export default function GestionFormulariosSimple({
     )
     const tieneEstadoCambios = formulariosSeleccionados.some((f) => f.nombre === "Estado de Cambios en el Patrimonio")
 
-    // Si hay errores en los formularios seleccionados
+    // If there are errors in the selected forms
     if (tieneNotasEstadosFinancieros || tieneEstadoCambios) {
       setIsSubmitting(false)
       setValidationPhase(0)
 
       const errores: Array<{ formulario: string; concepto: string; mensaje: string }> = []
 
-      // Errores de datos para Notas a los Estados Financieros
+      // Data errors for Notas a los Estados Financieros
       if (tieneNotasEstadosFinancieros) {
         errores.push(
           {
@@ -238,7 +241,7 @@ export default function GestionFormulariosSimple({
       setValidationPhase(2)
       await new Promise((resolve) => setTimeout(resolve, 800))
 
-      // Errores de completitud para Estado de Cambios en el Patrimonio
+      // Completeness errors for Estado de Cambios en el Patrimonio
       if (tieneEstadoCambios) {
         errores.push(
           {
@@ -268,7 +271,7 @@ export default function GestionFormulariosSimple({
       return
     }
 
-    // Fase 2: Completitud (si no hay errores)
+    // Fase 2: Completitud (if no errors)
     setValidationPhase(2)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
@@ -280,7 +283,7 @@ export default function GestionFormulariosSimple({
     setValidationPhase(4)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    // Si es categoría de Información Contable Convergencia, mostrar mensaje específico
+    // If it's Información Contable Convergencia category, show specific message
     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
       const formulariosEnviados = formulariosState
         .filter((f) => selectedFormularios.includes(f.id))
@@ -289,7 +292,9 @@ export default function GestionFormulariosSimple({
           registros: Math.floor(Math.random() * 200) + 50,
         }))
 
-      setFormularios((prev) => prev.map((f) => (selectedFormularios.includes(f.id) ? { ...f, estado: "Validado" } : f)))
+      setFormulariosState((prev) =>
+        prev.map((f) => (selectedFormularios.includes(f.id) ? { ...f, estado: "Validado" } : f)),
+      )
 
       setValidationResult({ formularios: formulariosEnviados })
       setShowSuccessDialog(true)
@@ -300,15 +305,42 @@ export default function GestionFormulariosSimple({
     setSelectedFormularios([])
   }
 
+  const getColorForEstado = (estado: string): string => {
+    // Exitosos en validación
+    if (estado === "Aceptado" || estado === "Validado") {
+      return "green"
+    }
+    // En proceso
+    if (estado === "En Validación") {
+      return "blue"
+    }
+    if (estado === "Pendiente en validar") {
+      return "yellow"
+    }
+    // Errores
+    if (estado === "Rechazado por Deficiencia" || estado === "Rechazado por Formato") {
+      return "red"
+    }
+    if (estado === "Excepción en Validación") {
+      return "orange"
+    }
+    return "gray"
+  }
+
   const handleViewErrorDetails = () => {
+    // Renombrado de handleViewErrors a handleViewErrorDetails
     setShowErrorAlert(false)
     setShowErrorsView(true)
 
     // Actualizar estados de formularios con errores
-    setFormularios((prev) =>
+    setFormulariosState((prev) =>
       prev.map((f) => {
         if (errorData?.formularios.includes(f.nombre)) {
-          return { ...f, estado: "Rechazado por Deficiencia", tipo: "Formulario" }
+          return {
+            ...f,
+            estado: "Rechazado por Deficiencia",
+            estadoColor: getColorForEstado("Rechazado por Deficiencia"),
+          } // Usar función para obtener color
         }
         return f
       }),
@@ -365,13 +397,21 @@ export default function GestionFormulariosSimple({
   }
 
   const handleUpdateFormularioEstado = (nombreFormulario: string) => {
-    setFormularios((prev) =>
-      prev.map((f) => {
-        if (f.nombre === nombreFormulario) {
-          return { ...f, estado: "Rechazado por Deficiencia", tipo: "Formulario" }
-        }
-        return f
-      }),
+    setFormulariosState(
+      (
+        prev, // Usando setFormulariosState
+      ) =>
+        prev.map((f) => {
+          if (f.nombre === nombreFormulario) {
+            return {
+              ...f,
+              estado: "Rechazado por Deficiencia",
+              tipo: "Formulario",
+              estadoColor: getColorForEstado("Rechazado por Deficiencia"),
+            } // Usar función para obtener color
+          }
+          return f
+        }),
     )
   }
 
