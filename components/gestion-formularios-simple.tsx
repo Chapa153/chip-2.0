@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/components/ui/toast"
 import DataTable from "@/components/data-table" // Assuming DataTable is imported here
 import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
 
@@ -85,9 +85,9 @@ export default function GestionFormulariosSimple({
       id: "CGN-2025-02",
       nombre: "Estado de Resultados",
       tipo: "Formulario",
-      estado: "Aceptado",
+      estado: "Pendiente en validar",
       fecha: "8/11/2024",
-      estadoColor: "green",
+      estadoColor: "yellow",
     },
     {
       id: "CGN-2025-03",
@@ -201,29 +201,67 @@ export default function GestionFormulariosSimple({
     console.log("[v0] Botón Enviar clickeado en GestionFormulariosSimple")
     console.log("[v0] Formularios seleccionados:", selectedFormularios)
 
+    if (!canSendSelectedFormularios()) {
+      toast({
+        title: "Validación de estado",
+        description:
+          "Solo se pueden enviar formularios en estados: Pendiente en validar (P), Error de validación (E) o Excepción de validación (X)",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
-    setValidationPhase(0)
+    setValidationPhase(1)
 
     // Fase 1: Contenido de variables
-    setValidationPhase(1)
-    await new Promise((resolve) => setTimeout(resolve, 800))
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
-    const tieneNotasEstadosFinancieros = formulariosSeleccionados.some(
-      (f) => f.nombre === "Notas a los Estados Financieros",
-    )
-    const tieneEstadoCambios = formulariosSeleccionados.some((f) => f.nombre === "Estado de Cambios en el Patrimonio")
-    const tieneFlujoEfectivo = formulariosSeleccionados.some((f) => f.nombre === "Flujo de Efectivo")
+    const selectedNames = selectedFormularios
+      .map((id) => formulariosState.find((f) => f.id === id)?.nombre)
+      .filter(Boolean) as string[]
+
+    if (selectedNames.includes("Estado de Resultados")) {
+      setIsSubmitting(false)
+      setValidationPhase(0)
+      setErrorData({
+        formularios: ["Estado de Resultados"],
+        detalles: [
+          {
+            formulario: "Estado de Resultados",
+            concepto: "",
+            mensaje: "",
+            codigo: "ERR_001",
+            permisible: "SI",
+            necesitaComentario: "SI",
+          },
+          {
+            formulario: "Estado de Resultados",
+            concepto: "",
+            mensaje: "",
+            codigo: "ERR_002",
+            permisible: "NO",
+            necesitaComentario: "NO",
+          },
+        ],
+        tipoError: "completo",
+      })
+      setShowErrorAlert(true)
+      return
+    }
 
     // If there are errors in the selected forms (Phase 1 and 2)
-    if (tieneNotasEstadosFinancieros || tieneEstadoCambios) {
+    if (
+      selectedNames.includes("Notas a los Estados Financieros") ||
+      selectedNames.includes("Estado de Cambios en el Patrimonio")
+    ) {
       setIsSubmitting(false)
       setValidationPhase(0)
 
       const errores: Array<{ formulario: string; concepto: string; mensaje: string }> = []
 
       // Data errors for Notas a los Estados Financieros
-      if (tieneNotasEstadosFinancieros) {
+      if (selectedNames.includes("Notas a los Estados Financieros")) {
         errores.push(
           {
             formulario: "Notas a los Estados Financieros",
@@ -248,7 +286,7 @@ export default function GestionFormulariosSimple({
       await new Promise((resolve) => setTimeout(resolve, 800))
 
       // Completeness errors for Estado de Cambios en el Patrimonio
-      if (tieneEstadoCambios) {
+      if (selectedNames.includes("Estado de Cambios en el Patrimonio")) {
         errores.push(
           {
             formulario: "Estado de Cambios en el Patrimonio",
@@ -269,7 +307,7 @@ export default function GestionFormulariosSimple({
       }
 
       setErrorData({
-        formularios: formulariosSeleccionados.map((f) => f.nombre),
+        formularios: selectedNames,
         detalles: errores,
       })
 
@@ -285,7 +323,7 @@ export default function GestionFormulariosSimple({
     setValidationPhase(3)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    if (tieneFlujoEfectivo) {
+    if (selectedNames.includes("Flujo de Efectivo")) {
       setIsSubmitting(false)
       setValidationPhase(0)
 
@@ -306,13 +344,13 @@ export default function GestionFormulariosSimple({
     // If it's Información Contable Convergencia category, show specific message
     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
       // Renombrado selectedForms a selectedFormularios para consistencia
-      const selectedForms = formulariosState.filter((f) => selectedFormularios.includes(f.id))
-      const formulariosEnviados = selectedForms.map((f) => ({
+      const selectedFormulariosData = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+      const formulariosEnviados = selectedFormulariosData.map((f) => ({
         nombre: f.nombre,
         registros: Math.floor(Math.random() * 200) + 50,
       }))
 
-      const balanceGeneralEnviado = selectedForms.some((f) => f.nombre === "Balance General")
+      const balanceGeneralEnviado = selectedFormulariosData.some((f) => f.nombre === "Balance General")
       let formulariosCalculados: { nombre: string; registros: number }[] = []
 
       if (balanceGeneralEnviado) {
@@ -404,24 +442,63 @@ export default function GestionFormulariosSimple({
   const handleBackFromErrors = () => {
     setShowErrorsView(false)
     setErrorData(null)
+    setErrorComments({}) // Limpiar comentarios al volver
   }
 
   const handleExportErrors = (format: "csv" | "excel" | "pdf" | "txt") => {
     if (!errorData) return
 
-    const data = errorData.detalles.map((d) => ({
-      Formulario: d.formulario,
-      Concepto: d.concepto,
-      Mensaje: d.mensaje,
-    }))
+    let dataToExport
 
-    console.log(`[v0] Exportando errores en formato ${format}`, data)
+    if (errorData.tipoError === "completo") {
+      dataToExport = errorData.detalles.map((d, index) => ({
+        Formulario: d.formulario,
+        Concepto: d.concepto || "-",
+        Mensaje: d.mensaje || "Mensaje",
+        Codigo: d.codigo,
+        Permisible: d.permisible,
+        NecesitaComentario: d.necesitaComentario,
+        Comentario: errorComments[index] || "",
+      }))
+    } else {
+      dataToExport = errorData.detalles.map((d) => ({
+        Formulario: d.formulario,
+        Concepto: d.concepto,
+        Mensaje: d.mensaje,
+      }))
+    }
+
+    console.log(`[v0] Exportando errores en formato ${format}`, dataToExport)
 
     const timestamp = new Date().toISOString().split("T")[0]
     const filename = `errores-validacion-${timestamp}.${format}`
 
     if (format === "txt") {
-      const txtContent = `Reporte de Errores de Validación\n${"=".repeat(50)}\n\nEntidad: ${entidad}\nCategoría: ${categoria}\nPeríodo: ${periodo}\nAño: ${ano}\n\n${"=".repeat(50)}\n\nErrores Detectados:\n\n${data.map((row, idx) => `${idx + 1}. Formulario: ${row.Formulario}\n   Concepto: ${row.Concepto}\n   ${row.Mensaje}\n`).join("\n")}`
+      let txtContent = ""
+      if (errorData.tipoError === "completo") {
+        txtContent = `Reporte Detallado de Errores de Validación\n${"=".repeat(60)}\n\n`
+        dataToExport.forEach((row, idx) => {
+          txtContent += `Error ${idx + 1}:\n`
+          txtContent += `  Formulario: ${row.Formulario}\n`
+          txtContent += `  Concepto: ${row.Concepto || "-"}\n`
+          txtContent += `  Mensaje: ${row.Mensaje}\n`
+          txtContent += `  Código: ${row.Codigo}\n`
+          txtContent += `  Permisible: ${row.Permisible}\n`
+          txtContent += `  Necesita Comentario: ${row.NecesitaComentario}\n`
+          if (row.Comentario) {
+            txtContent += `  Comentario: ${row.Comentario}\n`
+          }
+          txtContent += "\n"
+        })
+      } else {
+        txtContent = `Reporte de Errores de Validación\n${"=".repeat(50)}\n\nEntidad: ${entidad}\nCategoría: ${categoria}\nPeríodo: ${periodo}\nAño: ${ano}\n\n${"=".repeat(50)}\n\nErrores Detectados:\n\n`
+        dataToExport
+          .map(
+            (row, idx) =>
+              `${idx + 1}. Formulario: ${row.Formulario}\n   Concepto: ${row.Concepto}\n   ${row.Mensaje}\n`,
+          )
+          .join("\n")
+      }
       const blob = new Blob([txtContent], { type: "text/plain;charset=utf-8" })
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
@@ -430,10 +507,20 @@ export default function GestionFormulariosSimple({
       link.click()
       URL.revokeObjectURL(url)
     } else if (format === "csv") {
-      const headers = ["Formulario", "Concepto", "Mensaje"]
+      const headers =
+        errorData.tipoError === "completo"
+          ? ["Formulario", "Concepto", "Mensaje", "Código", "Permisible", "NecesitaComentario", "Comentario"]
+          : ["Formulario", "Concepto", "Mensaje"]
       const csvContent = [
         headers.join(","),
-        ...data.map((row) => [row.Formulario, row.Concepto, row.Mensaje].map((cell) => `"${cell}"`).join(",")),
+        ...dataToExport.map((row) =>
+          headers
+            .map((header) => {
+              const cellValue = row[header.toLowerCase() as keyof typeof row] as string
+              return `"${cellValue.replace(/"/g, '""')}"` // Escape double quotes
+            })
+            .join(","),
+        ),
       ].join("\n")
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" })
       const url = URL.createObjectURL(blob)
@@ -473,11 +560,26 @@ export default function GestionFormulariosSimple({
   const [showErrorsView, setShowErrorsView] = useState(false)
   const [errorData, setErrorData] = useState<{
     formularios: string[]
-    detalles: Array<{ formulario: string; concepto: string; mensaje: string }>
+    detalles: Array<{
+      formulario: string
+      concepto: string
+      mensaje: string
+      codigo?: string
+      permisible?: string
+      necesitaComentario?: string
+    }>
+    tipoError?: "simple" | "completo"
   } | null>(null)
   const [showErrorDetails, setShowErrorDetails] = useState(false)
   const [currentView, setCurrentView] = useState("dataTable")
   const [selectedFormulario, setSelectedFormulario] = useState<{ nombre: string } | null>(null)
+  const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({})
+
+  const handleCommentChange = (index: number, value: string) => {
+    if (value.length <= 250) {
+      setErrorComments((prev) => ({ ...prev, [index]: value }))
+    }
+  }
 
   const handleBackToList = () => {
     setCurrentView("list")
@@ -494,7 +596,13 @@ export default function GestionFormulariosSimple({
           </Button>
 
           <div className="bg-white border rounded-lg p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Errores de Validación</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">
+              {errorData.formularios.length > 0
+                ? `${errorData.formularios[0]}${errorData.formularios.length > 1 ? " y otros" : ""}`
+                : "Errores de Validación"}
+            </h2>
+
+            <div className="text-sm text-gray-600 mb-6">Cantidad de errores {errorData.detalles.length}</div>
 
             <div className="grid grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
               <div>
@@ -545,24 +653,61 @@ export default function GestionFormulariosSimple({
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100 border-b-2">
-                    <th className="p-3 text-left font-semibold text-gray-700">Formulario</th>
-                    <th className="p-3 text-left font-semibold text-gray-700">Concepto</th>
-                    <th className="p-3 text-left font-semibold text-gray-700">Mensaje</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {errorData.detalles.map((detalle, index) => (
-                    <tr key={index} className="border-t hover:bg-gray-50">
-                      <td className="p-3">{detalle.formulario}</td>
-                      <td className="p-3 font-mono text-xs">{detalle.concepto}</td>
-                      <td className="p-3 text-red-600">{detalle.mensaje}</td>
+              {errorData.tipoError === "completo" ? (
+                <table className="w-full border-collapse border">
+                  <thead className="bg-gray-200">
+                    <tr>
+                      <th className="p-3 text-left font-semibold text-gray-700 border">Código</th>
+                      <th className="p-3 text-left font-semibold text-gray-700 border">Mensaje</th>
+                      <th className="p-3 text-left font-semibold text-gray-700 border">Permisible</th>
+                      <th className="p-3 text-left font-semibold text-gray-700 border">Necesita comentario</th>
+                      <th className="p-3 text-left font-semibold text-gray-700 border">
+                        Comentario (Máximo 250 caracteres)
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {errorData.detalles.map((detalle, index) => (
+                      <tr key={index} className="border hover:bg-gray-50">
+                        <td className="p-3 border">{detalle.codigo}</td>
+                        <td className="p-3 border">{detalle.mensaje || "Mensaje"}</td>
+                        <td className="p-3 border text-center">{detalle.permisible}</td>
+                        <td className="p-3 border text-center">{detalle.necesitaComentario}</td>
+                        <td className="p-3 border">
+                          <input
+                            type="text"
+                            value={errorComments[index] || ""}
+                            onChange={(e) => handleCommentChange(index, e.target.value)}
+                            placeholder="Caja de texto"
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            maxLength={250}
+                          />
+                          <div className="text-xs text-gray-500 mt-1">{errorComments[index]?.length || 0}/250</div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 border-b-2">
+                      <th className="p-3 text-left font-semibold text-gray-700">Formulario</th>
+                      <th className="p-3 text-left font-semibold text-gray-700">Concepto</th>
+                      <th className="p-3 text-left font-semibold text-gray-700">Mensaje</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {errorData.detalles.map((detalle, index) => (
+                      <tr key={index} className="border-t hover:bg-gray-50">
+                        <td className="p-3">{detalle.formulario}</td>
+                        <td className="p-3 font-mono text-xs">{detalle.concepto}</td>
+                        <td className="p-3 text-red-600">{detalle.mensaje}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
@@ -725,8 +870,7 @@ export default function GestionFormulariosSimple({
                         <TooltipTrigger asChild>
                           <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("csv")}>
                             <FileSpreadsheet className="w-4 h-4 mr-2" />
-                            CSV
-                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                            CSV - Valores separados por comas
                           </DropdownMenuItem>
                         </TooltipTrigger>
                         <TooltipContent side="left" className="max-w-xs">
