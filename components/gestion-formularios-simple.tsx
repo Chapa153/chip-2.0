@@ -288,7 +288,12 @@ export default function GestionFormulariosSimple({
       setIsSubmitting(false)
       setValidationPhase(0)
 
-      setSimpleAlertMessage("Se encontraron errores en las validaciones generales del formulario Flujo de Efectivo.")
+      setSimpleAlertMessage(
+        "El formulario Flujo de Efectivo presenta las siguientes validaciones generales:\n\n" +
+          "• Las actividades de operación deben cuadrar con el estado de resultados\n" +
+          "• Las actividades de inversión deben estar correctamente clasificadas\n" +
+          "• Las actividades de financiación requieren documentación adicional",
+      )
       setShowSimpleAlert(true)
       return
     }
@@ -906,8 +911,8 @@ export default function GestionFormulariosSimple({
       <AlertDialog open={showSimpleAlert} onOpenChange={setShowSimpleAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Errores en validaciones generales</AlertDialogTitle>
-            <AlertDialogDescription>{simpleAlertMessage}</AlertDialogDescription>
+            <AlertDialogTitle>Validaciones generales</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-line">{simpleAlertMessage}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setShowSimpleAlert(false)}>Aceptar</AlertDialogAction>
