@@ -324,9 +324,28 @@ export default function GestionFormulariosSimple({
         ]
       }
 
-      setFormulariosState((prev) =>
-        prev.map((f) => (selectedFormularios.includes(f.id) ? { ...f, estado: "Validado" } : f)),
-      )
+      setFormulariosState((prev) => {
+        // Actualizar estado de formularios seleccionados
+        const updatedFormularios = prev.map((f) =>
+          selectedFormularios.includes(f.id) ? { ...f, estado: "Validado", estadoColor: "green" } : f,
+        )
+
+        // Agregar formularios calculados si existen
+        if (formulariosCalculados.length > 0) {
+          const nuevosFormulariosCalculados = formulariosCalculados.map((fc, index) => ({
+            id: `CALC-${Date.now()}-${index}`,
+            nombre: fc.nombre,
+            tipo: "Calculado",
+            estado: "Generado",
+            fecha: new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }),
+            estadoColor: "blue",
+          }))
+
+          return [...updatedFormularios, ...nuevosFormulariosCalculados]
+        }
+
+        return updatedFormularios
+      })
 
       setValidationResult({
         formularios: formulariosEnviados,
