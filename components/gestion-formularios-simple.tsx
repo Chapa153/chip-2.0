@@ -288,20 +288,6 @@ export default function GestionFormulariosSimple({
       setIsSubmitting(false)
       setValidationPhase(0)
 
-      // Actualizar estado a Rechazado por Deficiencia
-      setFormulariosState((prev) =>
-        prev.map((f) => {
-          if (f.nombre === "Flujo de Efectivo") {
-            return {
-              ...f,
-              estado: "Rechazado por Deficiencia",
-              estadoColor: getColorForEstado("Rechazado por Deficiencia"),
-            }
-          }
-          return f
-        }),
-      )
-
       setSimpleAlertMessage("Se encontraron errores en las validaciones generales del formulario Flujo de Efectivo.")
       setShowSimpleAlert(true)
       return
