@@ -207,21 +207,26 @@ export default function GestionFormulariosSimple({
       setIsSubmitting(false)
       setValidationPhase(0)
 
-      // Datos simulados de error
       setErrorData({
         formularios: ["Notas a los Estados Financieros"],
         detalles: [
           {
             formulario: "Notas a los Estados Financieros",
-            concepto: "Activos Corrientes",
+            concepto: "1105 - Efectivo y equivalentes al efectivo",
             variable: "var-3",
-            error: "Contenido malicioso detectado: script injection",
+            error: "Error de datos: contenido malicioso detectado",
           },
           {
             formulario: "Notas a los Estados Financieros",
-            concepto: "Pasivos No Corrientes",
+            concepto: "2105 - Cuentas por pagar",
             variable: "var-5",
-            error: "Contenido errado: formato de fecha inválido",
+            error: "Error de completitud: campo requerido sin completar",
+          },
+          {
+            formulario: "Notas a los Estados Financieros",
+            concepto: "3605 - Resultado del ejercicio",
+            variable: "var-2",
+            error: "Error de datos: formato numérico inválido",
           },
         ],
       })
@@ -699,21 +704,11 @@ export default function GestionFormulariosSimple({
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-orange-600">
               <AlertTriangle className="w-5 h-5" />
-              Error en validación de contenido
+              Error de validación
             </AlertDialogTitle>
             <div className="text-sm text-muted-foreground space-y-2">
-              <p>
-                Se detectaron errores o contenido malicioso en la fase de <strong>contenido de variables</strong> en los
-                siguientes formularios:
-              </p>
-              <ul className="list-disc list-inside">
-                {errorData?.formularios.map((f, i) => (
-                  <li key={i} className="text-sm font-medium text-gray-700">
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-sm">¿Desea ver el detalle de los errores encontrados?</p>
+              <p>Hubo errores en el envío a validar.</p>
+              <p className="text-sm">¿Desea ver el listado de errores?</p>
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -729,9 +724,9 @@ export default function GestionFormulariosSimple({
                 )
               }}
             >
-              No, cerrar
+              No
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleViewErrorDetails}>Sí, ver detalles</AlertDialogAction>
+            <AlertDialogAction onClick={handleViewErrorDetails}>Sí</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -770,17 +765,18 @@ export default function GestionFormulariosSimple({
                 <tr>
                   <th className="text-left p-3 font-semibold">Formulario</th>
                   <th className="text-left p-3 font-semibold">Concepto</th>
-                  <th className="text-left p-3 font-semibold">Variable</th>
-                  <th className="text-left p-3 font-semibold">Error</th>
+                  <th className="text-left p-3 font-semibold">Mensaje</th>
                 </tr>
               </thead>
               <tbody>
                 {errorData?.detalles.map((detalle, index) => (
                   <tr key={index} className="border-t hover:bg-gray-50">
                     <td className="p-3">{detalle.formulario}</td>
-                    <td className="p-3">{detalle.concepto}</td>
-                    <td className="p-3 font-mono text-xs">{detalle.variable}</td>
-                    <td className="p-3 text-red-600">{detalle.error}</td>
+                    <td className="p-3 font-mono text-xs">{detalle.concepto}</td>
+                    <td className="p-3">
+                      <span className="font-semibold text-gray-700">{detalle.variable}:</span>{" "}
+                      <span className="text-red-600">{detalle.error}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
