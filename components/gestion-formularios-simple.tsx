@@ -48,6 +48,15 @@ interface GestionFormulariosSimpleProps {
   onBack?: () => void
 }
 
+interface Formulario {
+  id: string
+  nombre: string
+  tipo: string
+  estado: string
+  fecha: string
+  estadoColor: string
+}
+
 export default function GestionFormulariosSimple({
   onEditForm,
   filtrosPrevios,
@@ -71,7 +80,7 @@ export default function GestionFormulariosSimple({
     formularios: { nombre: string; registros: number }[]
     formulariosCalculados?: { nombre: string; registros: number }[]
   } | null>(null)
-  const [formulariosState, setFormulariosState] = useState([
+  const [formulariosState, setFormulariosState] = useState<Formulario[]>([
     // Renombrado a setFormulariosState para evitar conflicto
     {
       id: "CGN-2025-01",
@@ -112,6 +121,14 @@ export default function GestionFormulariosSimple({
       estado: "Pendiente en validar",
       fecha: "5/11/2024",
       estadoColor: "yellow",
+    },
+    {
+      id: "CGN-2025-06",
+      nombre: "Información Complementaria",
+      tipo: "Formulario",
+      estado: "Rechazado por Deficiencia",
+      fecha: "4/11/2024",
+      estadoColor: "red",
     },
   ])
 
