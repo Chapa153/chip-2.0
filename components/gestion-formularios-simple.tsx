@@ -14,7 +14,6 @@ import {
   HelpCircle,
   Loader2,
   CheckCircle2,
-  AlertTriangle,
   FileText,
   Download,
   ChevronLeft,
@@ -31,7 +30,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/use-toast" // Corregido import de toast desde use-toast en lugar de toast
 import DataTable from "@/components/data-table" // Assuming DataTable is imported here
 import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
@@ -694,10 +692,8 @@ export default function GestionFormulariosSimple({
       permisible: string
       necesitaComentario: string
     }>
+    detalles?: any // Agregado para compatibilidad con el Dialog obsoleto
   } | null>(null)
-  const [showErrorDetails, setShowErrorDetails] = useState(false)
-  const [currentView, setCurrentView] = useState("dataTable")
-  const [selectedFormulario, setSelectedFormulario] = useState<{ nombre: string } | null>(null)
   const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({})
 
   const handleCommentChange = (index: number, value: string) => {
@@ -935,6 +931,10 @@ export default function GestionFormulariosSimple({
     // If you have an onBack prop, you can call it:
     // onBack?.();
   }
+
+  // State variables for current view and selected form
+  const [currentView, setCurrentView] = useState("list") // 'list' or 'dataTable'
+  const [selectedFormulario, setSelectedFormulario] = useState<Formulario | null>(null)
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -1338,219 +1338,6 @@ export default function GestionFormulariosSimple({
               }}
             >
               Sí, ver errores
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={showErrorDetails} onOpenChange={setShowErrorDetails}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="w-5 h-5" />
-              Detalles de errores de validación
-            </DialogTitle>
-          </DialogHeader>
-
-          {/* Encabezado con información del contexto */}
-          <div className="bg-gray-50 p-4 rounded-md border space-y-2 text-sm">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="font-semibold">Entidad:</span> {entidad}
-              </div>
-              <div>
-                <span className="font-semibold">Categoría:</span> {categoria}
-              </div>
-              <div>
-                <span className="font-semibold">Periodo:</span> {periodo}
-              </div>
-              <div>
-                <span className="font-semibold">Año:</span> {ano}
-              </div>
-            </div>
-          </div>
-
-          {/* Tabla de errores */}
-          <div className="border rounded-md overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="text-left p-3 font-semibold">Formulario</th>
-                  <th className="text-left p-3 font-semibold">Concepto</th>
-                  <th className="text-left p-3 font-semibold">Mensaje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {errorData?.detalles.map((detalle, index) => (
-                  <tr key={index} className="border-t hover:bg-gray-50">
-                    <td className="p-3">{detalle.formulario}</td>
-                    <td className="p-3 font-mono text-xs">{detalle.concepto}</td>
-                    <td className="p-3">
-                      <span className="font-semibold text-gray-700">{detalle.concepto}:</span>{" "}
-                      <span className="text-red-600">{detalle.mensaje}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Botones de exportación */}
-          <div className="flex items-center justify-between pt-4 border-t">
-            <div className="text-sm text-gray-600">Exportar errores:</div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <FileDown className="w-4 h-4 mr-2" />
-                  Exportar
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("csv")}>
-                        <FileSpreadsheet className="w-4 h-4 mr-2" />
-                        CSV
-                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                      </DropdownMenuItem>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-xs">
-                      <div className="text-xs space-y-1">
-                        <p className="font-semibold">CSV - Sin límite de filas</p>
-                        <ul className="list-disc pl-4 space-y-0.5">
-                          <li>Encoding UTF-8</li>
-                          <li>Encabezados incluidos</li>
-                        </ul>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("excel")}>
-                        <FileSpreadsheet className="w-4 h-4 mr-2" />
-                        Excel (XLSX)
-                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                      </DropdownMenuItem>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-xs">
-                      <div className="text-xs space-y-1">
-                        <p className="font-semibold">Excel (XLSX)</p>
-                        <ul className="list-disc pl-4 space-y-0.5">
-                          <li>Máximo 50 MB por archivo</li>
-                          <li>Hasta 1.048.576 filas por hoja</li>
-                          <li>Múltiples hojas permitidas</li>
-                        </ul>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("pdf")}>
-                        <FileText className="w-4 h-4 mr-2" />
-                        PDF
-                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                      </DropdownMenuItem>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-xs">
-                      <div className="text-xs space-y-1">
-                        <p className="font-semibold">PDF</p>
-                        <ul className="list-disc pl-4 space-y-0.5">
-                          <li>Máximo 10.000 líneas por archivo</li>
-                          <li>División automática si excede límite</li>
-                        </ul>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
-                        <FileText className="w-4 h-4 mr-2" />
-                        TXT
-                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                      </DropdownMenuItem>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-xs">
-                      <div className="text-xs space-y-1">
-                        <p className="font-semibold">TXT - Sin límite de filas</p>
-                        <ul className="list-disc pl-4 space-y-0.5">
-                          <li>Encoding UTF-8</li>
-                          <li>Formato de texto plano</li>
-                        </ul>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <DialogFooter>
-            <Button onClick={() => setShowErrorDetails(false)}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Diálogo de validación exitosa */}
-      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-green-600">Validación exitosa</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <div className="text-gray-700 font-medium">Los formularios validados son:</div>
-              {validationResult?.formularios.map((formId, index) => {
-                const form = formulariosState.find((f) => f.id === formId)
-                return (
-                  <div key={index} className="bg-gray-50 p-3 rounded-md">
-                    <div className="text-sm">
-                      <span className="font-semibold">{form?.nombre || "Formulario Desconocido"}:</span>{" "}
-                      {form?.nombre === "Balance General" ? `${Math.floor(Math.random() * 200) + 50} registros` : "N/A"}
-                    </div>
-                    <div className="text-xs text-gray-600 mt-1">
-                      Estado: <span className="text-green-600 font-medium">Validado</span> | Tipo:{" "}
-                      <span className="font-medium">{form?.tipo || "Formulario"}</span>
-                    </div>
-                  </div>
-                )
-              })}
-
-              {validationResult?.formulariosCalculados && validationResult.formulariosCalculados.length > 0 && (
-                <>
-                  <div className="text-gray-700 font-medium mt-4 pt-3 border-t">
-                    Se generaron automáticamente los siguientes formularios calculados:
-                  </div>
-                  {validationResult.formulariosCalculados.map((form, index) => (
-                    <div key={`calc-${index}`} className="bg-blue-50 p-3 rounded-md border border-blue-200">
-                      <div className="text-sm">
-                        <span className="font-semibold">{form.nombre}:</span> {form.registros} registros
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        Estado: <span className="text-yellow-600 font-medium">Pendiente en validar</span> | Tipo:{" "}
-                        <span className="font-medium">{form.tipo}</span>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction
-              onClick={() => {
-                setShowSuccessDialog(false)
-                setSelectedFormularios([])
-              }}
-            >
-              Aceptar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
