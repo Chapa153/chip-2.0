@@ -758,23 +758,90 @@ export default function GestionFormulariosSimple({
                     Exportar
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => handleExportErrors("csv")}>
-                    <FileText className="w-4 h-4 mr-2" />
-                    CSV
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExportErrors("excel")}>
-                    <FileSpreadsheet className="w-4 h-4 mr-2" />
-                    Excel
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExportErrors("pdf")}>
-                    <FileText className="w-4 h-4 mr-2" />
-                    PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExportErrors("txt")}>
-                    <FileText className="w-4 h-4 mr-2" />
-                    TXT
-                  </DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-64">
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("csv")}>
+                          <FileSpreadsheet className="w-4 h-4 mr-2" />
+                          CSV - Valores separados por comas
+                        </DropdownMenuItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        <div className="text-xs space-y-1">
+                          <p className="font-semibold">CSV - Sin límite de filas</p>
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            <li>Encoding UTF-8</li>
+                            <li>Encabezados incluidos</li>
+                          </ul>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("excel")}>
+                          <FileSpreadsheet className="w-4 h-4 mr-2" />
+                          Excel (XLSX)
+                          <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                        </DropdownMenuItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        <div className="text-xs space-y-1">
+                          <p className="font-semibold">Excel (XLSX)</p>
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            <li>Máximo 50 MB por archivo</li>
+                            <li>Hasta 1.048.576 filas por hoja</li>
+                            <li>Múltiples hojas permitidas</li>
+                          </ul>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("pdf")}>
+                          <FileText className="w-4 h-4 mr-2" />
+                          PDF
+                          <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                        </DropdownMenuItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        <div className="text-xs space-y-1">
+                          <p className="font-semibold">PDF</p>
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            <li>Máximo 10.000 líneas por archivo</li>
+                            <li>División automática si excede límite</li>
+                          </ul>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
+                          <FileText className="w-4 h-4 mr-2" />
+                          TXT
+                          <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                        </DropdownMenuItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        <div className="text-xs space-y-1">
+                          <p className="font-semibold">TXT - Sin límite de filas</p>
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            <li>Encoding UTF-8</li>
+                            <li>Formato de texto plano</li>
+                          </ul>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
