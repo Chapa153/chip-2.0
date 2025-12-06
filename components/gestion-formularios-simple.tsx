@@ -224,37 +224,7 @@ export default function GestionFormulariosSimple({
       .map((id) => formulariosState.find((f) => f.id === id)?.nombre)
       .filter(Boolean) as string[]
 
-    // if (selectedNames.includes("Estado de Resultados")) { // Este bloque ahora está en la fase 4
-    //   setIsSubmitting(false)
-    //   setValidationPhase(0)
-    //   setErrorData({
-    //     formularios: ["Estado de Resultados"],
-    //     detalles: [
-    //       {
-    //         formulario: "Estado de Resultados",
-    //         concepto: "",
-    //         mensaje: "",
-    //         codigo: "ERR_001",
-    //         permisible: "SI",
-    //         necesitaComentario: "SI",
-    //       },
-    //       {
-    //         formulario: "Estado de Resultados",
-    //         concepto: "",
-    //         mensaje: "",
-    //         codigo: "ERR_002",
-    //         permisible: "NO",
-    //         necesitaComentario: "NO",
-    //       },
-    //     ],
-    //     tipoError: "completo", // Este tipo de error ya no se usa directamente
-    //   })
-    //   setShowErrorAlert(true)
-    //   return
-    // }
-
-    // If there are errors in the selected forms (Phase 1 and 2)
-    const errores: Array<{
+    const erroresFase1: Array<{
       formulario: string
       concepto: string
       mensaje: string
@@ -264,8 +234,7 @@ export default function GestionFormulariosSimple({
     }> = []
 
     if (selectedNames.includes("Notas a los Estados Financieros")) {
-      // Data errors for Notas
-      errores.push(
+      erroresFase1.push(
         {
           formulario: "Notas a los Estados Financieros",
           concepto: "5105 - Políticas contables significativas",
@@ -284,12 +253,11 @@ export default function GestionFormulariosSimple({
       )
     }
 
-    if (errores.length > 0) {
-      // Si hay errores en Fase 1, mostrarlos y salir
+    if (erroresFase1.length > 0) {
       setErrorData({
         formularios: selectedNames,
-        detalles: errores,
-        tipoError: "contenido", // Especificar tipo de error para fase 1
+        detalles: erroresFase1,
+        tipoError: "contenido",
       })
       setShowErrorAlert(true)
       setIsSubmitting(false)
@@ -301,8 +269,17 @@ export default function GestionFormulariosSimple({
     setValidationPhase(2)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
+    const erroresFase2: Array<{
+      formulario: string
+      concepto: string
+      mensaje: string
+      codigo?: string
+      permisible?: string
+      necesitaComentario?: string
+    }> = []
+
     if (selectedNames.includes("Estado de Cambios en el Patrimonio")) {
-      errores.push(
+      erroresFase2.push(
         {
           formulario: "Estado de Cambios en el Patrimonio",
           concepto: "3105 - Capital social",
@@ -321,12 +298,11 @@ export default function GestionFormulariosSimple({
       )
     }
 
-    if (errores.length > 0) {
-      // Si hay errores en Fase 2, mostrarlos y salir
+    if (erroresFase2.length > 0) {
       setErrorData({
         formularios: selectedNames,
-        detalles: errores,
-        tipoError: "completitud", // Especificar tipo de error para fase 2
+        detalles: erroresFase2,
+        tipoError: "completitud",
       })
       setShowErrorAlert(true)
       setIsSubmitting(false)
@@ -356,8 +332,17 @@ export default function GestionFormulariosSimple({
     setValidationPhase(4)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
+    const erroresFase4: Array<{
+      formulario: string
+      concepto: string
+      mensaje: string
+      codigo?: string
+      permisible?: string
+      necesitaComentario?: string
+    }> = []
+
     if (selectedNames.includes("Estado de Resultados")) {
-      const expresionesErrores = [
+      erroresFase4.push(
         {
           formulario: "Estado de Resultados",
           codigo: "VAL-001",
@@ -374,12 +359,14 @@ export default function GestionFormulariosSimple({
           permisible: "SI",
           necesitaComentario: "SI",
         },
-      ]
+      )
+    }
 
+    if (erroresFase4.length > 0) {
       setErrorData({
         formularios: selectedNames,
-        detalles: expresionesErrores,
-        tipoError: "expresiones", // Especificar tipo de error para fase 4
+        detalles: erroresFase4,
+        tipoError: "expresiones",
       })
       setShowErrorAlert(true)
       setIsSubmitting(false)
@@ -491,6 +478,7 @@ export default function GestionFormulariosSimple({
     setShowErrorsView(false)
     setErrorData(null)
     setErrorComments({}) // Limpiar comentarios al volver
+    // Los formularios mantienen su estado original para poder ser reenviados
   }
 
   const handleExportErrors = (format: "csv" | "excel" | "pdf" | "txt") => {
@@ -1220,7 +1208,28 @@ export default function GestionFormulariosSimple({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setShowErrorAlert(false)}>No</AlertDialogCancel>
-            <AlertDialogAction onClick={handleViewErrorDetails}>Sí, ver errores</AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                setShowErrorAlert(false)
+                setShowErrorsView(true)
+                if (errorData) {
+                  const formulariosConError = errorData.formularios
+                  setFormulariosState((prev) =>
+                    prev.map((f) =>
+                      formulariosConError.includes(f.nombre)
+                        ? {
+                            ...f,
+                            estado: "Rechazado por Deficiencia",
+                            ultimaModificacion: new Date().toLocaleDateString("es-CO"),
+                          }
+                        : f,
+                    ),
+                  )
+                }
+              }}
+            >
+              Sí, ver errores
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
