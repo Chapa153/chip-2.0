@@ -256,13 +256,24 @@ export default function GestionFormulariosSimple({
       necesitaComentario?: string
     }> = []
 
-    let tipoErrorDetectado: "contenido" | "completitud" | "expresiones" | null = null
+    const errorsByType: {
+      contenido: typeof allErrors
+      completitud: typeof allErrors
+      expresiones: typeof allErrors
+    } = {
+      contenido: [],
+      completitud: [],
+      expresiones: [],
+    }
+
+    let hasInformativeAlert = false
+    let informativeAlertMessage = ""
 
     // Fase 1: Contenido de variables
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     if (selectedNames.includes("Notas a los Estados Financieros")) {
-      allErrors.push(
+      errorsByType.contenido.push(
         {
           formulario: "Notas a los Estados Financieros",
           concepto: "5110 - Inversiones en subsidiarias",
@@ -274,7 +285,6 @@ export default function GestionFormulariosSimple({
           mensaje: "var-5: Valor fuera del rango permitido",
         },
       )
-      if (!tipoErrorDetectado) tipoErrorDetectado = "contenido"
     }
 
     // Fase 2: Completitud
@@ -282,7 +292,7 @@ export default function GestionFormulariosSimple({
     await new Promise((resolve) => setTimeout(resolve, 800))
 
     if (selectedNames.includes("Estado de Cambios en el Patrimonio")) {
-      allErrors.push(
+      errorsByType.completitud.push(
         {
           formulario: "Estado de Cambios en el Patrimonio",
           concepto: "3105 - Capital suscrito y pagado",
@@ -294,7 +304,6 @@ export default function GestionFormulariosSimple({
           mensaje: "var-4: Campo requerido sin completar",
         },
       )
-      if (!tipoErrorDetectado) tipoErrorDetectado = "completitud"
     }
 
     // Fase 3: Validaciones generales
@@ -302,17 +311,12 @@ export default function GestionFormulariosSimple({
     await new Promise((resolve) => setTimeout(resolve, 800))
 
     if (selectedNames.includes("Flujo de Efectivo")) {
-      setIsSubmitting(false)
-      setValidationPhase(0)
-
-      setSimpleAlertMessage(
+      hasInformativeAlert = true
+      informativeAlertMessage =
         "El formulario Flujo de Efectivo presenta las siguientes validaciones generales:\n\n" +
-          "• Las actividades de operación deben cuadrar con el estado de resultados\n" +
-          "• Las actividades de inversión deben estar correctamente clasificadas\n" +
-          "• Las actividades de financiación deben estar correctamente clasificadas",
-      )
-      setShowSimpleAlert(true)
-      return
+        "• Las actividades de operación deben cuadrar con el estado de resultados\n" +
+        "• Las actividades de inversión deben estar correctamente clasificadas\n" +
+        "• Las actividades de financiación deben estar correctamente clasificadas"
     }
 
     // Fase 4: Expresiones de validación locales
@@ -320,7 +324,7 @@ export default function GestionFormulariosSimple({
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     if (selectedNames.includes("Estado de Resultados")) {
-      allErrors.push(
+      errorsByType.expresiones.push(
         {
           formulario: "Estado de Resultados",
           concepto: "",
@@ -338,18 +342,44 @@ export default function GestionFormulariosSimple({
           necesitaComentario: "NO",
         },
       )
-      if (!tipoErrorDetectado) tipoErrorDetectado = "expresiones"
     }
 
-    if (allErrors.length > 0 && tipoErrorDetectado) {
+    const totalErrors =
+      errorsByType.contenido.length + errorsByType.completitud.length + errorsByType.expresiones.length
+
+    if (totalErrors > 0) {
+      // Determinar el tipo principal de error (el primero que tenga errores)
+      let tipoErrorPrincipal: "contenido" | "completitud" | "expresiones" = "contenido"
+
+      if (errorsByType.contenido.length > 0) {
+        tipoErrorPrincipal = "contenido"
+        allErrors.push(...errorsByType.contenido)
+      }
+      if (errorsByType.completitud.length > 0) {
+        if (allErrors.length === 0) tipoErrorPrincipal = "completitud"
+        allErrors.push(...errorsByType.completitud)
+      }
+      if (errorsByType.expresiones.length > 0) {
+        if (allErrors.length === 0) tipoErrorPrincipal = "expresiones"
+        allErrors.push(...errorsByType.expresiones)
+      }
+
       setErrorData({
         formularios: selectedNames,
         detalles: allErrors,
-        tipoError: tipoErrorDetectado,
+        tipoError: tipoErrorPrincipal,
       })
       setShowErrorAlert(true)
       setIsSubmitting(false)
       setValidationPhase(0)
+      return
+    }
+
+    if (hasInformativeAlert) {
+      setIsSubmitting(false)
+      setValidationPhase(0)
+      setSimpleAlertMessage(informativeAlertMessage)
+      setShowSimpleAlert(true)
       return
     }
 
