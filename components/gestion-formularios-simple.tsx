@@ -146,10 +146,10 @@ export default function GestionFormulariosSimple({
   }
 
   const toggleSelectAll = () => {
-    if (selectedFormularios.length === formulariosState.length) {
-      setSelectedFormularios([])
-    } else {
+    if (selectedFormularios.length === 0) {
       setSelectedFormularios(formulariosState.map((f) => f.id))
+    } else {
+      setSelectedFormularios([])
     }
   }
 
@@ -162,6 +162,9 @@ export default function GestionFormulariosSimple({
     // Verificar que todos los formularios seleccionados tengan estados válidos
     return formularios.every((f) => {
       const estado = f.estado
+      // No permitir formularios en estado Aceptado
+      if (estado === "Aceptado") return false
+
       // Solo permitir estados que empiecen con P, E, o X (error y excepción)
       return (
         estado.startsWith("P") || // Pendiente en validar
@@ -205,7 +208,7 @@ export default function GestionFormulariosSimple({
       toast({
         title: "Validación de estado",
         description:
-          "Solo se pueden enviar formularios en estados: Pendiente en validar (P), Error de validación (E) o Excepción de validación (X)",
+          "Solo se pueden enviar formularios en estados: Pendiente en validar (P), Error de validación (E) o Excepción de validación (X). Los formularios Aceptados no pueden reenviarse.",
         variant: "destructive",
       })
       return
@@ -582,8 +585,8 @@ export default function GestionFormulariosSimple({
   }
 
   const handleBackToList = () => {
-    setCurrentView("list")
     setSelectedFormulario(null)
+    setCurrentView("dataTable")
   }
 
   if (showErrorsView && errorData) {
