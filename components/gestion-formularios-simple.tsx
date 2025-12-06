@@ -77,8 +77,16 @@ export default function GestionFormulariosSimple({
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [validationPhase, setValidationPhase] = useState(0)
   const [validationResult, setValidationResult] = useState<{
-    formularios: { nombre: string; registros: number }[]
-    formulariosCalculados?: { nombre: string; registros: number }[]
+    success?: boolean
+    formularios: string[]
+    formulariosCalculados?: Array<{
+      codigo: string
+      nombre: string
+      tipo: string
+      estado: string
+      ultimaModificacion: string
+      registros: number
+    }>
   } | null>(null)
   const [formulariosState, setFormulariosState] = useState<Formulario[]>([
     // Renombrado a setFormulariosState para evitar conflicto
@@ -226,9 +234,18 @@ export default function GestionFormulariosSimple({
 
   const [errorsSeen, setErrorsSeen] = useState(false)
 
+  // Reemplazo de `selectedForms` con `selectedFormularios` y ajuste en `handleEnviar` para usar `id` en lugar de `codigo`
   const handleEnviar = async () => {
     console.log("[v0] Botón Enviar clickeado en GestionFormulariosSimple")
-    console.log("[v0] Formularios seleccionados:", selectedFormularios)
+
+    const selectedNames = selectedFormularios
+      .map((id) => {
+        const form = formulariosState.find((f) => f.id === id)
+        return form?.nombre
+      })
+      .filter((name): name is string => name !== undefined)
+
+    console.log("[v0] Formularios seleccionados:", selectedNames)
 
     if (selectedFormularios.length === 0) {
       toast({
@@ -239,13 +256,10 @@ export default function GestionFormulariosSimple({
       return
     }
 
+    // Implementación de la lógica de validación con separación de errores por tipo
     setErrorsSeen(false)
     setIsSubmitting(true)
     setValidationPhase(1)
-
-    const selectedNames = selectedFormularios
-      .map((id) => formulariosState.find((f) => f.id === id)?.nombre)
-      .filter(Boolean) as string[]
 
     const allErrors: Array<{
       formulario: string
@@ -267,7 +281,6 @@ export default function GestionFormulariosSimple({
     }
 
     let hasInformativeAlert = false
-    let informativeAlertMessage = ""
 
     // Fase 1: Contenido de variables
     await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -312,11 +325,13 @@ export default function GestionFormulariosSimple({
 
     if (selectedNames.includes("Flujo de Efectivo")) {
       hasInformativeAlert = true
-      informativeAlertMessage =
+      setSimpleAlertMessage(
         "El formulario Flujo de Efectivo presenta las siguientes validaciones generales:\n\n" +
-        "• Las actividades de operación deben cuadrar con el estado de resultados\n" +
-        "• Las actividades de inversión deben estar correctamente clasificadas\n" +
-        "• Las actividades de financiación deben estar correctamente clasificadas"
+          "• Las actividades de operación deben cuadrar con el estado de resultados\n" +
+          "• Las actividades de inversión deben estar correctamente clasificadas\n" +
+          "• Las actividades de financiación deben estar correctamente clasificadas",
+      )
+      setShowSimpleAlert(true) // Mostrar la alerta informativa
     }
 
     // Fase 4: Expresiones de validación locales
@@ -348,26 +363,11 @@ export default function GestionFormulariosSimple({
       errorsByType.contenido.length + errorsByType.completitud.length + errorsByType.expresiones.length
 
     if (totalErrors > 0) {
-      // Determinar el tipo principal de error (el primero que tenga errores)
-      let tipoErrorPrincipal: "contenido" | "completitud" | "expresiones" = "contenido"
-
-      if (errorsByType.contenido.length > 0) {
-        tipoErrorPrincipal = "contenido"
-        allErrors.push(...errorsByType.contenido)
-      }
-      if (errorsByType.completitud.length > 0) {
-        if (allErrors.length === 0) tipoErrorPrincipal = "completitud"
-        allErrors.push(...errorsByType.completitud)
-      }
-      if (errorsByType.expresiones.length > 0) {
-        if (allErrors.length === 0) tipoErrorPrincipal = "expresiones"
-        allErrors.push(...errorsByType.expresiones)
-      }
-
       setErrorData({
         formularios: selectedNames,
-        detalles: allErrors,
-        tipoError: tipoErrorPrincipal,
+        contenido: errorsByType.contenido,
+        completitud: errorsByType.completitud,
+        expresiones: errorsByType.expresiones,
       })
       setShowErrorAlert(true)
       setIsSubmitting(false)
@@ -375,11 +375,11 @@ export default function GestionFormulariosSimple({
       return
     }
 
+    // Si hay alertas informativas y no hay errores críticos
     if (hasInformativeAlert) {
       setIsSubmitting(false)
       setValidationPhase(0)
-      setSimpleAlertMessage(informativeAlertMessage)
-      setShowSimpleAlert(true)
+      // La alerta ya fue mostrada, solo se ajusta el estado
       return
     }
 
@@ -430,8 +430,33 @@ export default function GestionFormulariosSimple({
       })
 
       setValidationResult({
-        formularios: formulariosEnviados,
-        formulariosCalculados: formulariosCalculados.length > 0 ? formulariosCalculados : undefined,
+        success: true, // Agregado para indicar éxito
+        formularios: selectedFormularios,
+        formulariosCalculados:
+          formulariosCalculados.length > 0
+            ? formulariosCalculados.map((fc) => ({
+                codigo: `CALC-${Date.now()}-${Math.random().toString(36).substring(7)}`, // Generar código único
+                nombre: fc.nombre,
+                tipo: "Formulario",
+                estado: "Pendiente en validar",
+                ultimaModificacion: new Date().toLocaleDateString("es-ES", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                }),
+                registros: fc.registros,
+              }))
+            : undefined,
+      })
+      setShowSuccessDialog(true)
+    } else {
+      // Si no es Convergencia, simular éxito general
+      setFormulariosState((prev) =>
+        prev.map((f) => (selectedFormularios.includes(f.id) ? { ...f, estado: "Validado", estadoColor: "green" } : f)),
+      )
+      setValidationResult({
+        success: true,
+        formularios: selectedFormularios,
       })
       setShowSuccessDialog(true)
     }
@@ -519,8 +544,8 @@ export default function GestionFormulariosSimple({
     let dataToExport
 
     // Ajuste para el nuevo tipoError
-    if (errorData.tipoError === "expresiones") {
-      dataToExport = errorData.detalles.map((d, index) => ({
+    if (errorData.expresiones && errorData.expresiones.length > 0) {
+      dataToExport = errorData.expresiones.map((d, index) => ({
         Formulario: d.formulario,
         Concepto: d.concepto || "-",
         Mensaje: d.mensaje || "Mensaje",
@@ -529,13 +554,20 @@ export default function GestionFormulariosSimple({
         NecesitaComentario: d.necesitaComentario,
         Comentario: errorComments[index] || "",
       }))
-    } else {
-      // Para tipoError "contenido" y "completitud"
-      dataToExport = errorData.detalles.map((d) => ({
+    } else if (errorData.contenido && errorData.contenido.length > 0) {
+      dataToExport = errorData.contenido.map((d) => ({
         Formulario: d.formulario,
         Concepto: d.concepto,
         Mensaje: d.mensaje,
       }))
+    } else if (errorData.completitud && errorData.completitud.length > 0) {
+      dataToExport = errorData.completitud.map((d) => ({
+        Formulario: d.formulario,
+        Concepto: d.concepto,
+        Mensaje: d.mensaje,
+      }))
+    } else {
+      return // No hay datos para exportar
     }
 
     console.log(`[v0] Exportando errores en formato ${format}`, dataToExport)
@@ -545,7 +577,7 @@ export default function GestionFormulariosSimple({
 
     if (format === "txt") {
       let txtContent = ""
-      if (errorData.tipoError === "expresiones") {
+      if (errorData.expresiones && errorData.expresiones.length > 0) {
         txtContent = `Reporte Detallado de Errores de Validación\n${"=".repeat(60)}\n\n`
         dataToExport.forEach((row, idx) => {
           txtContent += `Error ${idx + 1}:\n`
@@ -560,7 +592,7 @@ export default function GestionFormulariosSimple({
           }
           txtContent += "\n"
         })
-      } else {
+      } else if (errorData.contenido || errorData.completitud) {
         // Para tipoError "contenido" y "completitud"
         txtContent = `Reporte de Errores de Validación\n${"=".repeat(50)}\n\nEntidad: ${entidad}\nCategoría: ${categoria}\nPeríodo: ${periodo}\nAño: ${ano}\n\n${"=".repeat(50)}\n\nErrores Detectados:\n\n`
         dataToExport
@@ -579,7 +611,7 @@ export default function GestionFormulariosSimple({
       URL.revokeObjectURL(url)
     } else if (format === "csv") {
       const headers =
-        errorData.tipoError === "expresiones"
+        errorData.expresiones && errorData.expresiones.length > 0
           ? ["Formulario", "Concepto", "Mensaje", "Codigo", "Permisible", "NecesitaComentario", "Comentario"]
           : ["Formulario", "Concepto", "Mensaje"]
       const csvContent = [
@@ -645,15 +677,23 @@ export default function GestionFormulariosSimple({
   const [showErrorsView, setShowErrorsView] = useState(false)
   const [errorData, setErrorData] = useState<{
     formularios: string[]
-    detalles: Array<{
+    contenido: Array<{
       formulario: string
       concepto: string
       mensaje: string
-      codigo?: string
-      permisible?: string
-      necesitaComentario?: string
     }>
-    tipoError?: "contenido" | "completitud" | "expresiones"
+    completitud: Array<{
+      formulario: string
+      concepto: string
+      mensaje: string
+    }>
+    expresiones: Array<{
+      formulario: string
+      codigo: string
+      mensaje: string
+      permisible: string
+      necesitaComentario: string
+    }>
   } | null>(null)
   const [showErrorDetails, setShowErrorDetails] = useState(false)
   const [currentView, setCurrentView] = useState("dataTable")
@@ -666,8 +706,11 @@ export default function GestionFormulariosSimple({
     }
   }
 
-  // Nueva vista para mostrar errores, con condicionales p
   if (showErrorsView && errorData) {
+    const hasContenido = errorData.contenido && errorData.contenido.length > 0
+    const hasCompletitud = errorData.completitud && errorData.completitud.length > 0
+    const hasExpresiones = errorData.expresiones && errorData.expresiones.length > 0
+
     return (
       <div className="fixed inset-0 bg-white z-50 overflow-auto">
         <div className="min-h-screen bg-gray-50 p-6">
@@ -710,9 +753,8 @@ export default function GestionFormulariosSimple({
               </DropdownMenu>
             </div>
 
-            {/* Error details container */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-              {/* Header Information */}
+            {/* Header Information */}
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
               <div className="bg-gray-50 border-b border-gray-200 p-6">
                 <div className="grid grid-cols-4 gap-4">
                   <div>
@@ -733,27 +775,97 @@ export default function GestionFormulariosSimple({
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="p-6">
-                <div className="mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {errorData.tipoError === "contenido" && "Errores de Contenido de Variables"}
-                    {errorData.tipoError === "completitud" && "Errores de Completitud"}
-                    {errorData.tipoError === "expresiones" && "Errores de Expresiones de Validación Locales"}
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {errorData.tipoError === "contenido" &&
-                      "Se detectaron problemas en la estructura y formato de los datos enviados"}
-                    {errorData.tipoError === "completitud" && "Se encontraron campos requeridos sin completar"}
-                    {errorData.tipoError === "expresiones" &&
-                      "Se identificaron inconsistencias en las operaciones aritméticas configuradas"}
-                  </p>
+            {hasContenido && (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+                <div className="p-6">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">Errores de Contenido de Variables</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Se detectaron problemas en la estructura y formato de los datos enviados
+                    </p>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Formulario
+                          </th>
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Código y Nombre del Concepto
+                          </th>
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Descripción (Variable y Error)
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {errorData.contenido.map((detalle, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
+                            <td className="p-3 text-sm font-mono border border-gray-300">{detalle.concepto}</td>
+                            <td className="p-3 text-sm text-red-600 border border-gray-300">{detalle.mensaje}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
+              </div>
+            )}
 
-                {/* Table */}
-                <div className="overflow-x-auto">
-                  {errorData.tipoError === "expresiones" ? (
-                    /*Tabla para expresiones de validación locales */
+            {hasCompletitud && (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+                <div className="p-6">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">Errores de Completitud</h2>
+                    <p className="text-sm text-gray-600 mt-1">Se encontraron campos requeridos sin completar</p>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Formulario
+                          </th>
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Código y Nombre del Concepto
+                          </th>
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Descripción (Variable y Error)
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {errorData.completitud.map((detalle, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
+                            <td className="p-3 text-sm font-mono border border-gray-300">{detalle.concepto}</td>
+                            <td className="p-3 text-sm text-red-600 border border-gray-300">{detalle.mensaje}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {hasExpresiones && (
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+                <div className="p-6">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">Errores de Expresiones de Validación Locales</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Se identificaron inconsistencias en las operaciones aritméticas configuradas
+                    </p>
+                  </div>
+
+                  <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-gray-300">
                       <thead>
                         <tr className="bg-gray-100">
@@ -778,11 +890,11 @@ export default function GestionFormulariosSimple({
                         </tr>
                       </thead>
                       <tbody>
-                        {errorData.detalles.map((detalle, index) => (
+                        {errorData.expresiones.map((detalle, index) => (
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
                             <td className="p-3 text-sm border border-gray-300">{detalle.codigo}</td>
-                            <td className="p-3 text-sm border border-gray-300">{detalle.mensaje || "Mensaje"}</td>
+                            <td className="p-3 text-sm border border-gray-300">{detalle.mensaje}</td>
                             <td className="p-3 text-sm text-center border border-gray-300">{detalle.permisible}</td>
                             <td className="p-3 text-sm text-center border border-gray-300">
                               {detalle.necesitaComentario}
@@ -804,36 +916,10 @@ export default function GestionFormulariosSimple({
                         ))}
                       </tbody>
                     </table>
-                  ) : (
-                    /* Tabla para contenido de variables y completitud */
-                    <table className="w-full border-collapse border border-gray-300">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                            Formulario
-                          </th>
-                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                            Código y Nombre del Concepto
-                          </th>
-                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                            Descripción (Variable y Error)
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {errorData.detalles.map((detalle, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
-                            <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
-                            <td className="p-3 text-sm font-mono border border-gray-300">{detalle.concepto}</td>
-                            <td className="p-3 text-sm text-red-600 border border-gray-300">{detalle.mensaje}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -1420,17 +1506,21 @@ export default function GestionFormulariosSimple({
             <AlertDialogTitle className="text-green-600">Validación exitosa</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <div className="text-gray-700 font-medium">Los formularios validados son:</div>
-              {validationResult?.formularios.map((form, index) => (
-                <div key={index} className="bg-gray-50 p-3 rounded-md">
-                  <div className="text-sm">
-                    <span className="font-semibold">{form.nombre}:</span> {form.registros} registros
+              {validationResult?.formularios.map((formId, index) => {
+                const form = formulariosState.find((f) => f.id === formId)
+                return (
+                  <div key={index} className="bg-gray-50 p-3 rounded-md">
+                    <div className="text-sm">
+                      <span className="font-semibold">{form?.nombre || "Formulario Desconocido"}:</span>{" "}
+                      {form?.nombre === "Balance General" ? `${Math.floor(Math.random() * 200) + 50} registros` : "N/A"}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      Estado: <span className="text-green-600 font-medium">Validado</span> | Tipo:{" "}
+                      <span className="font-medium">{form?.tipo || "Formulario"}</span>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">
-                    Estado: <span className="text-green-600 font-medium">Validado</span> | Tipo:{" "}
-                    <span className="font-medium">Formulario</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
 
               {validationResult?.formulariosCalculados && validationResult.formulariosCalculados.length > 0 && (
                 <>
@@ -1444,7 +1534,7 @@ export default function GestionFormulariosSimple({
                       </div>
                       <div className="text-xs text-gray-600 mt-1">
                         Estado: <span className="text-yellow-600 font-medium">Pendiente en validar</span> | Tipo:{" "}
-                        <span className="font-medium">Formulario</span>
+                        <span className="font-medium">{form.tipo}</span>
                       </div>
                     </div>
                   ))}
