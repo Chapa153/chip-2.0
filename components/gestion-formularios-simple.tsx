@@ -706,6 +706,7 @@ export default function GestionFormulariosSimple({
     }
   }
 
+  // Vista de errores
   if (showErrorsView && errorData) {
     const hasContenido = errorData.contenido && errorData.contenido.length > 0
     const hasCompletitud = errorData.completitud && errorData.completitud.length > 0
