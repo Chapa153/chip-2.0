@@ -201,31 +201,30 @@ export default function GestionFormulariosSimple({
   const [showSimpleAlert, setShowSimpleAlert] = useState(false)
   const [simpleAlertMessage, setSimpleAlertMessage] = useState("")
 
+  const [errorsSeen, setErrorsSeen] = useState(false)
+
   const handleEnviar = async () => {
     console.log("[v0] Botón Enviar clickeado en GestionFormulariosSimple")
     console.log("[v0] Formularios seleccionados:", selectedFormularios)
 
-    if (!canSendSelectedFormularios()) {
+    if (selectedFormularios.length === 0) {
       toast({
-        title: "Validación de estado",
-        description:
-          "Solo se pueden enviar formularios en estados: Pendiente en validar (P), Error de validación (E) o Excepción de validación (X). Los formularios Aceptados no pueden reenviarse.",
+        title: "Sin selección",
+        description: "Por favor selecciona al menos un formulario para enviar.",
         variant: "destructive",
       })
       return
     }
 
+    setErrorsSeen(false)
     setIsSubmitting(true)
     setValidationPhase(1)
-
-    // Fase 1: Contenido de variables
-    await new Promise((resolve) => setTimeout(resolve, 1500))
 
     const selectedNames = selectedFormularios
       .map((id) => formulariosState.find((f) => f.id === id)?.nombre)
       .filter(Boolean) as string[]
 
-    const erroresFase1: Array<{
+    const allErrors: Array<{
       formulario: string
       concepto: string
       mensaje: string
@@ -234,17 +233,17 @@ export default function GestionFormulariosSimple({
       necesitaComentario?: string
     }> = []
 
+    let tipoErrorDetectado: "contenido" | "completitud" | "expresiones" | null = null
+
+    // Fase 1: Contenido de variables
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
     if (selectedNames.includes("Notas a los Estados Financieros")) {
-      erroresFase1.push(
+      allErrors.push(
         {
           formulario: "Notas a los Estados Financieros",
-          concepto: "5105 - Políticas contables significativas",
-          mensaje: "var-3: Formato de fecha incorrecto detectado",
-        },
-        {
-          formulario: "Notas a los Estados Financieros",
-          concepto: "5205 - Juicios y estimaciones contables",
-          mensaje: "var-1: Caracteres no permitidos en campo numérico",
+          concepto: "5110 - Inversiones en subsidiarias",
+          mensaje: "var-3: Tipo de dato incorrecto - esperado numérico",
         },
         {
           formulario: "Notas a los Estados Financieros",
@@ -252,38 +251,18 @@ export default function GestionFormulariosSimple({
           mensaje: "var-5: Valor fuera del rango permitido",
         },
       )
-    }
-
-    if (erroresFase1.length > 0) {
-      setErrorData({
-        formularios: selectedNames,
-        detalles: erroresFase1,
-        tipoError: "contenido",
-      })
-      setShowErrorAlert(true)
-      setIsSubmitting(false)
-      setValidationPhase(0)
-      return
+      if (!tipoErrorDetectado) tipoErrorDetectado = "contenido"
     }
 
     // Fase 2: Completitud
     setValidationPhase(2)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    const erroresFase2: Array<{
-      formulario: string
-      concepto: string
-      mensaje: string
-      codigo?: string
-      permisible?: string
-      necesitaComentario?: string
-    }> = []
-
     if (selectedNames.includes("Estado de Cambios en el Patrimonio")) {
-      erroresFase2.push(
+      allErrors.push(
         {
           formulario: "Estado de Cambios en el Patrimonio",
-          concepto: "3105 - Capital social",
+          concepto: "3105 - Capital suscrito y pagado",
           mensaje: "var-1: Campo requerido sin completar",
         },
         {
@@ -291,24 +270,8 @@ export default function GestionFormulariosSimple({
           concepto: "3205 - Reservas",
           mensaje: "var-4: Campo requerido sin completar",
         },
-        {
-          formulario: "Estado de Cambios en el Patrimonio",
-          concepto: "3305 - Resultados acumulados",
-          mensaje: "var-2: Campo requerido sin completar",
-        },
       )
-    }
-
-    if (erroresFase2.length > 0) {
-      setErrorData({
-        formularios: selectedNames,
-        detalles: erroresFase2,
-        tipoError: "completitud",
-      })
-      setShowErrorAlert(true)
-      setIsSubmitting(false)
-      setValidationPhase(0)
-      return
+      if (!tipoErrorDetectado) tipoErrorDetectado = "completitud"
     }
 
     // Fase 3: Validaciones generales
@@ -323,7 +286,7 @@ export default function GestionFormulariosSimple({
         "El formulario Flujo de Efectivo presenta las siguientes validaciones generales:\n\n" +
           "• Las actividades de operación deben cuadrar con el estado de resultados\n" +
           "• Las actividades de inversión deben estar correctamente clasificadas\n" +
-          "• Las actividades de financiación requieren documentación adicional",
+          "• Las actividades de financiación deben estar correctamente clasificadas",
       )
       setShowSimpleAlert(true)
       return
@@ -331,43 +294,35 @@ export default function GestionFormulariosSimple({
 
     // Fase 4: Expresiones de validación locales
     setValidationPhase(4)
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    const erroresFase4: Array<{
-      formulario: string
-      concepto: string
-      mensaje: string
-      codigo?: string
-      permisible?: string
-      necesitaComentario?: string
-    }> = []
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     if (selectedNames.includes("Estado de Resultados")) {
-      erroresFase4.push(
+      allErrors.push(
         {
           formulario: "Estado de Resultados",
-          codigo: "VAL-001",
           concepto: "",
-          mensaje: "Los ingresos operacionales no coinciden con la suma de sus componentes",
-          permisible: "NO",
-          necesitaComentario: "NO",
-        },
-        {
-          formulario: "Estado de Resultados",
-          codigo: "VAL-002",
-          concepto: "",
-          mensaje: "El costo de ventas excede los ingresos operacionales",
+          mensaje: "Mensaje",
+          codigo: "codigo_mensaje",
           permisible: "SI",
           necesitaComentario: "SI",
         },
+        {
+          formulario: "Estado de Resultados",
+          concepto: "",
+          mensaje: "Mensaje",
+          codigo: "codigo_mensaje",
+          permisible: "NO",
+          necesitaComentario: "NO",
+        },
       )
+      if (!tipoErrorDetectado) tipoErrorDetectado = "expresiones"
     }
 
-    if (erroresFase4.length > 0) {
+    if (allErrors.length > 0 && tipoErrorDetectado) {
       setErrorData({
         formularios: selectedNames,
-        detalles: erroresFase4,
-        tipoError: "expresiones",
+        detalles: allErrors,
+        tipoError: tipoErrorDetectado,
       })
       setShowErrorAlert(true)
       setIsSubmitting(false)
@@ -475,10 +430,33 @@ export default function GestionFormulariosSimple({
     )
   }
 
+  // Cambiado el nombre de la función y su lógica
+  const handleViewErrors = () => {
+    setShowErrorAlert(false)
+    setShowErrorsView(true)
+    setErrorsSeen(true)
+
+    if (errorData) {
+      const updatedForms = formulariosState.map((form) => {
+        if (errorData.formularios.includes(form.nombre)) {
+          return {
+            ...form,
+            estado: "Rechazado por Deficiencia",
+            estadoColor: "red",
+            fecha: new Date().toLocaleDateString("es-ES"),
+          }
+        }
+        return form
+      })
+      setFormulariosState(updatedForms)
+    }
+  }
+
   const handleBackFromErrors = () => {
     setShowErrorsView(false)
     setErrorData(null)
     setErrorComments({}) // Limpiar comentarios al volver
+    setSelectedFormularios([])
     // Los formularios mantienen su estado original para poder ser reenviados
   }
 
@@ -1216,21 +1194,7 @@ export default function GestionFormulariosSimple({
             <AlertDialogAction
               onClick={() => {
                 setShowErrorAlert(false)
-                setShowErrorsView(true)
-                if (errorData) {
-                  const formulariosConError = errorData.formularios
-                  setFormulariosState((prev) =>
-                    prev.map((f) =>
-                      formulariosConError.includes(f.nombre)
-                        ? {
-                            ...f,
-                            estado: "Rechazado por Deficiencia",
-                            ultimaModificacion: new Date().toLocaleDateString("es-CO"),
-                          }
-                        : f,
-                    ),
-                  )
-                }
+                handleViewErrors() // Llamar a la función actualizada
               }}
             >
               Sí, ver errores
