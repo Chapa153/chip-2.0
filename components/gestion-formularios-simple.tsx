@@ -1,7 +1,5 @@
 "use client"
 import { useState } from "react"
-import { DialogDescription } from "@/components/ui/dialog"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -17,6 +15,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertTriangle,
+  FileText,
   ArrowLeft,
   Download,
 } from "lucide-react"
@@ -33,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/components/ui/use-toast" // Corregido import de toast desde use-toast en lugar de toast
 import DataTable from "@/components/data-table" // Assuming DataTable is imported here
 import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
 
@@ -222,6 +221,35 @@ export default function GestionFormulariosSimple({
       .map((id) => formulariosState.find((f) => f.id === id)?.nombre)
       .filter(Boolean) as string[]
 
+    if (selectedNames.includes("Estado de Resultados")) {
+      setIsSubmitting(false)
+      setValidationPhase(0)
+      setErrorData({
+        formularios: ["Estado de Resultados"],
+        detalles: [
+          {
+            formulario: "Estado de Resultados",
+            concepto: "",
+            mensaje: "",
+            codigo: "ERR_001",
+            permisible: "SI",
+            necesitaComentario: "SI",
+          },
+          {
+            formulario: "Estado de Resultados",
+            concepto: "",
+            mensaje: "",
+            codigo: "ERR_002",
+            permisible: "NO",
+            necesitaComentario: "NO",
+          },
+        ],
+        tipoError: "completo",
+      })
+      setShowErrorAlert(true)
+      return
+    }
+
     // If there are errors in the selected forms (Phase 1 and 2)
     if (
       selectedNames.includes("Notas a los Estados Financieros") ||
@@ -313,35 +341,6 @@ export default function GestionFormulariosSimple({
     setValidationPhase(4)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    if (selectedNames.includes("Estado de Resultados")) {
-      setIsSubmitting(false)
-      setValidationPhase(0)
-      setErrorData({
-        formularios: ["Estado de Resultados"],
-        detalles: [
-          {
-            formulario: "Estado de Resultados",
-            concepto: "",
-            mensaje: "Expresión de validación: Los ingresos operacionales deben ser mayores que los gastos",
-            codigo: "ERR_001",
-            permisible: "SI",
-            necesitaComentario: "SI",
-          },
-          {
-            formulario: "Estado de Resultados",
-            concepto: "",
-            mensaje: "Expresión de validación: El costo de ventas no puede exceder los ingresos brutos",
-            codigo: "ERR_002",
-            permisible: "NO",
-            necesitaComentario: "NO",
-          },
-        ],
-        tipoError: "completo",
-      })
-      setShowErrorAlert(true)
-      return
-    }
-
     // If it's Información Contable Convergencia category, show specific message
     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
       // Renombrado selectedForms a selectedFormularios para consistencia
@@ -420,46 +419,24 @@ export default function GestionFormulariosSimple({
     return "gray"
   }
 
-  const handleUpdateFormularioEstado = (nombreFormulario: string) => {
-    setFormulariosState(
-      (
-        prev, // Usando setFormulariosState
-      ) =>
-        prev.map((f) => {
-          if (f.nombre === nombreFormulario) {
-            return {
-              ...f,
-              estado: "Rechazado por Deficiencia",
-              tipo: "Formulario",
-              estadoColor: getColorForEstado("Rechazado por Deficiencia"),
-            } // Usar función para obtener color
-          }
-          return f
-        }),
+  const handleViewErrorDetails = () => {
+    // Renombrado de handleViewErrors a handleViewErrorDetails
+    setShowErrorAlert(false)
+    setShowErrorsView(true)
+
+    // Actualizar estados de formularios con errores
+    setFormulariosState((prev) =>
+      prev.map((f) => {
+        if (errorData?.formularios.includes(f.nombre)) {
+          return {
+            ...f,
+            estado: "Rechazado por Deficiencia",
+            estadoColor: getColorForEstado("Rechazado por Deficiencia"),
+          } // Usar función para obtener color
+        }
+        return f
+      }),
     )
-  }
-
-  const [showErrorAlert, setShowErrorAlert] = useState(false)
-  const [showErrorsView, setShowErrorsView] = useState(false)
-  const [errorData, setErrorData] = useState<{
-    formularios: string[]
-    detalles: Array<{
-      formulario: string
-      concepto: string
-      mensaje: string
-      codigo?: string
-      permisible?: string
-      necesitaComentario?: string
-    }>
-    tipoError?: "simple" | "completo"
-  } | null>(null)
-  const [showErrorDetails, setShowErrorDetails] = useState(false)
-  const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({})
-
-  const handleCommentChange = (index: number, value: string) => {
-    if (value.length <= 250) {
-      setErrorComments((prev) => ({ ...prev, [index]: value }))
-    }
   }
 
   const handleBackFromErrors = () => {
@@ -515,7 +492,7 @@ export default function GestionFormulariosSimple({
         })
       } else {
         txtContent = `Reporte de Errores de Validación\n${"=".repeat(50)}\n\nEntidad: ${entidad}\nCategoría: ${categoria}\nPeríodo: ${periodo}\nAño: ${ano}\n\n${"=".repeat(50)}\n\nErrores Detectados:\n\n`
-        txtContent += dataToExport
+        dataToExport
           .map(
             (row, idx) =>
               `${idx + 1}. Formulario: ${row.Formulario}\n   Concepto: ${row.Concepto}\n   ${row.Mensaje}\n`,
@@ -539,9 +516,8 @@ export default function GestionFormulariosSimple({
         ...dataToExport.map((row) =>
           headers
             .map((header) => {
-              const key = header.toLowerCase().replace(/\s+/g, "") as keyof typeof row
-              const cellValue = (row[key] as string) || ""
-              return `"${cellValue.replace(/"/g, '""')}"`
+              const cellValue = row[header.toLowerCase() as keyof typeof row] as string
+              return `"${cellValue.replace(/"/g, '""')}"` // Escape double quotes
             })
             .join(","),
         ),
@@ -561,435 +537,889 @@ export default function GestionFormulariosSimple({
     })
   }
 
-  return (
-    <div className="p-6">
-      {onBack && (
-        <Button variant="outline" onClick={onBack} className="mb-6 bg-transparent">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver
-        </Button>
-      )}
-      <h1 className="text-2xl font-semibold mb-4">Gestión de Formularios Simples</h1>
+  const handleUpdateFormularioEstado = (nombreFormulario: string) => {
+    setFormulariosState(
+      (
+        prev, // Usando setFormulariosState
+      ) =>
+        prev.map((f) => {
+          if (f.nombre === nombreFormulario) {
+            return {
+              ...f,
+              estado: "Rechazado por Deficiencia",
+              tipo: "Formulario",
+              estadoColor: getColorForEstado("Rechazado por Deficiencia"),
+            } // Usar función para obtener color
+          }
+          return f
+        }),
+    )
+  }
 
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <div className="flex flex-col space-y-1">
-            <label htmlFor="entidad" className="text-sm font-medium text-gray-700">
-              Entidad
-            </label>
-            <Input id="entidad" value={entidad} disabled className="w-64" />
-          </div>
-          <div className="flex flex-col space-y-1">
-            <label htmlFor="categoria" className="text-sm font-medium text-gray-700">
-              Categoría
-            </label>
-            <select
-              id="categoria"
-              value={categoria}
-              onChange={(e) => handleFilterChange(setCategoria, e.target.value)}
-              className="border border-gray-300 rounded-md p-2 w-64"
-            >
-              <option value="">Seleccionar Categoría</option>
-              {categorias.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col space-y-1">
-            <label htmlFor="ano" className="text-sm font-medium text-gray-700">
-              Año
-            </label>
-            <select
-              id="ano"
-              value={ano}
-              onChange={(e) => handleFilterChange(setAno, e.target.value)}
-              className="border border-gray-300 rounded-md p-2 w-32"
-            >
-              <option value="">Seleccionar Año</option>
-              {anos.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col space-y-1">
-            <label htmlFor="periodo" className="text-sm font-medium text-gray-700">
-              Período
-            </label>
-            <select
-              id="periodo"
-              value={periodo}
-              onChange={(e) => handleFilterChange(setPeriodo, e.target.value)}
-              className="border border-gray-300 rounded-md p-2 w-48"
-            >
-              <option value="">Seleccionar Período</option>
-              {getPeriodos().map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={handleAplicarFiltros}
-                  disabled={!categoria || !ano || !periodo}
-                  className="flex items-center"
-                >
-                  <Filter className="mr-2 h-4 w-4" />
-                  Aplicar Filtros
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Aplica los filtros seleccionados para mostrar los formularios.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+  const [showErrorAlert, setShowErrorAlert] = useState(false)
+  const [showErrorsView, setShowErrorsView] = useState(false)
+  const [errorData, setErrorData] = useState<{
+    formularios: string[]
+    detalles: Array<{
+      formulario: string
+      concepto: string
+      mensaje: string
+      codigo?: string
+      permisible?: string
+      necesitaComentario?: string
+    }>
+    tipoError?: "simple" | "completo"
+  } | null>(null)
+  const [showErrorDetails, setShowErrorDetails] = useState(false)
+  const [currentView, setCurrentView] = useState("dataTable")
+  const [selectedFormulario, setSelectedFormulario] = useState<{ nombre: string } | null>(null)
+  const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({})
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="secondary" onClick={() => {}} disabled={!mostrarTabla}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Subir Archivo
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Permite subir un archivo para la validación de formularios.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+  const handleCommentChange = (index: number, value: string) => {
+    if (value.length <= 250) {
+      setErrorComments((prev) => ({ ...prev, [index]: value }))
+    }
+  }
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-8 w-8 p-0 bg-transparent">
-                <span className="sr-only">Abrir menú</span>
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => {}}>
-                <FileSpreadsheet className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Exportar a Excel</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => {}}>
-                <FileDown className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Descargar Plantilla</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => {}}>
-                <HelpCircle className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Ayuda</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+  const handleBackToList = () => {
+    setCurrentView("list")
+    setSelectedFormulario(null)
+  }
+
+  if (showErrorsView && errorData) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="mb-6">
+          <Button variant="outline" onClick={handleBackFromErrors} className="mb-4 bg-transparent">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver
+          </Button>
+
+          <div className="bg-white border rounded-lg shadow-sm">
+            {/* Título y contador de errores */}
+            <div className="border-b px-6 py-4">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                {errorData.formularios.length > 0
+                  ? `${errorData.formularios[0]}${errorData.formularios.length > 1 ? ` y ${errorData.formularios.length - 1} más` : ""}`
+                  : "Errores de Validación"}
+              </h2>
+              <div className="text-sm text-gray-600">Cantidad de errores: {errorData.detalles.length}</div>
+            </div>
+
+            {/* Encabezado con información de contexto - estilo unificado */}
+            <div className="px-6 py-4 bg-gray-50 border-b">
+              <div className="grid grid-cols-4 gap-6">
+                <div>
+                  <div className="text-xs font-medium text-gray-500 uppercase mb-1">Entidad</div>
+                  <div className="text-sm font-semibold text-gray-900">{entidad}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-gray-500 uppercase mb-1">Categoría</div>
+                  <div className="text-sm font-semibold text-gray-900">{categoria}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-gray-500 uppercase mb-1">Año</div>
+                  <div className="text-sm font-semibold text-gray-900">{ano}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-gray-500 uppercase mb-1">Período</div>
+                  <div className="text-sm font-semibold text-gray-900">{periodo}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Botón de exportar - estilo unificado */}
+            <div className="px-6 py-4 border-b flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 bg-transparent">
+                    <Download className="w-4 h-4" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => handleExportErrors("csv")}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">CSV</span>
+                      <span className="text-xs text-gray-500">Valores separados por comas</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportErrors("excel")}>
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Excel</span>
+                      <span className="text-xs text-gray-500">Hoja de cálculo</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportErrors("pdf")}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">PDF</span>
+                      <span className="text-xs text-gray-500">Documento portable</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportErrors("txt")}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">TXT</span>
+                      <span className="text-xs text-gray-500">Texto plano</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="p-6">
+              <div className="overflow-x-auto">
+                {errorData.tipoError === "completo" ? (
+                  /*Tabla para expresiones de validación locales */
+                  <table className="w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                          Formulario
+                        </th>
+                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                          Código del Error
+                        </th>
+                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                          Mensaje
+                        </th>
+                        <th className="p-3 text-center text-sm font-semibold text-gray-700 border border-gray-300">
+                          Permisible
+                        </th>
+                        <th className="p-3 text-center text-sm font-semibold text-gray-700 border border-gray-300">
+                          Necesita comentario
+                        </th>
+                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                          Comentario
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {errorData.detalles.map((detalle, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
+                          <td className="p-3 text-sm border border-gray-300">{detalle.codigo}</td>
+                          <td className="p-3 text-sm border border-gray-300">{detalle.mensaje || "Mensaje"}</td>
+                          <td className="p-3 text-sm text-center border border-gray-300">{detalle.permisible}</td>
+                          <td className="p-3 text-sm text-center border border-gray-300">
+                            {detalle.necesitaComentario}
+                          </td>
+                          <td className="p-3 border border-gray-300">
+                            <input
+                              type="text"
+                              value={errorComments[index] || ""}
+                              onChange={(e) => handleCommentChange(index, e.target.value)}
+                              placeholder="Caja de texto"
+                              className="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              maxLength={250}
+                            />
+                            <div className="text-xs text-gray-500 mt-1 text-right">
+                              {errorComments[index]?.length || 0}/250
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  /* Tabla para contenido de variables y completitud */
+                  <table className="w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                          Formulario
+                        </th>
+                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                          Código y Nombre del Concepto
+                        </th>
+                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                          Descripción
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {errorData.detalles.map((detalle, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
+                          <td className="p-3 text-sm font-mono border border-gray-300">{detalle.concepto}</td>
+                          <td className="p-3 text-sm text-red-600 border border-gray-300">{detalle.mensaje}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+    )
+  }
 
-      {mostrarTabla && (
-        <>
-          <div className="flex items-center justify-between py-4">
-            <Input
-              placeholder="Buscar formularios por nombre o ID..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="max-w-sm"
-            />
-            <div className="flex items-center space-x-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      onClick={() => {}}
-                      disabled={selectedFormularios.length === 0 || !canSendSelectedFormularios()}
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      Enviar Selección
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Envía los formularios seleccionados para su validación.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Filtros de Búsqueda */}
+      <div className="p-6 space-y-6">
+        <div className="bg-white rounded-lg border border-border p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="w-5 h-5" />
+            <h3 className="font-semibold text-lg">Filtros de Búsqueda</h3>
+          </div>
+
+          {filtrosModificados && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+              Los filtros han sido modificados. Haga clic en "Aplicar Filtros" para actualizar los resultados.
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Entidad</label>
+              <input
+                value={entidad}
+                disabled
+                className="w-full px-3 py-2 border border-input rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Categoría <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={categoria}
+                onChange={(e) => handleFilterChange(setCategoria, e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              >
+                <option value="">Seleccione categoría</option>
+                {categorias.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Año <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={ano}
+                onChange={(e) => handleFilterChange(setAno, e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              >
+                <option value="">Seleccione año</option>
+                {anos.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Periodo <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={periodo}
+                onChange={(e) => handleFilterChange(setPeriodo, e.target.value)}
+                disabled={!categoria}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50"
+              >
+                <option value="">Seleccione periodo</option>
+                {getPeriodos().map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {isSubmitting && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="mr-2 h-8 w-8 animate-spin text-blue-500" />
-              <span className="text-lg text-blue-500">Procesando ({validationPhase}/4)...</span>
-            </div>
-          )}
+          <div className="flex justify-end">
+            <Button
+              onClick={handleAplicarFiltros}
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={!categoria || !ano || !periodo}
+            >
+              Aplicar Filtros
+            </Button>
+          </div>
+        </div>
 
-          {!isSubmitting && (
-            <DataTable
-              columns={[
-                {
-                  id: "select",
-                  header: ({ table }) => (
-                    <Checkbox
-                      checked={
-                        table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")
-                      }
-                      onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                      aria-label="Seleccionar todo"
-                    />
-                  ),
-                  cell: ({ row }) => (
-                    <Checkbox
-                      checked={row.getIsSelected()}
-                      onCheckedChange={(value) => row.toggleSelected(!!value)}
-                      aria-label={`Seleccionar fila ${row.original.id}`}
-                    />
-                  ),
-                  enableSorting: false,
-                  enableHiding: false,
-                },
-                {
-                  accessorKey: "nombre",
-                  header: "Nombre del Formulario",
-                },
-                {
-                  accessorKey: "estado",
-                  header: "Estado",
-                  cell: ({ row }) => {
-                    const estado = row.getValue("estado") as string
-                    const color = getColorForEstado(estado)
-                    return (
-                      <span className={`px-2 py-1 rounded-md border text-xs font-medium ${getEstadoBadgeClass(color)}`}>
-                        {estado}
-                      </span>
-                    )
-                  },
-                },
-                {
-                  accessorKey: "fecha",
-                  header: "Fecha",
-                },
-                {
-                  id: "actions",
-                  header: "Acciones",
-                  cell: ({ row }) => {
-                    const formulario = row.original
-                    return (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Abrir menú</span>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => onEditForm?.(formulario.id, formulario.nombre)}>
-                            <Edit className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <span>Editar</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUpdateFormularioEstado(formulario.nombre)}>
-                            <AlertTriangle className="mr-2 h-4 w-4 text-red-500" />
-                            <span>Marcar como error</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => {}}>
-                            <Search className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <span>Ver Detalle</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )
-                  },
-                },
-              ]}
-              data={filteredFormularios}
-              onRowSelectionChange={setSelectedFormularios}
-              selectedRowIds={selectedFormularios}
-            />
-          )}
+        {/* Estado Vacío */}
+        {!mostrarTabla && (
+          <div className="bg-white rounded-lg border border-border p-12 text-center">
+            <Filter className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Seleccione los filtros de búsqueda</h3>
+            <p className="text-gray-500">
+              Para visualizar los formularios disponibles, debe seleccionar Categoría, Año y Periodo
+            </p>
+          </div>
+        )}
 
-          {/* Dialog for successful submission */}
-          <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>¡Envío Exitoso!</DialogTitle>
-              </DialogHeader>
-              <DialogDescription>
-                <div className="flex flex-col space-y-4">
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-6 w-6 text-green-500 mr-3" />
-                    <p className="text-gray-700">
-                      Los siguientes formularios fueron enviados y validados exitosamente:
-                    </p>
-                  </div>
-                  <ul className="list-disc list-inside">
-                    {validationResult?.formularios.map((f) => (
-                      <li key={f.nombre} className="text-sm text-gray-600">
-                        {f.nombre} ({f.registros} registros)
-                      </li>
-                    ))}
-                  </ul>
-                  {validationResult?.formulariosCalculados && (
+        {/* Tabla de Formularios */}
+        {mostrarTabla && (
+          <div className="bg-white rounded-lg border border-border shadow-sm">
+            {/* Barra de Acciones */}
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div className="flex gap-2">
+                <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Importar
+                </Button>
+                <Button variant="outline" size="sm">
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Envíos
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!canSendSelectedFormularios() || isSubmitting}
+                  onClick={handleEnviar}
+                  className={!canSendSelectedFormularios() && !isSubmitting ? "opacity-50 cursor-not-allowed" : ""}
+                >
+                  {isSubmitting ? (
                     <>
-                      <p className="text-gray-700">Se generaron automáticamente los siguientes formularios:</p>
-                      <ul className="list-disc list-inside">
-                        {validationResult.formulariosCalculados.map((fc) => (
-                          <li key={fc.nombre} className="text-sm text-gray-600">
-                            {fc.nombre} ({fc.registros} registros)
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </div>
-              </DialogDescription>
-              <DialogFooter>
-                <Button onClick={() => setShowSuccessDialog(false)}>Cerrar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Dialog for simple alerts */}
-          <Dialog open={showSimpleAlert} onOpenChange={setShowSimpleAlert}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Advertencia de Validación</DialogTitle>
-              </DialogHeader>
-              <DialogDescription>
-                <div className="whitespace-pre-wrap text-gray-700">{simpleAlertMessage}</div>
-              </DialogDescription>
-              <DialogFooter>
-                <Button onClick={() => setShowSimpleAlert(false)}>Entendido</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Dialog for showing error alerts */}
-          <AlertDialog open={showErrorAlert} onOpenChange={setShowErrorAlert}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Errores de Validación Detectados</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Los siguientes formularios presentan errores que deben ser corregidos:
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setShowErrorAlert(false)}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={() => setShowErrorDetails(true)}>Ver Detalles</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          {/* Dialog for showing detailed error view */}
-          {showErrorDetails && errorData && (
-            <Dialog open={showErrorDetails} onOpenChange={() => setShowErrorDetails(false)}>
-              <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Detalles de Errores de Validación</DialogTitle>
-                  <DialogDescription>
-                    A continuación se presentan los errores encontrados en los formularios.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  {errorData.tipoError === "completo" ? (
-                    <>
-                      <div className="flex justify-end space-x-2">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline">
-                              <Download className="mr-2 h-4 w-4" />
-                              Exportar Errores
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleExportErrors("csv")}>CSV</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExportErrors("excel")}>Excel</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExportErrors("pdf")}>PDF</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExportErrors("txt")}>TXT</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      <div className="grid grid-cols-1 gap-4">
-                        {errorData.detalles.map((detalle, index) => (
-                          <div key={index} className="border rounded-lg p-4 shadow-sm">
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-lg font-semibold">{detalle.formulario}</h3>
-                              <span className="text-sm font-medium text-red-600">{detalle.codigo}</span>
-                            </div>
-                            <p className="text-sm text-gray-700 mb-2">
-                              <strong>Concepto:</strong> {detalle.concepto || "N/A"}
-                            </p>
-                            <p className="text-sm text-gray-700 mb-2">{detalle.mensaje}</p>
-                            {detalle.permisible && (
-                              <p className="text-sm text-gray-700">
-                                <strong>Permisible:</strong> {detalle.permisible}
-                              </p>
-                            )}
-                            {detalle.necesitaComentario && (
-                              <>
-                                <p className="text-sm text-gray-700 mt-2">
-                                  <strong>Comentario:</strong>
-                                </p>
-                                <textarea
-                                  className="w-full p-2 border rounded-md mt-1"
-                                  rows={3}
-                                  value={errorComments[index] || ""}
-                                  onChange={(e) => handleCommentChange(index, e.target.value)}
-                                  maxLength={250}
-                                  placeholder="Ingrese su comentario (máx. 250 caracteres)"
-                                />
-                                <div className="text-right text-xs text-gray-500">
-                                  {(250 - (errorComments[index]?.length || 0)).toString() /* Remaining characters */}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Enviando...
                     </>
                   ) : (
                     <>
-                      <div className="flex justify-end space-x-2">
+                      <Send className="w-4 h-4 mr-2" />
+                      Enviar
+                    </>
+                  )}
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedFormularios.length === 0}
+                      className={selectedFormularios.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+                    >
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Exportar
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("csv")}>
+                            <FileSpreadsheet className="w-4 h-4 mr-2" />
+                            CSV - Valores separados por comas
+                          </DropdownMenuItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <div className="text-xs space-y-1">
+                            <p className="font-semibold">CSV - Sin límite de filas</p>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              <li>Encoding UTF-8</li>
+                              <li>Encabezados incluidos</li>
+                            </ul>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("excel")}>
+                            <FileSpreadsheet className="w-4 h-4 mr-2" />
+                            Excel (XLSX)
+                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                          </DropdownMenuItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <div className="text-xs space-y-1">
+                            <p className="font-semibold">Excel (XLSX)</p>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              <li>Máximo 50 MB por archivo</li>
+                              <li>Hasta 1.048.576 filas por hoja</li>
+                              <li>Múltiples hojas permitidas</li>
+                            </ul>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("pdf")}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            PDF
+                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                          </DropdownMenuItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <div className="text-xs space-y-1">
+                            <p className="font-semibold">PDF</p>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              <li>Máximo 10.000 líneas por archivo</li>
+                              <li>División automática si excede límite</li>
+                            </ul>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            TXT
+                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                          </DropdownMenuItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <div className="text-xs space-y-1">
+                            <p className="font-semibold">TXT - Sin límite de filas</p>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              <li>Encoding UTF-8</li>
+                              <li>Formato de texto plano</li>
+                            </ul>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Barra de Búsqueda */}
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar por código o nombre..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Tabla */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-border">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                      <input
+                        type="checkbox"
+                        className="rounded"
+                        checked={selectedFormularios.length === formulariosState.length}
+                        onChange={toggleSelectAll}
+                      />
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      CÓDIGO ↕
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      NOMBRE DEL FORMULARIO ↕
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      TIPO ↕
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ESTADO DE VALIDACIÓN ↕
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ÚLTIMA MODIFICACIÓN ↕
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ACCIONES
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-border">
+                  {filteredFormularios.map((form) => (
+                    <tr key={form.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <Checkbox
+                          checked={selectedFormularios.includes(form.id)}
+                          onCheckedChange={() => {
+                            handleToggleSelectFormulario(form.id)
+                            // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
+                          }}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
+                        >
+                          {form.estado}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
+                      <td className="px-4 py-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline">
-                              <Download className="mr-2 h-4 w-4" />
-                              Exportar Errores
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleExportErrors("csv")}>CSV</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExportErrors("excel")}>Excel</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExportErrors("pdf")}>PDF</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExportErrors("txt")}>TXT</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onEditForm?.(form.id, form.nombre)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Registro manual
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <FileSpreadsheet className="w-4 h-4 mr-2" />
+                              Generar protocolo importación
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Paginación */}
+            <div className="p-4 border-t border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Registros por página:</span>
+                <select className="px-2 py-1 border border-input rounded-md text-sm">
+                  <option>10</option>
+                  <option>25</option>
+                  <option>50</option>
+                </select>
+                <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled>
+                  Primera
+                </Button>
+                <Button variant="outline" size="sm" disabled>
+                  Anterior
+                </Button>
+                <Button variant="default" size="sm">
+                  Página 1 de 1
+                </Button>
+                <Button variant="outline" size="sm" disabled>
+                  Siguiente
+                </Button>
+                <Button variant="outline" size="sm" disabled>
+                  Última
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!showErrorsView && currentView === "dataTable" && selectedFormulario && (
+          <DataTable
+            title={selectedFormulario.nombre}
+            onBack={handleBackToList}
+            filtrosPrevios={{ categoria, periodo, ano }}
+            onUpdateEstado={handleUpdateFormularioEstado}
+          />
+        )}
+      </div>
+
+      <AlertDialog open={showSimpleAlert} onOpenChange={setShowSimpleAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Validaciones generales</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-line">{simpleAlertMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowSimpleAlert(false)}>Aceptar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Alerta con opción de ver errores para otros formularios */}
+      <AlertDialog open={showErrorAlert} onOpenChange={setShowErrorAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Errores en el envío a validar</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hubo errores en el envío a validar. ¿Desea ver el listado de errores?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowErrorAlert(false)}>No</AlertDialogCancel>
+            <AlertDialogAction onClick={handleViewErrorDetails}>Sí, ver errores</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={showErrorDetails} onOpenChange={setShowErrorDetails}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Detalles de errores de validación
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Encabezado con información del contexto */}
+          <div className="bg-gray-50 p-4 rounded-md border space-y-2 text-sm">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="font-semibold">Entidad:</span> {entidad}
+              </div>
+              <div>
+                <span className="font-semibold">Categoría:</span> {categoria}
+              </div>
+              <div>
+                <span className="font-semibold">Periodo:</span> {periodo}
+              </div>
+              <div>
+                <span className="font-semibold">Año:</span> {ano}
+              </div>
+            </div>
+          </div>
+
+          {/* Tabla de errores */}
+          <div className="border rounded-md overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="text-left p-3 font-semibold">Formulario</th>
+                  <th className="text-left p-3 font-semibold">Concepto</th>
+                  <th className="text-left p-3 font-semibold">Mensaje</th>
+                </tr>
+              </thead>
+              <tbody>
+                {errorData?.detalles.map((detalle, index) => (
+                  <tr key={index} className="border-t hover:bg-gray-50">
+                    <td className="p-3">{detalle.formulario}</td>
+                    <td className="p-3 font-mono text-xs">{detalle.concepto}</td>
+                    <td className="p-3">
+                      <span className="font-semibold text-gray-700">{detalle.concepto}:</span>{" "}
+                      <span className="text-red-600">{detalle.mensaje}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Botones de exportación */}
+          <div className="flex items-center justify-between pt-4 border-t">
+            <div className="text-sm text-gray-600">Exportar errores:</div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("csv")}>
+                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                        CSV
+                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                      </DropdownMenuItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <div className="text-xs space-y-1">
+                        <p className="font-semibold">CSV - Sin límite de filas</p>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          <li>Encoding UTF-8</li>
+                          <li>Encabezados incluidos</li>
+                        </ul>
                       </div>
-                      {errorData.detalles.map((detalle, index) => (
-                        <div key={index} className="border rounded-lg p-4 shadow-sm">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold">{detalle.formulario}</h3>
-                          </div>
-                          <p className="text-sm text-gray-700 mb-2">
-                            <strong>Concepto:</strong> {detalle.concepto || "N/A"}
-                          </p>
-                          <p className="text-sm text-gray-700 mb-2">{detalle.mensaje}</p>
-                        </div>
-                      ))}
-                    </>
-                  )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("excel")}>
+                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                        Excel (XLSX)
+                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                      </DropdownMenuItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <div className="text-xs space-y-1">
+                        <p className="font-semibold">Excel (XLSX)</p>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          <li>Máximo 50 MB por archivo</li>
+                          <li>Hasta 1.048.576 filas por hoja</li>
+                          <li>Múltiples hojas permitidas</li>
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("pdf")}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        PDF
+                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                      </DropdownMenuItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <div className="text-xs space-y-1">
+                        <p className="font-semibold">PDF</p>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          <li>Máximo 10.000 líneas por archivo</li>
+                          <li>División automática si excede límite</li>
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        TXT
+                        <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                      </DropdownMenuItem>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <div className="text-xs space-y-1">
+                        <p className="font-semibold">TXT - Sin límite de filas</p>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          <li>Encoding UTF-8</li>
+                          <li>Formato de texto plano</li>
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setShowErrorDetails(false)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de validación exitosa */}
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-green-600">Validación exitosa</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <div className="text-gray-700 font-medium">Los formularios validados son:</div>
+              {validationResult?.formularios.map((form, index) => (
+                <div key={index} className="bg-gray-50 p-3 rounded-md">
+                  <div className="text-sm">
+                    <span className="font-semibold">{form.nombre}:</span> {form.registros} registros
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Estado: <span className="text-green-600 font-medium">Validado</span> | Tipo:{" "}
+                    <span className="font-medium">Formulario</span>
+                  </div>
                 </div>
-                <DialogFooter>
-                  <Button onClick={() => setShowErrorDetails(false)}>Volver</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
-        </>
+              ))}
+
+              {validationResult?.formulariosCalculados && validationResult.formulariosCalculados.length > 0 && (
+                <>
+                  <div className="text-gray-700 font-medium mt-4 pt-3 border-t">
+                    Se generaron automáticamente los siguientes formularios calculados:
+                  </div>
+                  {validationResult.formulariosCalculados.map((form, index) => (
+                    <div key={`calc-${index}`} className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                      <div className="text-sm">
+                        <span className="font-semibold">{form.nombre}:</span> {form.registros} registros
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        Estado: <span className="text-yellow-600 font-medium">Pendiente en validar</span> | Tipo:{" "}
+                        <span className="font-medium">Formulario</span>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                setShowSuccessDialog(false)
+                setSelectedFormularios([])
+              }}
+            >
+              Aceptar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Capa de carga */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-6 max-w-md">
+            <Loader2 className="w-16 h-16 animate-spin text-primary" />
+            <div className="text-center space-y-4 w-full">
+              <h3 className="text-lg font-semibold text-gray-900">Validando formulario</h3>
+              <div className="space-y-3 text-left">
+                <div className={`flex items-center gap-3 ${validationPhase >= 1 ? "text-gray-900" : "text-gray-400"}`}>
+                  {validationPhase > 1 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  ) : validationPhase === 1 ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                  )}
+                  <span className="text-sm">1. Contenido de variables</span>
+                </div>
+                <div className={`flex items-center gap-3 ${validationPhase >= 2 ? "text-gray-900" : "text-gray-400"}`}>
+                  {validationPhase > 2 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  ) : validationPhase === 2 ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                  )}
+                  <span className="text-sm">2. Completitud</span>
+                </div>
+                <div className={`flex items-center gap-3 ${validationPhase >= 3 ? "text-gray-900" : "text-gray-400"}`}>
+                  {validationPhase > 3 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  ) : validationPhase === 3 ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                  )}
+                  <span className="text-sm">3. Validaciones generales</span>
+                </div>
+                <div className={`flex items-center gap-3 ${validationPhase >= 4 ? "text-gray-900" : "text-gray-400"}`}>
+                  {validationPhase > 4 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  ) : validationPhase === 4 ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                  )}
+                  <span className="text-sm">4. Expresiones de validación locales</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
