@@ -165,11 +165,12 @@ export default function GestionFormulariosSimple({
       // No permitir formularios en estado Aceptado
       if (estado === "Aceptado") return false
 
-      // Solo permitir estados que empiecen con P, E, o X (error y excepción)
+      // Solo permitir estados que empiecen con P, D, X, o V
       return (
         estado.startsWith("P") || // Pendiente en validar
-        estado.startsWith("E") || // Error de validación
-        estado.startsWith("X") // Excepción de validación
+        estado.startsWith("D") || // Rechazado por deficiencia
+        estado.startsWith("X") || // Excepción de validación
+        estado.startsWith("V") // En validación
       )
     })
   }
@@ -634,12 +635,7 @@ export default function GestionFormulariosSimple({
     }
   }
 
-  const handleBackToList = () => {
-    setSelectedFormulario(null)
-    setCurrentView("dataTable")
-  }
-
-  // Nueva vista para mostrar errores, con condicionales para diferentes tipos de errores
+  // Nueva vista para mostrar errores, con condicionales p
   if (showErrorsView && errorData) {
     return (
       <div className="fixed inset-0 bg-white z-50 overflow-auto">
@@ -811,6 +807,15 @@ export default function GestionFormulariosSimple({
         </div>
       </div>
     )
+  }
+
+  // Define handleBackToList here if it's not imported or globally available
+  const handleBackToList = () => {
+    // Implement your logic to go back to the list view
+    // For example, you might set a state variable or call a prop function
+    console.log("Navigating back to list...")
+    // If you have an onBack prop, you can call it:
+    // onBack?.();
   }
 
   return (
