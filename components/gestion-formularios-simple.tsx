@@ -176,40 +176,25 @@ export default function GestionFormulariosSimple({
     // Obtener los formularios seleccionados
     const formularios = formulariosState.filter((f) => selectedFormularios.includes(f.id))
 
-    console.log(
-      "[v0] Formularios seleccionados:",
-      formularios.map((f) => ({ nombre: f.nombre, estado: f.estado })),
-    )
-
     // Verificar que todos los formularios seleccionados tengan estados válidos
     const result = formularios.every((f) => {
       const estado = f.estado
-      console.log("[v0] Verificando formulario:", f.nombre, "Estado:", estado)
 
       // No permitir formularios en estado Aceptado
       if (estado === "Aceptado") {
-        console.log("[v0] Rechazado: Estado Aceptado")
         return false
       }
 
-      // Solo permitir estados que empiecen con P, D, X, o V
+      // Solo permitir estados: P (Pendiente), R (Rechazado por Deficiencia), X (Excepción), V (En validación)
       const isValid =
         estado.startsWith("P") || // Pendiente en validar
-        estado.startsWith("D") || // Rechazado por deficiencia
+        estado.startsWith("R") || // Rechazado por Deficiencia (corregido de D a R)
         estado.startsWith("X") || // Excepción de validación
         estado.startsWith("V") // En validación
-
-      console.log("[v0] Estado válido?:", isValid, "- Empieza con P/D/X/V?:", {
-        P: estado.startsWith("P"),
-        D: estado.startsWith("D"),
-        X: estado.startsWith("X"),
-        V: estado.startsWith("V"),
-      })
 
       return isValid
     })
 
-    console.log("[v0] Resultado final canSendSelectedFormularios:", result)
     return result
   }
 
