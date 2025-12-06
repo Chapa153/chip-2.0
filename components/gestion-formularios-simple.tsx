@@ -86,6 +86,36 @@ export default function GestionFormulariosSimple({
       registros: number
     }>
   } | null>(null)
+  const [showSimpleAlert, setShowSimpleAlert] = useState(false)
+  const [simpleAlertMessage, setSimpleAlertMessage] = useState("")
+  const [errorsSeen, setErrorsSeen] = useState(false)
+  const [showErrorAlert, setShowErrorAlert] = useState(false)
+  const [showErrorsView, setShowErrorsView] = useState(false)
+  const [errorData, setErrorData] = useState<{
+    formularios: string[]
+    contenido: Array<{
+      formulario: string
+      concepto: string
+      mensaje: string
+    }>
+    completitud: Array<{
+      formulario: string
+      concepto: string
+      mensaje: string
+    }>
+    expresiones: Array<{
+      formulario: string
+      codigo: string
+      mensaje: string
+      permisible: string
+      necesitaComentario: string
+    }>
+    detalles?: any
+  } | null>(null)
+  const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({})
+  const [currentView, setCurrentView] = useState("list")
+  const [selectedFormulario, setSelectedFormulario] = useState<Formulario | null>(null)
+
   const [formulariosState, setFormulariosState] = useState<Formulario[]>([
     // Renombrado a setFormulariosState para evitar conflicto
     {
@@ -227,10 +257,9 @@ export default function GestionFormulariosSimple({
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const [showSimpleAlert, setShowSimpleAlert] = useState(false)
-  const [simpleAlertMessage, setSimpleAlertMessage] = useState("")
-
-  const [errorsSeen, setErrorsSeen] = useState(false)
+  // const [showSimpleAlert, setShowSimpleAlert] = useState(false) // Reubicado al inicio
+  // const [simpleAlertMessage, setSimpleAlertMessage] = useState("") // Reubicado al inicio
+  // const [errorsSeen, setErrorsSeen] = useState(false) // Reubicado al inicio
 
   // Reemplazo de `selectedForms` con `selectedFormularios` y ajuste en `handleEnviar` para usar `id` en lugar de `codigo`
   const handleEnviar = async () => {
@@ -531,7 +560,7 @@ export default function GestionFormulariosSimple({
   const handleBackFromErrors = () => {
     setShowErrorsView(false)
     setErrorData(null)
-    setErrorComments({}) // Limpiar comentarios al volver
+    setErrorComments({})
     setSelectedFormularios([])
     // Los formularios mantienen su estado original para poder ser reenviados
   }
@@ -671,30 +700,30 @@ export default function GestionFormulariosSimple({
     )
   }
 
-  const [showErrorAlert, setShowErrorAlert] = useState(false)
-  const [showErrorsView, setShowErrorsView] = useState(false)
-  const [errorData, setErrorData] = useState<{
-    formularios: string[]
-    contenido: Array<{
-      formulario: string
-      concepto: string
-      mensaje: string
-    }>
-    completitud: Array<{
-      formulario: string
-      concepto: string
-      mensaje: string
-    }>
-    expresiones: Array<{
-      formulario: string
-      codigo: string
-      mensaje: string
-      permisible: string
-      necesitaComentario: string
-    }>
-    detalles?: any // Agregado para compatibilidad con el Dialog obsoleto
-  } | null>(null)
-  const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({})
+  // const [showErrorAlert, setShowErrorAlert] = useState(false) // Reubicado al inicio
+  // const [showErrorsView, setShowErrorsView] = useState(false) // Reubicado al inicio
+  // const [errorData, setErrorData] = useState<{ // Reubicado al inicio
+  //   formularios: string[]
+  //   contenido: Array<{
+  //     formulario: string
+  //     concepto: string
+  //     mensaje: string
+  //   }>
+  //   completitud: Array<{
+  //     formulario: string
+  //     concepto: string
+  //     mensaje: string
+  //   }>
+  //   expresiones: Array<{
+  //     formulario: string
+  //     codigo: string
+  //     mensaje: string
+  //     permisible: string
+  //     necesitaComentario: string
+  //   }>
+  //   detalles?: any // Agregado para compatibilidad con el Dialog obsoleto
+  // } | null>(null)
+  // const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({}) // Reubicado al inicio
 
   const handleCommentChange = (index: number, value: string) => {
     if (value.length <= 250) {
@@ -933,8 +962,8 @@ export default function GestionFormulariosSimple({
   }
 
   // State variables for current view and selected form
-  const [currentView, setCurrentView] = useState("list") // 'list' or 'dataTable'
-  const [selectedFormulario, setSelectedFormulario] = useState<Formulario | null>(null)
+  // const [currentView, setCurrentView] = useState("list") // Reubicado al inicio
+  // const [selectedFormulario, setSelectedFormulario] = useState<Formulario | null>(null) // Reubicado al inicio
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -1075,13 +1104,8 @@ export default function GestionFormulariosSimple({
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={selectedFormularios.length === 0}
-                      className={selectedFormularios.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
-                    >
-                      <FileDown className="w-4 h-4 mr-2" />
+                    <Button variant="outline" className="flex items-center gap-2 bg-transparent">
+                      <Download className="w-4 h-4" />
                       Exportar
                     </Button>
                   </DropdownMenuTrigger>
