@@ -16,8 +16,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   FileText,
-  ArrowLeft,
   Download,
+  ChevronLeft,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -224,103 +224,115 @@ export default function GestionFormulariosSimple({
       .map((id) => formulariosState.find((f) => f.id === id)?.nombre)
       .filter(Boolean) as string[]
 
-    if (selectedNames.includes("Estado de Resultados")) {
-      setIsSubmitting(false)
-      setValidationPhase(0)
-      setErrorData({
-        formularios: ["Estado de Resultados"],
-        detalles: [
-          {
-            formulario: "Estado de Resultados",
-            concepto: "",
-            mensaje: "",
-            codigo: "ERR_001",
-            permisible: "SI",
-            necesitaComentario: "SI",
-          },
-          {
-            formulario: "Estado de Resultados",
-            concepto: "",
-            mensaje: "",
-            codigo: "ERR_002",
-            permisible: "NO",
-            necesitaComentario: "NO",
-          },
-        ],
-        tipoError: "completo",
-      })
-      setShowErrorAlert(true)
-      return
-    }
+    // if (selectedNames.includes("Estado de Resultados")) { // Este bloque ahora está en la fase 4
+    //   setIsSubmitting(false)
+    //   setValidationPhase(0)
+    //   setErrorData({
+    //     formularios: ["Estado de Resultados"],
+    //     detalles: [
+    //       {
+    //         formulario: "Estado de Resultados",
+    //         concepto: "",
+    //         mensaje: "",
+    //         codigo: "ERR_001",
+    //         permisible: "SI",
+    //         necesitaComentario: "SI",
+    //       },
+    //       {
+    //         formulario: "Estado de Resultados",
+    //         concepto: "",
+    //         mensaje: "",
+    //         codigo: "ERR_002",
+    //         permisible: "NO",
+    //         necesitaComentario: "NO",
+    //       },
+    //     ],
+    //     tipoError: "completo", // Este tipo de error ya no se usa directamente
+    //   })
+    //   setShowErrorAlert(true)
+    //   return
+    // }
 
     // If there are errors in the selected forms (Phase 1 and 2)
-    if (
-      selectedNames.includes("Notas a los Estados Financieros") ||
-      selectedNames.includes("Estado de Cambios en el Patrimonio")
-    ) {
-      setIsSubmitting(false)
-      setValidationPhase(0)
+    const errores: Array<{
+      formulario: string
+      concepto: string
+      mensaje: string
+      codigo?: string
+      permisible?: string
+      necesitaComentario?: string
+    }> = []
 
-      const errores: Array<{ formulario: string; concepto: string; mensaje: string }> = []
+    if (selectedNames.includes("Notas a los Estados Financieros")) {
+      // Data errors for Notas
+      errores.push(
+        {
+          formulario: "Notas a los Estados Financieros",
+          concepto: "5105 - Políticas contables significativas",
+          mensaje: "var-3: Formato de fecha incorrecto detectado",
+        },
+        {
+          formulario: "Notas a los Estados Financieros",
+          concepto: "5205 - Juicios y estimaciones contables",
+          mensaje: "var-1: Caracteres no permitidos en campo numérico",
+        },
+        {
+          formulario: "Notas a los Estados Financieros",
+          concepto: "5305 - Gestión de riesgos financieros",
+          mensaje: "var-5: Valor fuera del rango permitido",
+        },
+      )
+    }
 
-      // Data errors for Notas a los Estados Financieros
-      if (selectedNames.includes("Notas a los Estados Financieros")) {
-        errores.push(
-          {
-            formulario: "Notas a los Estados Financieros",
-            concepto: "1105 - Efectivo y equivalentes al efectivo",
-            mensaje: "var-3: Contenido malicioso detectado",
-          },
-          {
-            formulario: "Notas a los Estados Financieros",
-            concepto: "2105 - Cuentas por pagar",
-            mensaje: "var-5: Formato numérico inválido",
-          },
-          {
-            formulario: "Notas a los Estados Financieros",
-            concepto: "3605 - Resultado del ejercicio",
-            mensaje: "var-2: Dato fuera del rango permitido",
-          },
-        )
-      }
-
-      // Fase 2: Completitud
-      setValidationPhase(2)
-      await new Promise((resolve) => setTimeout(resolve, 800))
-
-      // Completeness errors for Estado de Cambios en el Patrimonio
-      if (selectedNames.includes("Estado de Cambios en el Patrimonio")) {
-        errores.push(
-          {
-            formulario: "Estado de Cambios en el Patrimonio",
-            concepto: "3105 - Capital social",
-            mensaje: "var-1: Campo requerido sin completar",
-          },
-          {
-            formulario: "Estado de Cambios en el Patrimonio",
-            concepto: "3205 - Reservas",
-            mensaje: "var-4: Campo requerido sin completar",
-          },
-          {
-            formulario: "Estado de Cambios en el Patrimonio",
-            concepto: "3305 - Resultados acumulados",
-            mensaje: "var-2: Campo requerido sin completar",
-          },
-        )
-      }
-
+    if (errores.length > 0) {
+      // Si hay errores en Fase 1, mostrarlos y salir
       setErrorData({
         formularios: selectedNames,
         detalles: errores,
+        tipoError: "contenido", // Especificar tipo de error para fase 1
       })
-
       setShowErrorAlert(true)
+      setIsSubmitting(false)
+      setValidationPhase(0)
       return
     }
 
-    // Fase 2: Completitud (if no errors in Phase 1)
+    // Fase 2: Completitud
     setValidationPhase(2)
     await new Promise((resolve) => setTimeout(resolve, 800))
+
+    if (selectedNames.includes("Estado de Cambios en el Patrimonio")) {
+      errores.push(
+        {
+          formulario: "Estado de Cambios en el Patrimonio",
+          concepto: "3105 - Capital social",
+          mensaje: "var-1: Campo requerido sin completar",
+        },
+        {
+          formulario: "Estado de Cambios en el Patrimonio",
+          concepto: "3205 - Reservas",
+          mensaje: "var-4: Campo requerido sin completar",
+        },
+        {
+          formulario: "Estado de Cambios en el Patrimonio",
+          concepto: "3305 - Resultados acumulados",
+          mensaje: "var-2: Campo requerido sin completar",
+        },
+      )
+    }
+
+    if (errores.length > 0) {
+      // Si hay errores en Fase 2, mostrarlos y salir
+      setErrorData({
+        formularios: selectedNames,
+        detalles: errores,
+        tipoError: "completitud", // Especificar tipo de error para fase 2
+      })
+      setShowErrorAlert(true)
+      setIsSubmitting(false)
+      setValidationPhase(0)
+      return
+    }
 
     // Fase 3: Validaciones generales
     setValidationPhase(3)
@@ -343,6 +355,39 @@ export default function GestionFormulariosSimple({
     // Fase 4: Expresiones de validación locales
     setValidationPhase(4)
     await new Promise((resolve) => setTimeout(resolve, 800))
+
+    if (selectedNames.includes("Estado de Resultados")) {
+      const expresionesErrores = [
+        {
+          formulario: "Estado de Resultados",
+          codigo: "VAL-001",
+          concepto: "",
+          mensaje: "Los ingresos operacionales no coinciden con la suma de sus componentes",
+          permisible: "NO",
+          necesitaComentario: "NO",
+        },
+        {
+          formulario: "Estado de Resultados",
+          codigo: "VAL-002",
+          concepto: "",
+          mensaje: "El costo de ventas excede los ingresos operacionales",
+          permisible: "SI",
+          necesitaComentario: "SI",
+        },
+      ]
+
+      setErrorData({
+        formularios: selectedNames,
+        detalles: expresionesErrores,
+        tipoError: "expresiones", // Especificar tipo de error para fase 4
+      })
+      setShowErrorAlert(true)
+      setIsSubmitting(false)
+      setValidationPhase(0)
+      return
+    }
+
+    // Si no hay errores en ninguna fase, continuar con el éxito
 
     // If it's Información Contable Convergencia category, show specific message
     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
@@ -453,7 +498,8 @@ export default function GestionFormulariosSimple({
 
     let dataToExport
 
-    if (errorData.tipoError === "completo") {
+    // Ajuste para el nuevo tipoError
+    if (errorData.tipoError === "expresiones") {
       dataToExport = errorData.detalles.map((d, index) => ({
         Formulario: d.formulario,
         Concepto: d.concepto || "-",
@@ -464,6 +510,7 @@ export default function GestionFormulariosSimple({
         Comentario: errorComments[index] || "",
       }))
     } else {
+      // Para tipoError "contenido" y "completitud"
       dataToExport = errorData.detalles.map((d) => ({
         Formulario: d.formulario,
         Concepto: d.concepto,
@@ -478,7 +525,7 @@ export default function GestionFormulariosSimple({
 
     if (format === "txt") {
       let txtContent = ""
-      if (errorData.tipoError === "completo") {
+      if (errorData.tipoError === "expresiones") {
         txtContent = `Reporte Detallado de Errores de Validación\n${"=".repeat(60)}\n\n`
         dataToExport.forEach((row, idx) => {
           txtContent += `Error ${idx + 1}:\n`
@@ -494,6 +541,7 @@ export default function GestionFormulariosSimple({
           txtContent += "\n"
         })
       } else {
+        // Para tipoError "contenido" y "completitud"
         txtContent = `Reporte de Errores de Validación\n${"=".repeat(50)}\n\nEntidad: ${entidad}\nCategoría: ${categoria}\nPeríodo: ${periodo}\nAño: ${ano}\n\n${"=".repeat(50)}\n\nErrores Detectados:\n\n`
         dataToExport
           .map(
@@ -511,8 +559,8 @@ export default function GestionFormulariosSimple({
       URL.revokeObjectURL(url)
     } else if (format === "csv") {
       const headers =
-        errorData.tipoError === "completo"
-          ? ["Formulario", "Concepto", "Mensaje", "Código", "Permisible", "NecesitaComentario", "Comentario"]
+        errorData.tipoError === "expresiones"
+          ? ["Formulario", "Concepto", "Mensaje", "Codigo", "Permisible", "NecesitaComentario", "Comentario"]
           : ["Formulario", "Concepto", "Mensaje"]
       const csvContent = [
         headers.join(","),
@@ -532,6 +580,20 @@ export default function GestionFormulariosSimple({
       link.download = filename
       link.click()
       URL.revokeObjectURL(url)
+    } else if (format === "excel") {
+      // Placeholder for Excel export
+      toast({
+        title: "Exportación no implementada",
+        description: "La exportación a Excel aún no está disponible.",
+        variant: "warning",
+      })
+    } else if (format === "pdf") {
+      // Placeholder for PDF export
+      toast({
+        title: "Exportación no implementada",
+        description: "La exportación a PDF aún no está disponible.",
+        variant: "warning",
+      })
     }
 
     toast({
@@ -571,7 +633,7 @@ export default function GestionFormulariosSimple({
       permisible?: string
       necesitaComentario?: string
     }>
-    tipoError?: "simple" | "completo"
+    tipoError?: "contenido" | "completitud" | "expresiones"
   } | null>(null)
   const [showErrorDetails, setShowErrorDetails] = useState(false)
   const [currentView, setCurrentView] = useState("dataTable")
@@ -589,171 +651,172 @@ export default function GestionFormulariosSimple({
     setCurrentView("dataTable")
   }
 
+  // Nueva vista para mostrar errores, con condicionales para diferentes tipos de errores
   if (showErrorsView && errorData) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="mb-6">
-          <Button variant="outline" onClick={handleBackFromErrors} className="mb-4 bg-transparent">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver
-          </Button>
-
-          <div className="bg-white border rounded-lg shadow-sm">
-            {/* Título y contador de errores */}
-            <div className="border-b px-6 py-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                {errorData.formularios.length > 0
-                  ? `${errorData.formularios[0]}${errorData.formularios.length > 1 ? ` y ${errorData.formularios.length - 1} más` : ""}`
-                  : "Errores de Validación"}
-              </h2>
-              <div className="text-sm text-gray-600">Cantidad de errores: {errorData.detalles.length}</div>
-            </div>
-
-            {/* Encabezado con información de contexto - estilo unificado */}
-            <div className="px-6 py-4 bg-gray-50 border-b">
-              <div className="grid grid-cols-4 gap-6">
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase mb-1">Entidad</div>
-                  <div className="text-sm font-semibold text-gray-900">{entidad}</div>
-                </div>
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase mb-1">Categoría</div>
-                  <div className="text-sm font-semibold text-gray-900">{categoria}</div>
-                </div>
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase mb-1">Año</div>
-                  <div className="text-sm font-semibold text-gray-900">{ano}</div>
-                </div>
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase mb-1">Período</div>
-                  <div className="text-sm font-semibold text-gray-900">{periodo}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Botón de exportar - estilo unificado */}
-            <div className="px-6 py-4 border-b flex justify-end">
+      <div className="fixed inset-0 bg-white z-50 overflow-auto">
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="max-w-7xl mx-auto">
+            {/* Header with back button */}
+            <div className="mb-6 flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={handleBackFromErrors}
+                className="flex items-center gap-2 bg-transparent"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Volver
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 bg-transparent">
+                  <Button variant="outline" className="flex items-center gap-2 bg-transparent">
                     <Download className="w-4 h-4" />
                     Exportar
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => handleExportErrors("csv")}>
                     <FileText className="w-4 h-4 mr-2" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">CSV</span>
-                      <span className="text-xs text-gray-500">Valores separados por comas</span>
-                    </div>
+                    CSV
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExportErrors("excel")}>
                     <FileSpreadsheet className="w-4 h-4 mr-2" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">Excel</span>
-                      <span className="text-xs text-gray-500">Hoja de cálculo</span>
-                    </div>
+                    Excel
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExportErrors("pdf")}>
                     <FileText className="w-4 h-4 mr-2" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">PDF</span>
-                      <span className="text-xs text-gray-500">Documento portable</span>
-                    </div>
+                    PDF
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExportErrors("txt")}>
                     <FileText className="w-4 h-4 mr-2" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">TXT</span>
-                      <span className="text-xs text-gray-500">Texto plano</span>
-                    </div>
+                    TXT
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
 
-            <div className="p-6">
-              <div className="overflow-x-auto">
-                {errorData.tipoError === "completo" ? (
-                  /*Tabla para expresiones de validación locales */
-                  <table className="w-full border-collapse border border-gray-300">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                          Formulario
-                        </th>
-                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                          Código del Error
-                        </th>
-                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                          Mensaje
-                        </th>
-                        <th className="p-3 text-center text-sm font-semibold text-gray-700 border border-gray-300">
-                          Permisible
-                        </th>
-                        <th className="p-3 text-center text-sm font-semibold text-gray-700 border border-gray-300">
-                          Necesita comentario
-                        </th>
-                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                          Comentario
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {errorData.detalles.map((detalle, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
-                          <td className="p-3 text-sm border border-gray-300">{detalle.codigo}</td>
-                          <td className="p-3 text-sm border border-gray-300">{detalle.mensaje || "Mensaje"}</td>
-                          <td className="p-3 text-sm text-center border border-gray-300">{detalle.permisible}</td>
-                          <td className="p-3 text-sm text-center border border-gray-300">
-                            {detalle.necesitaComentario}
-                          </td>
-                          <td className="p-3 border border-gray-300">
-                            <input
-                              type="text"
-                              value={errorComments[index] || ""}
-                              onChange={(e) => handleCommentChange(index, e.target.value)}
-                              placeholder="Caja de texto"
-                              className="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              maxLength={250}
-                            />
-                            <div className="text-xs text-gray-500 mt-1 text-right">
-                              {errorComments[index]?.length || 0}/250
-                            </div>
-                          </td>
+            {/* Error details container */}
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+              {/* Header Information */}
+              <div className="bg-gray-50 border-b border-gray-200 p-6">
+                <div className="grid grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Entidad</p>
+                    <p className="text-base font-semibold text-gray-900 mt-1">{entidad}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Categoría</p>
+                    <p className="text-base font-semibold text-gray-900 mt-1">{categoria}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Año</p>
+                    <p className="text-base font-semibold text-gray-900 mt-1">{ano}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Período</p>
+                    <p className="text-base font-semibold text-gray-900 mt-1">{periodo}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {errorData.tipoError === "contenido" && "Errores de Contenido de Variables"}
+                    {errorData.tipoError === "completitud" && "Errores de Completitud"}
+                    {errorData.tipoError === "expresiones" && "Errores de Expresiones de Validación Locales"}
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {errorData.tipoError === "contenido" &&
+                      "Se detectaron problemas en la estructura y formato de los datos enviados"}
+                    {errorData.tipoError === "completitud" && "Se encontraron campos requeridos sin completar"}
+                    {errorData.tipoError === "expresiones" &&
+                      "Se identificaron inconsistencias en las operaciones aritméticas configuradas"}
+                  </p>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto">
+                  {errorData.tipoError === "expresiones" ? (
+                    /*Tabla para expresiones de validación locales */
+                    <table className="w-full border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Formulario
+                          </th>
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Código del Error
+                          </th>
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Mensaje
+                          </th>
+                          <th className="p-3 text-center text-sm font-semibold text-gray-700 border border-gray-300">
+                            Permisible
+                          </th>
+                          <th className="p-3 text-center text-sm font-semibold text-gray-700 border border-gray-300">
+                            Necesita comentario
+                          </th>
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Comentario (Máximo 250 caracteres)
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  /* Tabla para contenido de variables y completitud */
-                  <table className="w-full border-collapse border border-gray-300">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                          Formulario
-                        </th>
-                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                          Código y Nombre del Concepto
-                        </th>
-                        <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                          Descripción
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {errorData.detalles.map((detalle, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
-                          <td className="p-3 text-sm font-mono border border-gray-300">{detalle.concepto}</td>
-                          <td className="p-3 text-sm text-red-600 border border-gray-300">{detalle.mensaje}</td>
+                      </thead>
+                      <tbody>
+                        {errorData.detalles.map((detalle, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
+                            <td className="p-3 text-sm border border-gray-300">{detalle.codigo}</td>
+                            <td className="p-3 text-sm border border-gray-300">{detalle.mensaje || "Mensaje"}</td>
+                            <td className="p-3 text-sm text-center border border-gray-300">{detalle.permisible}</td>
+                            <td className="p-3 text-sm text-center border border-gray-300">
+                              {detalle.necesitaComentario}
+                            </td>
+                            <td className="p-3 border border-gray-300">
+                              <input
+                                type="text"
+                                value={errorComments[index] || ""}
+                                onChange={(e) => handleCommentChange(index, e.target.value)}
+                                placeholder="Caja de texto"
+                                className="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                maxLength={250}
+                              />
+                              <div className="text-xs text-gray-500 mt-1 text-right">
+                                {errorComments[index]?.length || 0}/250
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    /* Tabla para contenido de variables y completitud */
+                    <table className="w-full border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Formulario
+                          </th>
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Código y Nombre del Concepto
+                          </th>
+                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                            Descripción (Variable y Error)
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                      </thead>
+                      <tbody>
+                        {errorData.detalles.map((detalle, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
+                            <td className="p-3 text-sm font-mono border border-gray-300">{detalle.concepto}</td>
+                            <td className="p-3 text-sm text-red-600 border border-gray-300">{detalle.mensaje}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
             </div>
           </div>
