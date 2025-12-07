@@ -13,6 +13,7 @@ import Footer from "@/components/footer"
 import Breadcrumb from "@/components/breadcrumb"
 import Home from "@/components/home"
 import GestionRolesView from "@/components/gestion-roles-view"
+import GestionAnalistas from "@/components/gestion-analistas"
 
 interface NavigationState {
   view: string | null
@@ -48,7 +49,7 @@ export default function Page() {
       return
     }
 
-    if (["entidades", "usuarios", "roles", "auditoria"].includes(moduleId)) {
+    if (["entidades", "usuarios", "roles", "analistas", "auditoria"].includes(moduleId)) {
       setNavigationStack({ view: "administracion", subview: moduleId })
     } else if (moduleId === "gestion-formularios") {
       setNavigationStack({ view: "formularios", subview: "gestion-formularios" })
@@ -125,6 +126,8 @@ export default function Page() {
       breadcrumbItems.push({ label: "Gestión de Usuarios", isActive: true })
     } else if (navigationStack.subview === "roles") {
       breadcrumbItems.push({ label: "Gestión de Roles", isActive: true })
+    } else if (navigationStack.subview === "analistas") {
+      breadcrumbItems.push({ label: "Gestión de Analistas", isActive: true })
     } else if (navigationStack.subview === "auditoria") {
       breadcrumbItems.push({ label: "Auditoría", isActive: true })
     } else {
@@ -232,6 +235,15 @@ export default function Page() {
             <GestionRolesView onBack={handleBack} />
           </div>
         )}
+        {navigationStack.view === "administracion" && navigationStack.subview === "analistas" && (
+          <div className="max-w-7xl mx-auto px-4 py-12">
+            <GestionAnalistas onBack={handleBack} />
+          </div>
+        )}
+
+        {navigationStack.view === "administracion" && navigationStack.subview === "auditoria" && (
+          <div className="max-w-7xl mx-auto px-4 py-12">{/* Placeholder for Auditoría component */}</div>
+        )}
 
         {navigationStack.view === "formularios" && navigationStack.subview === "gestion-formularios" && (
           <div className="max-w-7xl mx-auto px-4 py-6">
@@ -268,6 +280,11 @@ export default function Page() {
         {navigationStack.view === "roles" && (
           <div className="max-w-7xl mx-auto px-4 py-12">
             <GestionRolesView onBack={handleBack} />
+          </div>
+        )}
+        {navigationStack.view === "analistas" && (
+          <div className="max-w-7xl mx-auto px-4 py-12">
+            <GestionAnalistas onBack={handleBack} />
           </div>
         )}
       </main>
