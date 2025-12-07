@@ -120,6 +120,7 @@ export default function GestionFormulariosSimple({
   const [showCertificationDialog, setShowCertificationDialog] = useState(false)
   const [showCentralErrorDialog, setShowCentralErrorDialog] = useState(false)
   const [showEmailFormatDialog, setShowEmailFormatDialog] = useState(false)
+  const [isValidatingCentral, setIsValidatingCentral] = useState(false)
   // </CHANGE>
 
   // Define currentView and selectedFormulario here
@@ -216,6 +217,11 @@ export default function GestionFormulariosSimple({
     }
   }
 
+  const getEstadosPermitidos = () => {
+    // Define los estados que se permiten para enviar
+    return ["Pendiente en validar", "Rechazado por Deficiencia", "Excepción de validación", "En validación"]
+  }
+
   const canSendSelectedFormularios = (): boolean => {
     if (selectedFormularios.length === 0) return false
 
@@ -225,18 +231,15 @@ export default function GestionFormulariosSimple({
     // Verificar que todos los formularios seleccionados tengan estados válidos
     const result = formularios.every((f) => {
       const estado = f.estado
+      const estadosPermitidos = getEstadosPermitidos()
 
       // No permitir formularios en estado Aceptado
       if (estado === "Aceptado") {
         return false
       }
 
-      // Solo permitir estados: P (Pendiente), R (Rechazado por Deficiencia), X (Excepción), V (En validación)
-      const isValid =
-        estado.startsWith("P") || // Pendiente en validar
-        estado.startsWith("R") || // Rechazado por Deficiencia (corregido de D a R)
-        estado.startsWith("X") || // Excepción de validación
-        estado.startsWith("V") // En validación
+      // Solo permitir estados de la lista `estadosPermitidos`
+      const isValid = estadosPermitidos.some((e) => estado.startsWith(e))
 
       return isValid
     })
@@ -273,30 +276,18 @@ export default function GestionFormulariosSimple({
 
   // Reemplazo de `selectedForms` con `selectedFormularios` y ajuste en `handleEnviar` para usar `id` en lugar de `codigo`
   const handleEnviar = async () => {
-    console.log("[v0] Botón Enviar clickeado en GestionFormulariosSimple")
+    console.log("[v0] handleEnviar - Iniciando envío")
+    const allowedStates = getEstadosPermitidos()
+    console.log("[v0] Estados permitidos:", allowedStates)
 
-    const selectedNames = selectedFormularios
-      .map((id) => {
-        const form = formulariosState.find((f) => f.id === id)
-        return form?.nombre
-      })
-      .filter((name): name is string => name !== undefined)
+    const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+    console.log("[v0] Formularios seleccionados:", formulariosSeleccionados)
 
-    console.log("[v0] Formularios seleccionados:", selectedNames)
-
-    if (selectedFormularios.length === 0) {
-      toast({
-        title: "Sin selección",
-        description: "Por favor selecciona al menos un formulario para enviar.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    const todosSeleccionados = selectedFormularios.length === formulariosState.length
+    const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
+    console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
 
     if (todosSeleccionados) {
-      // Flujo especial: validaciones centrales
+      // Mostrar diálogo de certificación
       setShowCertificationDialog(true)
       return
     }
@@ -331,7 +322,8 @@ export default function GestionFormulariosSimple({
     // Fase 1: Contenido de variables
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    if (selectedNames.includes("Notas a los Estados Financieros")) {
+    if (selectedFormularios.includes("CGN-2025-05")) {
+      // Notas a los Estados Financieros
       errorsByType.contenido.push(
         {
           formulario: "Notas a los Estados Financieros",
@@ -350,7 +342,8 @@ export default function GestionFormulariosSimple({
     setValidationPhase(2)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    if (selectedNames.includes("Estado de Cambios en el Patrimonio")) {
+    if (selectedFormularios.includes("CGN-2025-04")) {
+      // Estado de Cambios en el Patrimonio
       errorsByType.completitud.push(
         {
           formulario: "Estado de Cambios en el Patrimonio",
@@ -369,7 +362,8 @@ export default function GestionFormulariosSimple({
     setValidationPhase(3)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    if (selectedNames.includes("Flujo de Efectivo")) {
+    if (selectedFormularios.includes("CGN-2025-03")) {
+      // Flujo de Efectivo
       hasInformativeAlert = true
       setSimpleAlertMessage(
         "El formulario Flujo de Efectivo presenta las siguientes validaciones generales:\n\n" +
@@ -384,7 +378,8 @@ export default function GestionFormulariosSimple({
     setValidationPhase(4)
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    if (selectedNames.includes("Estado de Resultados")) {
+    if (selectedFormularios.includes("CGN-2025-02")) {
+      // Estado de Resultados
       errorsByType.expresiones.push(
         {
           formulario: "Estado de Resultados",
@@ -410,7 +405,12 @@ export default function GestionFormulariosSimple({
 
     if (totalErrors > 0) {
       setErrorData({
-        formularios: selectedNames,
+        formularios: selectedFormularios
+          .map((id) => {
+            const form = formulariosState.find((f) => f.id === id)
+            return form?.nombre || ""
+          })
+          .filter(Boolean), // Filtrar nombres vacíos si algún formulario no se encuentra
         contenido: errorsByType.contenido,
         completitud: errorsByType.completitud,
         expresiones: errorsByType.expresiones,
@@ -1528,6 +1528,7 @@ export default function GestionFormulariosSimple({
         </AlertDialogContent>
       </AlertDialog> */}
 
+      {/* Dialog de Certificación Central */}
       <Dialog open={showCertificationDialog} onOpenChange={setShowCertificationDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1555,10 +1556,23 @@ export default function GestionFormulariosSimple({
             <Button
               onClick={() => {
                 setShowCertificationDialog(false)
-                // Después de aceptar, simular error de validación central
+                setIsValidatingCentral(true)
+                // Simular proceso de validación
                 setTimeout(() => {
+                  setIsValidatingCentral(false)
                   setShowCentralErrorDialog(true)
-                }, 500)
+                  // Actualizar todos los formularios a Categoría y Rechazado por Deficiencia
+                  setFormulariosState((prev) =>
+                    prev.map((f) => ({
+                      ...f,
+                      tipo: "Categoría",
+                      estado: "Rechazado por Deficiencia",
+                      estadoColor: "red",
+                      fecha: new Date().toLocaleDateString("es-ES"),
+                    })),
+                  )
+                }, 2000) // 2 segundos de simulación
+                // </CHANGE>
               }}
             >
               Aceptar
@@ -1566,6 +1580,17 @@ export default function GestionFormulariosSimple({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* </CHANGE> */}
+
+      {isValidatingCentral && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+            <p className="text-sm text-gray-700">Procesando validación central (Fase 5)...</p>
+          </div>
+        </div>
+      )}
+      {/* </CHANGE> */}
 
       <Dialog open={showCentralErrorDialog} onOpenChange={setShowCentralErrorDialog}>
         <DialogContent className="max-w-2xl">
@@ -1607,14 +1632,14 @@ export default function GestionFormulariosSimple({
       </Dialog>
 
       <Dialog open={showEmailFormatDialog} onOpenChange={setShowEmailFormatDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5 text-blue-500" />
               Formato del Correo - Envío Rechazado por Inconsistencias
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 text-sm">
+          <div className="space-y-4">
             <div className="border rounded-lg p-4 bg-gray-50">
               <div className="space-y-2 mb-4">
                 <div>
@@ -1705,6 +1730,7 @@ export default function GestionFormulariosSimple({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* </CHANGE> */}
     </div>
   )
 }
