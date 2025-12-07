@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { Search, ChevronLeft, UserCog, FilterIcon } from "lucide-react"
+import { useState, useMemo, useEffect } from "react"
+import { Search, ChevronLeft, UserCog, FilterIcon, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -403,6 +403,21 @@ export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
     )
   }
 
+  const [paginaActual, setPaginaActual] = useState(1)
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(10)
+
+  const entidadesPaginadas = useMemo(() => {
+    const inicio = (paginaActual - 1) * registrosPorPagina
+    const fin = inicio + registrosPorPagina
+    return entidadesFiltradas.slice(inicio, fin)
+  }, [entidadesFiltradas, paginaActual, registrosPorPagina])
+
+  const totalPaginas = Math.ceil(entidadesFiltradas.length / registrosPorPagina)
+
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [filtros])
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -550,8 +565,8 @@ export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
                 </tr>
               </thead>
               <tbody>
-                {entidadesFiltradas.length > 0 ? (
-                  entidadesFiltradas.map((entidad) => (
+                {entidadesPaginadas.length > 0 ? (
+                  entidadesPaginadas.map((entidad) => (
                     <tr key={entidad.nit} className="border-b border-border hover:bg-muted/30 transition">
                       <td className="py-4 px-4 text-foreground font-mono text-sm">{entidad.nit}</td>
                       <td className="py-4 px-4 text-foreground font-medium">{entidad.nombre}</td>
@@ -588,12 +603,72 @@ export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
             </table>
           </div>
 
-          {/* Resumen de resultados */}
-          <div className="px-6 py-4 bg-muted/30 border-t border-border">
-            <p className="text-sm text-muted-foreground">
-              Se encontraron <span className="font-semibold">{entidadesFiltradas.length}</span> resultado
-              {entidadesFiltradas.length !== 1 ? "s" : ""}
-            </p>
+          <div className="px-6 py-4 bg-muted/30 border-t border-border flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-muted-foreground">
+                Se encontraron <span className="font-semibold">{entidadesFiltradas.length}</span> resultado
+                {entidadesFiltradas.length !== 1 ? "s" : ""}
+              </p>
+
+              <div className="flex items-center gap-2">
+                <label htmlFor="registros-por-pagina" className="text-sm text-muted-foreground whitespace-nowrap">
+                  Registros por página:
+                </label>
+                <select
+                  id="registros-por-pagina"
+                  value={registrosPorPagina}
+                  onChange={(e) => {
+                    setRegistrosPorPagina(Number(e.target.value))
+                    setPaginaActual(1)
+                  }}
+                  className="px-3 py-1.5 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+
+            {totalPaginas > 1 && (
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => setPaginaActual(1)} disabled={paginaActual === 1}>
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPaginaActual((prev) => Math.max(1, prev - 1))}
+                  disabled={paginaActual === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                <span className="text-sm text-muted-foreground px-2">
+                  Página <span className="font-semibold">{paginaActual}</span> de{" "}
+                  <span className="font-semibold">{totalPaginas}</span>
+                </span>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPaginaActual((prev) => Math.min(totalPaginas, prev + 1))}
+                  disabled={paginaActual === totalPaginas}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPaginaActual(totalPaginas)}
+                  disabled={paginaActual === totalPaginas}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}
