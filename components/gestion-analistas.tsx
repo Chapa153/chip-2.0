@@ -448,8 +448,8 @@ export default function GestionAnalistas() {
   }
 
   const seleccionarTodas = () => {
-    const nitsPaginados = entidades.map((e) => e.nit)
-    setEntidadesSeleccionadas(nitsPaginados)
+    const nitsTodasFiltradas = entidades.map((e) => e.nit)
+    setEntidadesSeleccionadas(nitsTodasFiltradas)
   }
 
   const deseleccionarTodas = () => {
@@ -664,7 +664,7 @@ export default function GestionAnalistas() {
               {entidadesPaginadas.length > 0 && (
                 <>
                   <Button variant="ghost" size="sm" onClick={seleccionarTodas}>
-                    Seleccionar página actual
+                    Seleccionar Todos
                   </Button>
                   {entidadesSeleccionadas.length > 0 && (
                     <Button variant="ghost" size="sm" onClick={deseleccionarTodas}>
@@ -695,10 +695,7 @@ export default function GestionAnalistas() {
                     <th className="text-left py-4 px-4">
                       <input
                         type="checkbox"
-                        checked={
-                          entidadesPaginadas.length > 0 &&
-                          entidadesPaginadas.every((e) => entidadesSeleccionadas.includes(e.nit))
-                        }
+                        checked={entidades.length > 0 && entidades.every((e) => entidadesSeleccionadas.includes(e.nit))}
                         onChange={(e) => (e.target.checked ? seleccionarTodas() : deseleccionarTodas())}
                         className="rounded border-gray-300"
                       />
