@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Search, ChevronLeft, UserCog, X, BarChart3, ChevronsLeft, ChevronRight } from "lucide-react"
+import { Search, ChevronLeft, UserCog, X, ChevronsLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
@@ -648,42 +648,77 @@ export default function GestionAnalistas() {
       {filtrosAplicados && (
         <>
           {/* Barra de acciones antes de la tabla */}
-          <div className="flex items-center justify-between gap-4 bg-muted/30 p-4 rounded-lg border border-border">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border border-border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Resultados encontrados: {entidades.length}</span>
+              <div className="flex items-center gap-2 ml-4">
+                <Label htmlFor="registros-por-pagina" className="text-sm">
+                  Registros por página:
+                </Label>
+                <Select
+                  value={registrosPorPagina.toString()}
+                  onValueChange={(value) => {
+                    setRegistrosPorPagina(Number(value))
+                    setPaginaActual(1)
+                  }}
+                >
+                  <SelectTrigger id="registros-por-pagina" className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPaginaActual(1)} disabled={paginaActual === 1}>
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setMostrarDialogAsignacion(true)}
-                disabled={entidadesSeleccionadas.length === 0}
-                className="text-teal-600 border-teal-600 hover:bg-teal-50"
+                onClick={() => setPaginaActual((prev) => Math.max(1, prev - 1))}
+                disabled={paginaActual === 1}
               >
-                <UserCog className="mr-2 h-4 w-4" />
-                Asignar Analista
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-
-              {entidadesPaginadas.length > 0 && (
-                <>
-                  <Button variant="ghost" size="sm" onClick={seleccionarTodas}>
-                    Seleccionar Todos
-                  </Button>
-                  {entidadesSeleccionadas.length > 0 && (
-                    <Button variant="ghost" size="sm" onClick={deseleccionarTodas}>
-                      Limpiar selección
-                    </Button>
-                  )}
-                </>
-              )}
+              <span className="text-sm text-muted-foreground px-4">
+                Página {paginaActual} de {totalPaginas}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPaginaActual((prev) => Math.min(totalPaginas, prev + 1))}
+                disabled={paginaActual === totalPaginas}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPaginaActual(totalPaginas)}
+                disabled={paginaActual === totalPaginas}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M13 17l5-5m0 0l-5-5m5 5H7"></path>
+                </svg>
+              </Button>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMostrarCargaAnalistas(true)}
-              className="text-blue-600 border-blue-600 hover:bg-blue-50"
-            >
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Ver carga de analistas
-            </Button>
           </div>
 
           {/* Tabla con checkboxes */}
