@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Search, ChevronLeft, UserCog, X, ChevronsLeft, ChevronRight } from "lucide-react"
+import { Search, ChevronLeft, UserCog, X, BarChart3, ChevronsLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
@@ -506,46 +506,14 @@ export default function GestionAnalistas() {
     })
   }
 
-  const entidadesFiltradas = useMemo(() => {
-    if (!filtrosAplicados) return []
-    const filteredEntities = entidadesIniciales.filter((entidad) => {
-      const matchesEntidad = entidad.nombre.toLowerCase().includes(filtros.entidad.toLowerCase())
-      const matchesDepartamento =
-        filtros.departamento.length === 0 || filtros.departamento.includes(entidad.departamento)
-      const matchesCiudad = filtros.ciudad.length === 0 || filtros.ciudad.includes(entidad.ciudad)
-      const matchesSector = filtros.sector.length === 0 || filtros.sector.includes(entidad.sector)
-      const matchesMarcoNormativo =
-        filtros.marcoNormativo.length === 0 || filtros.marcoNormativo.includes(entidad.marcoNormativo)
-      const matchesNaturaleza = filtros.naturaleza.length === 0 || filtros.naturaleza.includes(entidad.naturaleza)
-      const matchesDeptoGobierno =
-        filtros.deptoGobierno.length === 0 || filtros.deptoGobierno.includes(entidad.deptoGobierno)
-      const matchesCiudadGobierno =
-        filtros.ciudadGobierno.length === 0 || filtros.ciudadGobierno.includes(entidad.ciudadGobierno)
-      const matchesAnalistaActual =
-        filtros.analistaActual.length === 0 || filtros.analistaActual.includes(entidad.analistaActual)
-      return (
-        matchesEntidad &&
-        matchesDepartamento &&
-        matchesCiudad &&
-        matchesSector &&
-        matchesMarcoNormativo &&
-        matchesNaturaleza &&
-        matchesDeptoGobierno &&
-        matchesCiudadGobierno &&
-        matchesAnalistaActual
-      )
-    })
-    return filteredEntities
-  }, [entidadesIniciales, filtros])
-
   const entidadesPaginadas = useMemo(() => {
     if (!filtrosAplicados) return []
     const inicio = (paginaActual - 1) * registrosPorPagina
     const fin = inicio + registrosPorPagina
-    return entidadesFiltradas.slice(inicio, fin)
-  }, [entidadesFiltradas, paginaActual, registrosPorPagina, filtrosAplicados])
+    return entidades.slice(inicio, fin)
+  }, [entidades, paginaActual, registrosPorPagina, filtrosAplicados])
 
-  const totalPaginas = Math.ceil(entidadesFiltradas.length / registrosPorPagina)
+  const totalPaginas = Math.ceil(entidades.length / registrosPorPagina)
 
   useEffect(() => {
     setPaginaActual(1)
@@ -578,179 +546,145 @@ export default function GestionAnalistas() {
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-teal-700">Filtros de Búsqueda</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Entidad - Input de texto libre */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Entidad</label>
-            <Input
-              type="text"
-              value={filtros.entidad}
-              onChange={(e) => setFiltros({ ...filtros, entidad: e.target.value })}
-              placeholder="Buscar por nombre de entidad"
-              className="w-full"
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Entidad - Input de texto libre */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Entidad</label>
+              <Input
+                type="text"
+                value={filtros.entidad}
+                onChange={(e) => setFiltros({ ...filtros, entidad: e.target.value })}
+                placeholder="Buscar por nombre de entidad"
+                className="w-full"
+              />
+            </div>
+
+            {/* Departamento - Select múltiple con búsqueda */}
+            <SelectMultipleConBusqueda
+              label="Departamento"
+              values={filtros.departamento}
+              onChange={(values) => setFiltros({ ...filtros, departamento: values })}
+              options={Array.from(new Set(entidades.map((e) => e.departamento))).sort()}
+              placeholder="Buscar departamento..."
+            />
+
+            {/* Ciudad - Select múltiple con búsqueda */}
+            <SelectMultipleConBusqueda
+              label="Ciudad"
+              values={filtros.ciudad}
+              onChange={(values) => setFiltros({ ...filtros, ciudad: values })}
+              options={Array.from(new Set(entidades.map((e) => e.ciudad))).sort()}
+              placeholder="Buscar ciudad..."
+            />
+
+            {/* Sector - Select múltiple con búsqueda */}
+            <SelectMultipleConBusqueda
+              label="Sector"
+              values={filtros.sector}
+              onChange={(values) => setFiltros({ ...filtros, sector: values })}
+              options={Array.from(new Set(entidades.map((e) => e.sector))).sort()}
+              placeholder="Buscar sector..."
+            />
+
+            {/* Marco Normativo - Select múltiple con búsqueda */}
+            <SelectMultipleConBusqueda
+              label="Marco Normativo"
+              values={filtros.marcoNormativo}
+              onChange={(values) => setFiltros({ ...filtros, marcoNormativo: values })}
+              options={Array.from(new Set(entidades.map((e) => e.marcoNormativo))).sort()}
+              placeholder="Buscar marco normativo..."
+            />
+
+            {/* Naturaleza - Select múltiple con búsqueda */}
+            <SelectMultipleConBusqueda
+              label="Naturaleza"
+              values={filtros.naturaleza}
+              onChange={(values) => setFiltros({ ...filtros, naturaleza: values })}
+              options={Array.from(new Set(entidades.map((e) => e.naturaleza))).sort()}
+              placeholder="Buscar naturaleza..."
+            />
+
+            {/* Depto. Gobierno - Select múltiple con búsqueda */}
+            <SelectMultipleConBusqueda
+              label="Depto. Gobierno"
+              values={filtros.deptoGobierno}
+              onChange={(values) => setFiltros({ ...filtros, deptoGobierno: values })}
+              options={Array.from(new Set(entidades.map((e) => e.deptoGobierno))).sort()}
+              placeholder="Buscar departamento gobierno..."
+            />
+
+            {/* Ciudad Gobierno - Select múltiple con búsqueda */}
+            <SelectMultipleConBusqueda
+              label="Ciudad Gobierno"
+              values={filtros.ciudadGobierno}
+              onChange={(values) => setFiltros({ ...filtros, ciudadGobierno: values })}
+              options={Array.from(new Set(entidades.map((e) => e.ciudadGobierno))).sort()}
+              placeholder="Buscar ciudad gobierno..."
+            />
+
+            {/* Analista Actual - Select múltiple con búsqueda */}
+            <SelectMultipleConBusqueda
+              label="Analista Actual"
+              values={filtros.analistaActual}
+              onChange={(values) => setFiltros({ ...filtros, analistaActual: values })}
+              options={Array.from(new Set(entidades.map((e) => e.analistaActual))).sort()}
+              placeholder="Buscar analista..."
             />
           </div>
 
-          {/* Departamento - Select múltiple con búsqueda */}
-          <SelectMultipleConBusqueda
-            label="Departamento"
-            values={filtros.departamento}
-            onChange={(values) => setFiltros({ ...filtros, departamento: values })}
-            options={Array.from(new Set(entidadesIniciales.map((e) => e.departamento))).sort()}
-            placeholder="Buscar departamento..."
-          />
-
-          {/* Ciudad - Select múltiple con búsqueda */}
-          <SelectMultipleConBusqueda
-            label="Ciudad"
-            values={filtros.ciudad}
-            onChange={(values) => setFiltros({ ...filtros, ciudad: values })}
-            options={Array.from(new Set(entidadesIniciales.map((e) => e.ciudad))).sort()}
-            placeholder="Buscar ciudad..."
-          />
-
-          {/* Sector - Select múltiple con búsqueda */}
-          <SelectMultipleConBusqueda
-            label="Sector"
-            values={filtros.sector}
-            onChange={(values) => setFiltros({ ...filtros, sector: values })}
-            options={Array.from(new Set(entidadesIniciales.map((e) => e.sector))).sort()}
-            placeholder="Buscar sector..."
-          />
-
-          {/* Marco Normativo - Select múltiple con búsqueda */}
-          <SelectMultipleConBusqueda
-            label="Marco Normativo"
-            values={filtros.marcoNormativo}
-            onChange={(values) => setFiltros({ ...filtros, marcoNormativo: values })}
-            options={Array.from(new Set(entidadesIniciales.map((e) => e.marcoNormativo))).sort()}
-            placeholder="Buscar marco normativo..."
-          />
-
-          {/* Naturaleza - Select múltiple con búsqueda */}
-          <SelectMultipleConBusqueda
-            label="Naturaleza"
-            values={filtros.naturaleza}
-            onChange={(values) => setFiltros({ ...filtros, naturaleza: values })}
-            options={Array.from(new Set(entidadesIniciales.map((e) => e.naturaleza))).sort()}
-            placeholder="Buscar naturaleza..."
-          />
-
-          {/* Depto. Gobierno - Select múltiple con búsqueda */}
-          <SelectMultipleConBusqueda
-            label="Depto. Gobierno"
-            values={filtros.deptoGobierno}
-            onChange={(values) => setFiltros({ ...filtros, deptoGobierno: values })}
-            options={Array.from(new Set(entidadesIniciales.map((e) => e.deptoGobierno))).sort()}
-            placeholder="Buscar departamento gobierno..."
-          />
-
-          {/* Ciudad Gobierno - Select múltiple con búsqueda */}
-          <SelectMultipleConBusqueda
-            label="Ciudad Gobierno"
-            values={filtros.ciudadGobierno}
-            onChange={(values) => setFiltros({ ...filtros, ciudadGobierno: values })}
-            options={Array.from(new Set(entidadesIniciales.map((e) => e.ciudadGobierno))).sort()}
-            placeholder="Buscar ciudad gobierno..."
-          />
-
-          {/* Analista Actual - Select múltiple con búsqueda */}
-          <SelectMultipleConBusqueda
-            label="Analista Actual"
-            values={filtros.analistaActual}
-            onChange={(values) => setFiltros({ ...filtros, analistaActual: values })}
-            options={Array.from(new Set(entidadesIniciales.map((e) => e.analistaActual))).sort()}
-            placeholder="Buscar analista..."
-          />
+          <div className="flex gap-3 justify-end mt-6">
+            <Button onClick={aplicarFiltros} className="bg-teal-600 hover:bg-teal-700">
+              <Search className="mr-2 h-4 w-4" />
+              Buscar
+            </Button>
+            <Button onClick={limpiarFiltros} variant="outline">
+              <X className="mr-2 h-4 w-4" />
+              Limpiar Filtros
+            </Button>
+          </div>
         </CardContent>
       </Card>
-
-      {/* Botones de acción de filtros */}
-      <div className="flex gap-3 justify-end">
-        <Button onClick={aplicarFiltros} className="bg-teal-600 hover:bg-teal-700">
-          <Search className="mr-2 h-4 w-4" />
-          Aplicar Filtros
-        </Button>
-        <Button onClick={limpiarFiltros} variant="outline">
-          <X className="mr-2 h-4 w-4" />
-          Limpiar Filtros
-        </Button>
-      </div>
 
       {filtrosAplicados && (
         <>
           {/* Barra de acciones antes de la tabla */}
-          <div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border border-border">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Resultados encontrados: {entidadesFiltradas.length}</span>
-              <div className="flex items-center gap-2 ml-4">
-                <Label htmlFor="registros-por-pagina" className="text-sm">
-                  Registros por página:
-                </Label>
-                <Select
-                  value={registrosPorPagina.toString()}
-                  onValueChange={(value) => {
-                    setRegistrosPorPagina(Number(value))
-                    setPaginaActual(1)
-                  }}
-                >
-                  <SelectTrigger id="registros-por-pagina" className="w-20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="flex items-center justify-between gap-4 bg-muted/30 p-4 rounded-lg border border-border">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMostrarDialogAsignacion(true)}
+                disabled={entidadesSeleccionadas.length === 0}
+                className="text-teal-600 border-teal-600 hover:bg-teal-50"
+              >
+                <UserCog className="mr-2 h-4 w-4" />
+                Asignar Analista
+              </Button>
+
+              {entidadesPaginadas.length > 0 && (
+                <>
+                  <Button variant="ghost" size="sm" onClick={seleccionarTodas}>
+                    Seleccionar Todos
+                  </Button>
+                  {entidadesSeleccionadas.length > 0 && (
+                    <Button variant="ghost" size="sm" onClick={deseleccionarTodas}>
+                      Limpiar selección
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPaginaActual(1)} disabled={paginaActual === 1}>
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPaginaActual((prev) => Math.max(1, prev - 1))}
-                disabled={paginaActual === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm text-muted-foreground px-4">
-                Página {paginaActual} de {totalPaginas}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPaginaActual((prev) => Math.min(totalPaginas, prev + 1))}
-                disabled={paginaActual === totalPaginas}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPaginaActual(totalPaginas)}
-                disabled={paginaActual === totalPaginas}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                >
-                  <path d="M13 17l5-5m0 0l-5-5m5 5H7"></path>
-                </svg>
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMostrarCargaAnalistas(true)}
+              className="text-blue-600 border-blue-600 hover:bg-blue-50"
+            >
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Ver carga de analistas
+            </Button>
           </div>
 
           {/* Tabla con checkboxes */}
@@ -762,10 +696,7 @@ export default function GestionAnalistas() {
                     <th className="text-left py-4 px-4">
                       <input
                         type="checkbox"
-                        checked={
-                          entidadesFiltradas.length > 0 &&
-                          entidadesFiltradas.every((e) => entidadesSeleccionadas.includes(e.nit))
-                        }
+                        checked={entidades.length > 0 && entidades.every((e) => entidadesSeleccionadas.includes(e.nit))}
                         onChange={(e) => (e.target.checked ? seleccionarTodas() : deseleccionarTodas())}
                         className="rounded border-gray-300"
                       />
@@ -824,11 +755,10 @@ export default function GestionAnalistas() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>
                 Mostrando {entidadesPaginadas.length > 0 ? (paginaActual - 1) * registrosPorPagina + 1 : 0} -{" "}
-                {Math.min(paginaActual * registrosPorPagina, entidadesFiltradas.length)} de {entidadesFiltradas.length}{" "}
-                resultados
+                {Math.min(paginaActual * registrosPorPagina, entidades.length)} de {entidades.length} resultados
               </span>
               <div className="flex items-center gap-2 ml-4">
-                <Label htmlFor="registros-por-pagina-bottom" className="text-sm">
+                <Label htmlFor="registros-por-pagina" className="text-sm">
                   Registros por página:
                 </Label>
                 <Select
@@ -838,7 +768,7 @@ export default function GestionAnalistas() {
                     setPaginaActual(1)
                   }}
                 >
-                  <SelectTrigger id="registros-por-pagina-bottom" className="w-20">
+                  <SelectTrigger id="registros-por-pagina" className="w-20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
