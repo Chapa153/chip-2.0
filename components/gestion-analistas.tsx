@@ -506,14 +506,46 @@ export default function GestionAnalistas() {
     })
   }
 
+  const entidadesFiltradas = useMemo(() => {
+    if (!filtrosAplicados) return []
+    const filteredEntities = entidadesIniciales.filter((entidad) => {
+      const matchesEntidad = entidad.nombre.toLowerCase().includes(filtros.entidad.toLowerCase())
+      const matchesDepartamento =
+        filtros.departamento.length === 0 || filtros.departamento.includes(entidad.departamento)
+      const matchesCiudad = filtros.ciudad.length === 0 || filtros.ciudad.includes(entidad.ciudad)
+      const matchesSector = filtros.sector.length === 0 || filtros.sector.includes(entidad.sector)
+      const matchesMarcoNormativo =
+        filtros.marcoNormativo.length === 0 || filtros.marcoNormativo.includes(entidad.marcoNormativo)
+      const matchesNaturaleza = filtros.naturaleza.length === 0 || filtros.naturaleza.includes(entidad.naturaleza)
+      const matchesDeptoGobierno =
+        filtros.deptoGobierno.length === 0 || filtros.deptoGobierno.includes(entidad.deptoGobierno)
+      const matchesCiudadGobierno =
+        filtros.ciudadGobierno.length === 0 || filtros.ciudadGobierno.includes(entidad.ciudadGobierno)
+      const matchesAnalistaActual =
+        filtros.analistaActual.length === 0 || filtros.analistaActual.includes(entidad.analistaActual)
+      return (
+        matchesEntidad &&
+        matchesDepartamento &&
+        matchesCiudad &&
+        matchesSector &&
+        matchesMarcoNormativo &&
+        matchesNaturaleza &&
+        matchesDeptoGobierno &&
+        matchesCiudadGobierno &&
+        matchesAnalistaActual
+      )
+    })
+    return filteredEntities
+  }, [entidadesIniciales, filtros])
+
   const entidadesPaginadas = useMemo(() => {
     if (!filtrosAplicados) return []
     const inicio = (paginaActual - 1) * registrosPorPagina
     const fin = inicio + registrosPorPagina
-    return entidades.slice(inicio, fin)
-  }, [entidades, paginaActual, registrosPorPagina, filtrosAplicados])
+    return entidadesFiltradas.slice(inicio, fin)
+  }, [entidadesFiltradas, paginaActual, registrosPorPagina, filtrosAplicados])
 
-  const totalPaginas = Math.ceil(entidades.length / registrosPorPagina)
+  const totalPaginas = Math.ceil(entidadesFiltradas.length / registrosPorPagina)
 
   useEffect(() => {
     setPaginaActual(1)
@@ -564,7 +596,7 @@ export default function GestionAnalistas() {
             label="Departamento"
             values={filtros.departamento}
             onChange={(values) => setFiltros({ ...filtros, departamento: values })}
-            options={Array.from(new Set(entidades.map((e) => e.departamento))).sort()}
+            options={Array.from(new Set(entidadesIniciales.map((e) => e.departamento))).sort()}
             placeholder="Buscar departamento..."
           />
 
@@ -573,7 +605,7 @@ export default function GestionAnalistas() {
             label="Ciudad"
             values={filtros.ciudad}
             onChange={(values) => setFiltros({ ...filtros, ciudad: values })}
-            options={Array.from(new Set(entidades.map((e) => e.ciudad))).sort()}
+            options={Array.from(new Set(entidadesIniciales.map((e) => e.ciudad))).sort()}
             placeholder="Buscar ciudad..."
           />
 
@@ -582,7 +614,7 @@ export default function GestionAnalistas() {
             label="Sector"
             values={filtros.sector}
             onChange={(values) => setFiltros({ ...filtros, sector: values })}
-            options={Array.from(new Set(entidades.map((e) => e.sector))).sort()}
+            options={Array.from(new Set(entidadesIniciales.map((e) => e.sector))).sort()}
             placeholder="Buscar sector..."
           />
 
@@ -591,7 +623,7 @@ export default function GestionAnalistas() {
             label="Marco Normativo"
             values={filtros.marcoNormativo}
             onChange={(values) => setFiltros({ ...filtros, marcoNormativo: values })}
-            options={Array.from(new Set(entidades.map((e) => e.marcoNormativo))).sort()}
+            options={Array.from(new Set(entidadesIniciales.map((e) => e.marcoNormativo))).sort()}
             placeholder="Buscar marco normativo..."
           />
 
@@ -600,7 +632,7 @@ export default function GestionAnalistas() {
             label="Naturaleza"
             values={filtros.naturaleza}
             onChange={(values) => setFiltros({ ...filtros, naturaleza: values })}
-            options={Array.from(new Set(entidades.map((e) => e.naturaleza))).sort()}
+            options={Array.from(new Set(entidadesIniciales.map((e) => e.naturaleza))).sort()}
             placeholder="Buscar naturaleza..."
           />
 
@@ -609,7 +641,7 @@ export default function GestionAnalistas() {
             label="Depto. Gobierno"
             values={filtros.deptoGobierno}
             onChange={(values) => setFiltros({ ...filtros, deptoGobierno: values })}
-            options={Array.from(new Set(entidades.map((e) => e.deptoGobierno))).sort()}
+            options={Array.from(new Set(entidadesIniciales.map((e) => e.deptoGobierno))).sort()}
             placeholder="Buscar departamento gobierno..."
           />
 
@@ -618,7 +650,7 @@ export default function GestionAnalistas() {
             label="Ciudad Gobierno"
             values={filtros.ciudadGobierno}
             onChange={(values) => setFiltros({ ...filtros, ciudadGobierno: values })}
-            options={Array.from(new Set(entidades.map((e) => e.ciudadGobierno))).sort()}
+            options={Array.from(new Set(entidadesIniciales.map((e) => e.ciudadGobierno))).sort()}
             placeholder="Buscar ciudad gobierno..."
           />
 
@@ -627,7 +659,7 @@ export default function GestionAnalistas() {
             label="Analista Actual"
             values={filtros.analistaActual}
             onChange={(values) => setFiltros({ ...filtros, analistaActual: values })}
-            options={Array.from(new Set(entidades.map((e) => e.analistaActual))).sort()}
+            options={Array.from(new Set(entidadesIniciales.map((e) => e.analistaActual))).sort()}
             placeholder="Buscar analista..."
           />
         </CardContent>
@@ -650,7 +682,7 @@ export default function GestionAnalistas() {
           {/* Barra de acciones antes de la tabla */}
           <div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border border-border">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Resultados encontrados: {entidades.length}</span>
+              <span>Resultados encontrados: {entidadesFiltradas.length}</span>
               <div className="flex items-center gap-2 ml-4">
                 <Label htmlFor="registros-por-pagina" className="text-sm">
                   Registros por página:
@@ -730,7 +762,10 @@ export default function GestionAnalistas() {
                     <th className="text-left py-4 px-4">
                       <input
                         type="checkbox"
-                        checked={entidades.length > 0 && entidades.every((e) => entidadesSeleccionadas.includes(e.nit))}
+                        checked={
+                          entidadesFiltradas.length > 0 &&
+                          entidadesFiltradas.every((e) => entidadesSeleccionadas.includes(e.nit))
+                        }
                         onChange={(e) => (e.target.checked ? seleccionarTodas() : deseleccionarTodas())}
                         className="rounded border-gray-300"
                       />
@@ -789,10 +824,11 @@ export default function GestionAnalistas() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>
                 Mostrando {entidadesPaginadas.length > 0 ? (paginaActual - 1) * registrosPorPagina + 1 : 0} -{" "}
-                {Math.min(paginaActual * registrosPorPagina, entidades.length)} de {entidades.length} resultados
+                {Math.min(paginaActual * registrosPorPagina, entidadesFiltradas.length)} de {entidadesFiltradas.length}{" "}
+                resultados
               </span>
               <div className="flex items-center gap-2 ml-4">
-                <Label htmlFor="registros-por-pagina" className="text-sm">
+                <Label htmlFor="registros-por-pagina-bottom" className="text-sm">
                   Registros por página:
                 </Label>
                 <Select
@@ -802,7 +838,7 @@ export default function GestionAnalistas() {
                     setPaginaActual(1)
                   }}
                 >
-                  <SelectTrigger id="registros-por-pagina" className="w-20">
+                  <SelectTrigger id="registros-por-pagina-bottom" className="w-20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
