@@ -31,6 +31,269 @@ interface Entidad {
   analistaActual: string
 }
 
+const entidadesIniciales = [
+  {
+    nit: "811036423:1",
+    nombre: "A.C.I Agencia de Cooperación e Inversión de Medellín y el Área Metropolitana",
+    estado: "ACTIVO",
+    marcoNormativo: "Entidades de gobierno",
+    departamento: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudad: "MEDELLIN",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudadGobierno: "MEDELLIN",
+    analistaActual: "HVALENCIA",
+  },
+  {
+    nit: "890981195:5",
+    nombre: "E.S.E. Hospital San Juan de Dios - Abejorral",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas no cotizantes",
+    departamento: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudad: "ABEJORRAL",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "PRINCIPAL",
+    deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudadGobierno: "ABEJORRAL",
+    analistaActual: "ERODELO",
+  },
+  {
+    nit: "890504612:0",
+    nombre: "E.S.E. Hospital San Roque - Pradera",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas no cotizantes",
+    departamento: "DEPARTAMENTO DE NORTE DE SANTANDER",
+    ciudad: "ABREGO",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "PRINCIPAL",
+    deptoGobierno: "DEPARTAMENTO DE NORTE DE SANTANDER",
+    ciudadGobierno: "ABREGO",
+    analistaActual: "MCUELLAR",
+  },
+  {
+    nit: "890981251:1",
+    nombre: "Empresa de Tecnología, Imprenta y Comunicaciones de Nariño",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas no cotizantes",
+    departamento: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudad: "ABRIAQUI",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "PRINCIPAL",
+    deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudadGobierno: "ABRIAQUI",
+    analistaActual: "ERODELO",
+  },
+  {
+    nit: "892001457:3",
+    nombre: "Instituto de Financiamiento, Promoción y Desarrollo de Caldas",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas no cotizantes",
+    departamento: "DEPARTAMENTO DEL META",
+    ciudad: "ACACIAS",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "PRINCIPAL",
+    deptoGobierno: "DEPARTAMENTO DEL META",
+    ciudadGobierno: "ACACIAS",
+    analistaActual: "JARANGO",
+  },
+  {
+    nit: "891680050:8",
+    nombre: "E.S.E. Hospital Laureano Pino - San José de la Montaña",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas no cotizantes",
+    departamento: "DEPARTAMENTO DE CHOCO",
+    ciudad: "ACANDI",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "PRINCIPAL",
+    deptoGobierno: "DEPARTAMENTO DE CHOCO",
+    ciudadGobierno: "ACANDI",
+    analistaActual: "NOSORIO",
+  },
+  {
+    nit: "891180069:1",
+    nombre: "E.S.P. Empresas Públicas de El Santuario",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas no cotizantes",
+    departamento: "DEPARTAMENTO DE HUILA",
+    ciudad: "ACEVEDO",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "PRINCIPAL",
+    deptoGobierno: "DEPARTAMENTO DE HUILA",
+    ciudadGobierno: "ACEVEDO",
+    analistaActual: "ERODELO",
+  },
+  {
+    nit: "800037371:1",
+    nombre: "E.S.E. Centro de Salud - Luis Patiño Camargo",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas no cotizantes",
+    departamento: "DEPARTAMENTO DE BOLIVAR",
+    ciudad: "ACHI",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "PRINCIPAL",
+    deptoGobierno: "DEPARTAMENTO DE BOLIVAR",
+    ciudadGobierno: "ACHI",
+    analistaActual: "SGALVIS",
+  },
+  {
+    nit: "900266932:6",
+    nombre: "Plaza de Mercado de Apartadó",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas no cotizantes",
+    departamento: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudad: "MEDELLIN",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudadGobierno: "MEDELLIN",
+    analistaActual: "HVALENCIA",
+  },
+  {
+    nit: "900336004:7",
+    nombre: "E.S.P. Empresas Públicas - Concordia",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas no cotizantes",
+    departamento: "DISTRITO CAPITAL",
+    ciudad: "BOGOTA - DISTRITO CAPITAL",
+    sector: "SECTOR PUBLICO NACIONAL",
+    naturaleza: "VINCULADA DIRECTA NO SOCIETARIA",
+    deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudadGobierno: "MEDELLIN",
+    analistaActual: "MCASTAÑO",
+  },
+  {
+    nit: "901037916:1",
+    nombre: "E.S.P. Empresa Aguas del Oriente Antioqueño S.A.",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas cotizantes",
+    departamento: "DISTRITO CAPITAL",
+    ciudad: "BOGOTA - DISTRITO CAPITAL",
+    sector: "SECTOR PUBLICO NACIONAL",
+    naturaleza: "ADSCRITA SECTOR SALUD",
+    deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudadGobierno: "MEDELLIN",
+    analistaActual: "BCRISTIANO",
+  },
+  {
+    nit: "900505060:5",
+    nombre: "E.S.P. Servicio Público de Aseo - Venecia",
+    estado: "ACTIVO",
+    marcoNormativo: "Empresas no cotizantes",
+    departamento: "DISTRITO CAPITAL",
+    ciudad: "BOGOTA - DISTRITO CAPITAL",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudadGobierno: "MEDELLIN",
+    analistaActual: "ERODELO",
+  },
+  {
+    nit: "800157073:4",
+    nombre: "E.S.P. Hydros Melgar S en C. A. -  En Liquidación",
+    estado: "ACTIVO",
+    marcoNormativo: "Entidades en liquidación",
+    departamento: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudad: "MEDELLIN",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudadGobierno: "MEDELLIN",
+    analistaActual: "HVALENCIA",
+  },
+  {
+    nit: "901486723:0",
+    nombre: "E.S.P. Hydros Chía S. en C.A. - En Liquidación",
+    estado: "ACTIVO",
+    marcoNormativo: "Entidades en liquidación",
+    departamento: "DISTRITO CAPITAL",
+    ciudad: "BOGOTA - DISTRITO CAPITAL",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DISTRITO CAPITAL",
+    ciudadGobierno: "BOGOTA - DISTRITO CAPITAL",
+    analistaActual: "LBLANCO",
+  },
+  {
+    nit: "901024331:5",
+    nombre: "Agencia de Cundinamarca para la Paz y la Convivencia",
+    estado: "ACTIVO",
+    marcoNormativo: "Entidades de gobierno",
+    departamento: "DISTRITO CAPITAL",
+    ciudad: "BOGOTA - DISTRITO CAPITAL",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DISTRITO CAPITAL",
+    ciudadGobierno: "BOGOTA - DISTRITO CAPITAL",
+    analistaActual: "LBLANCO",
+  },
+  {
+    nit: "814004674:5",
+    nombre: "Agencia de Desarrollo Local Nariño",
+    estado: "ACTIVO",
+    marcoNormativo: "Entidades de gobierno",
+    departamento: "DEPARTAMENTO DE NARIÑO",
+    ciudad: "SAN JUAN DE PASTO",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DEPARTAMENTO DE NARIÑO",
+    ciudadGobierno: "SAN JUAN DE PASTO",
+    analistaActual: "MCARMONA",
+  },
+  {
+    nit: "900948958:4",
+    nombre: "Agencia de Desarrollo Rural - ADR",
+    estado: "ACTIVO",
+    marcoNormativo: "Entidades de gobierno",
+    departamento: "DISTRITO CAPITAL",
+    ciudad: "BOGOTA - DISTRITO CAPITAL",
+    sector: "SECTOR PUBLICO NACIONAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DEPARTAMENTO DE NARIÑO",
+    ciudadGobierno: "SAN JUAN DE PASTO",
+    analistaActual: "MMARTINEZ",
+  },
+  {
+    nit: "901006886:4",
+    nombre: "Agencia de Renovación del Territorio",
+    estado: "ACTIVO",
+    marcoNormativo: "Entidades de gobierno",
+    departamento: "DISTRITO CAPITAL",
+    ciudad: "BOGOTA - DISTRITO CAPITAL",
+    sector: "SECTOR PUBLICO NACIONAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
+    ciudadGobierno: "MEDELLIN",
+    analistaActual: "LALDANA",
+  },
+  {
+    nit: "802024407:7",
+    nombre: "Agencia Distrital de Infraestructura del Distrito de Barranquilla",
+    estado: "ACTIVO",
+    marcoNormativo: "Entidades de gobierno",
+    departamento: "DEPARTAMENTO DE ATLANTICO",
+    ciudad: "BARRANQUILLA - DISTRITO ESPECIAL, INDUSTRIAL Y PORTUARIO",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DEPARTAMENTO DE ATLANTICO",
+    ciudadGobierno: "BARRANQUILLA - DISTRITO ESPECIAL, INDUSTRIAL Y PORTUARIO",
+    analistaActual: "JARANGO",
+  },
+  {
+    nit: "901508361:4",
+    nombre: "Agencia Distrital para la Educación Superior, la Ciencia y la Tecnología",
+    estado: "ACTIVO",
+    marcoNormativo: "Entidades de gobierno",
+    departamento: "DISTRITO CAPITAL",
+    ciudad: "BOGOTA - DISTRITO CAPITAL",
+    sector: "SECTOR PUBLICO TERRITORIAL",
+    naturaleza: "ADSCRITA",
+    deptoGobierno: "DISTRITO CAPITAL",
+    ciudadGobierno: "BOGOTA - DISTRITO CAPITAL",
+    analistaActual: "YORTIZ",
+  },
+]
+
 export default function GestionAnalistas() {
   const [showResults, setShowResults] = useState(false)
   const [filtros, setFiltros] = useState({
@@ -45,298 +308,7 @@ export default function GestionAnalistas() {
     analistaActual: [] as string[],
   })
 
-  const [entidades, setEntidades] = useState<Entidad[]>([
-    {
-      nit: "811036423:1",
-      nombre: "A.C.I Agencia de Cooperación e Inversión de Medellín y el Área Metropolitana",
-      estado: "ACTIVO",
-      marcoNormativo: "Entidades de gobierno",
-      departamento: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudad: "MEDELLIN",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudadGobierno: "MEDELLIN",
-      analistaActual: "HVALENCIA",
-    },
-    {
-      nit: "890981195:5",
-      nombre: "E.S.E. Hospital San Juan de Dios - Abejorral",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas no cotizantes",
-      departamento: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudad: "ABEJORRAL",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "PRINCIPAL",
-      deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudadGobierno: "ABEJORRAL",
-      analistaActual: "ERODELO",
-    },
-    {
-      nit: "890504612:0",
-      nombre: "E.S.E. Hospital San Roque - Pradera",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas no cotizantes",
-      departamento: "DEPARTAMENTO DE NORTE DE SANTANDER",
-      ciudad: "ABREGO",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "PRINCIPAL",
-      deptoGobierno: "DEPARTAMENTO DE NORTE DE SANTANDER",
-      ciudadGobierno: "ABREGO",
-      analistaActual: "MCUELLAR",
-    },
-    {
-      nit: "890981251:1",
-      nombre: "Empresa de Tecnología, Imprenta y Comunicaciones de Nariño",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas no cotizantes",
-      departamento: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudad: "ABRIAQUI",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "PRINCIPAL",
-      deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudadGobierno: "ABRIAQUI",
-      analistaActual: "ERODELO",
-    },
-    {
-      nit: "892001457:3",
-      nombre: "Instituto de Financiamiento, Promoción y Desarrollo de Caldas",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas no cotizantes",
-      departamento: "DEPARTAMENTO DEL META",
-      ciudad: "ACACIAS",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "PRINCIPAL",
-      deptoGobierno: "DEPARTAMENTO DEL META",
-      ciudadGobierno: "ACACIAS",
-      analistaActual: "JARANGO",
-    },
-    {
-      nit: "891680050:8",
-      nombre: "E.S.E. Hospital Laureano Pino - San José de la Montaña",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas no cotizantes",
-      departamento: "DEPARTAMENTO DE CHOCO",
-      ciudad: "ACANDI",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "PRINCIPAL",
-      deptoGobierno: "DEPARTAMENTO DE CHOCO",
-      ciudadGobierno: "ACANDI",
-      analistaActual: "NOSORIO",
-    },
-    {
-      nit: "891180069:1",
-      nombre: "E.S.P. Empresas Públicas de El Santuario",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas no cotizantes",
-      departamento: "DEPARTAMENTO DE HUILA",
-      ciudad: "ACEVEDO",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "PRINCIPAL",
-      deptoGobierno: "DEPARTAMENTO DE HUILA",
-      ciudadGobierno: "ACEVEDO",
-      analistaActual: "ERODELO",
-    },
-    {
-      nit: "800037371:1",
-      nombre: "E.S.E. Centro de Salud - Luis Patiño Camargo",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas no cotizantes",
-      departamento: "DEPARTAMENTO DE BOLIVAR",
-      ciudad: "ACHI",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "PRINCIPAL",
-      deptoGobierno: "DEPARTAMENTO DE BOLIVAR",
-      ciudadGobierno: "ACHI",
-      analistaActual: "SGALVIS",
-    },
-    {
-      nit: "900266932:6",
-      nombre: "Plaza de Mercado de Apartadó",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas no cotizantes",
-      departamento: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudad: "MEDELLIN",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudadGobierno: "MEDELLIN",
-      analistaActual: "HVALENCIA",
-    },
-    {
-      nit: "900336004:7",
-      nombre: "E.S.P. Empresas Públicas - Concordia",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas no cotizantes",
-      departamento: "DISTRITO CAPITAL",
-      ciudad: "BOGOTA - DISTRITO CAPITAL",
-      sector: "SECTOR PUBLICO NACIONAL",
-      naturaleza: "VINCULADA DIRECTA NO SOCIETARIA",
-      deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudadGobierno: "MEDELLIN",
-      analistaActual: "MCASTAÑO",
-    },
-    {
-      nit: "901037916:1",
-      nombre: "E.S.P. Empresa Aguas del Oriente Antioqueño S.A.",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas cotizantes",
-      departamento: "DISTRITO CAPITAL",
-      ciudad: "BOGOTA - DISTRITO CAPITAL",
-      sector: "SECTOR PUBLICO NACIONAL",
-      naturaleza: "ADSCRITA SECTOR SALUD",
-      deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudadGobierno: "MEDELLIN",
-      analistaActual: "BCRISTIANO",
-    },
-    {
-      nit: "900505060:5",
-      nombre: "E.S.P. Servicio Público de Aseo - Venecia",
-      estado: "ACTIVO",
-      marcoNormativo: "Empresas no cotizantes",
-      departamento: "DISTRITO CAPITAL",
-      ciudad: "BOGOTA - DISTRITO CAPITAL",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudadGobierno: "MEDELLIN",
-      analistaActual: "ERODELO",
-    },
-    {
-      nit: "800157073:4",
-      nombre: "E.S.P. Hydros Melgar S en C. A. -  En Liquidación",
-      estado: "ACTIVO",
-      marcoNormativo: "Entidades en liquidación",
-      departamento: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudad: "MEDELLIN",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudadGobierno: "MEDELLIN",
-      analistaActual: "HVALENCIA",
-    },
-    {
-      nit: "901486723:0",
-      nombre: "E.S.P. Hydros Chía S. en C.A. - En Liquidación",
-      estado: "ACTIVO",
-      marcoNormativo: "Entidades en liquidación",
-      departamento: "DISTRITO CAPITAL",
-      ciudad: "BOGOTA - DISTRITO CAPITAL",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DISTRITO CAPITAL",
-      ciudadGobierno: "BOGOTA - DISTRITO CAPITAL",
-      analistaActual: "LBLANCO",
-    },
-    {
-      nit: "901024331:5",
-      nombre: "Agencia de Cundinamarca para la Paz y la Convivencia",
-      estado: "ACTIVO",
-      marcoNormativo: "Entidades de gobierno",
-      departamento: "DISTRITO CAPITAL",
-      ciudad: "BOGOTA - DISTRITO CAPITAL",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DISTRITO CAPITAL",
-      ciudadGobierno: "BOGOTA - DISTRITO CAPITAL",
-      analistaActual: "LBLANCO",
-    },
-    {
-      nit: "814004674:5",
-      nombre: "Agencia de Desarrollo Local Nariño",
-      estado: "ACTIVO",
-      marcoNormativo: "Entidades de gobierno",
-      departamento: "DEPARTAMENTO DE NARIÑO",
-      ciudad: "SAN JUAN DE PASTO",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DEPARTAMENTO DE NARIÑO",
-      ciudadGobierno: "SAN JUAN DE PASTO",
-      analistaActual: "MCARMONA",
-    },
-    {
-      nit: "900948958:4",
-      nombre: "Agencia de Desarrollo Rural - ADR",
-      estado: "ACTIVO",
-      marcoNormativo: "Entidades de gobierno",
-      departamento: "DISTRITO CAPITAL",
-      ciudad: "BOGOTA - DISTRITO CAPITAL",
-      sector: "SECTOR PUBLICO NACIONAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DEPARTAMENTO DE NARIÑO",
-      ciudadGobierno: "SAN JUAN DE PASTO",
-      analistaActual: "MMARTINEZ",
-    },
-    {
-      nit: "901006886:4",
-      nombre: "Agencia de Renovación del Territorio",
-      estado: "ACTIVO",
-      marcoNormativo: "Entidades de gobierno",
-      departamento: "DISTRITO CAPITAL",
-      ciudad: "BOGOTA - DISTRITO CAPITAL",
-      sector: "SECTOR PUBLICO NACIONAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
-      ciudadGobierno: "MEDELLIN",
-      analistaActual: "LALDANA",
-    },
-    {
-      nit: "802024407:7",
-      nombre: "Agencia Distrital de Infraestructura del Distrito de Barranquilla",
-      estado: "ACTIVO",
-      marcoNormativo: "Entidades de gobierno",
-      departamento: "DEPARTAMENTO DE ATLANTICO",
-      ciudad: "BARRANQUILLA - DISTRITO ESPECIAL, INDUSTRIAL Y PORTUARIO",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DEPARTAMENTO DE ATLANTICO",
-      ciudadGobierno: "BARRANQUILLA - DISTRITO ESPECIAL, INDUSTRIAL Y PORTUARIO",
-      analistaActual: "JARANGO",
-    },
-    {
-      nit: "901508361:4",
-      nombre: "Agencia Distrital para la Educación Superior, la Ciencia y la Tecnología",
-      estado: "ACTIVO",
-      marcoNormativo: "Entidades de gobierno",
-      departamento: "DISTRITO CAPITAL",
-      ciudad: "BOGOTA - DISTRITO CAPITAL",
-      sector: "SECTOR PUBLICO TERRITORIAL",
-      naturaleza: "ADSCRITA",
-      deptoGobierno: "DISTRITO CAPITAL",
-      ciudadGobierno: "BOGOTA - DISTRITO CAPITAL",
-      analistaActual: "YORTIZ",
-    },
-  ])
-
-  const departamentos = useMemo(() => Array.from(new Set(entidades.map((e) => e.departamento))).sort(), [entidades])
-  const ciudades = useMemo(() => Array.from(new Set(entidades.map((e) => e.ciudad))).sort(), [entidades])
-  const sectores = useMemo(() => Array.from(new Set(entidades.map((e) => e.sector))).sort(), [entidades])
-  const marcosNormativos = useMemo(
-    () => Array.from(new Set(entidades.map((e) => e.marcoNormativo))).sort(),
-    [entidades],
-  )
-  const naturalezas = useMemo(() => Array.from(new Set(entidades.map((e) => e.naturaleza))).sort(), [entidades])
-  const analistas = useMemo(() => Array.from(new Set(entidades.map((e) => e.analistaActual))).sort(), [entidades])
-
-  const toast = useToast()
-
-  // Filtrado con búsqueda por coincidencia
-  const entidadesFiltradas = useMemo(() => {
-    return entidades.filter((entidad) => {
-      return (
-        (filtros.entidad === "" || entidad.nombre.toLowerCase().includes(filtros.entidad.toLowerCase())) &&
-        (filtros.departamento.length === 0 || filtros.departamento.includes(entidad.departamento)) &&
-        (filtros.ciudad.length === 0 || filtros.ciudad.includes(entidad.ciudad)) &&
-        (filtros.sector.length === 0 || filtros.sector.includes(entidad.sector)) &&
-        (filtros.marcoNormativo.length === 0 || filtros.marcoNormativo.includes(entidad.marcoNormativo)) &&
-        (filtros.naturaleza.length === 0 || filtros.naturaleza.includes(entidad.naturaleza)) &&
-        (filtros.deptoGobierno.length === 0 || filtros.deptoGobierno.includes(entidad.deptoGobierno)) &&
-        (filtros.ciudadGobierno.length === 0 || filtros.ciudadGobierno.includes(entidad.ciudadGobierno)) &&
-        (filtros.analistaActual.length === 0 || filtros.analistaActual.includes(entidad.analistaActual))
-      )
-    })
-  }, [entidades, filtros])
-
+  const [entidades, setEntidades] = useState<Entidad[]>(entidadesIniciales)
   const [paginaActual, setPaginaActual] = useState(1)
   const [registrosPorPagina, setRegistrosPorPagina] = useState(10)
   const [entidadesSeleccionadas, setEntidadesSeleccionadas] = useState<string[]>([])
@@ -346,6 +318,7 @@ export default function GestionAnalistas() {
   const [mostrarCargaAnalistas, setMostrarCargaAnalistas] = useState(false)
   const [filtrosAplicados, setFiltrosAplicados] = useState(false)
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
+  const toast = useToast()
 
   const SelectMultipleConBusqueda = ({
     label,
@@ -460,14 +433,14 @@ export default function GestionAnalistas() {
   // Calcular carga de trabajo de analistas
   const cargaAnalistas = useMemo(() => {
     const carga: { [key: string]: number } = {}
-    entidadesFiltradas.forEach((entidad) => {
+    entidades.forEach((entidad) => {
       const analista = entidad.analistaActual
       carga[analista] = (carga[analista] || 0) + 1
     })
     return Object.entries(carga)
       .map(([nombre, cantidad]) => ({ nombre, cantidad }))
       .sort((a, b) => b.cantidad - a.cantidad)
-  }, [entidadesFiltradas])
+  }, [entidades])
 
   // Handlers para selección de entidades
   const toggleSeleccionEntidad = (nit: string) => {
@@ -475,7 +448,7 @@ export default function GestionAnalistas() {
   }
 
   const seleccionarTodas = () => {
-    const nitsPaginados = entidadesPaginadas.map((e) => e.nit)
+    const nitsPaginados = entidades.map((e) => e.nit)
     setEntidadesSeleccionadas(nitsPaginados)
   }
 
@@ -517,26 +490,30 @@ export default function GestionAnalistas() {
       ),
     )
 
-    toast({
-      title: "Asignación exitosa",
-      description: `Se asignó ${analistaSeleccionado} a ${entidadesSeleccionadas.length} entidad(es).`,
-    })
-
+    // Cerrar modales primero
     setMostrarConfirmacion(false)
     setMostrarDialogAsignacion(false)
+
+    // Limpiar selecciones y estados
     setEntidadesSeleccionadas([])
     setPerfilSeleccionado("")
     setAnalistaSeleccionado("")
+
+    // Mostrar notificación de éxito
+    toast.toast({
+      title: "Asignación exitosa",
+      description: `Se asignó ${analistaSeleccionado} a ${entidadesSeleccionadas.length} entidad(es).`,
+    })
   }
 
   const entidadesPaginadas = useMemo(() => {
     if (!filtrosAplicados) return []
     const inicio = (paginaActual - 1) * registrosPorPagina
     const fin = inicio + registrosPorPagina
-    return entidadesFiltradas.slice(inicio, fin)
-  }, [entidadesFiltradas, paginaActual, registrosPorPagina, filtrosAplicados])
+    return entidades.slice(inicio, fin)
+  }, [entidades, paginaActual, registrosPorPagina, filtrosAplicados])
 
-  const totalPaginas = Math.ceil(entidadesFiltradas.length / registrosPorPagina)
+  const totalPaginas = Math.ceil(entidades.length / registrosPorPagina)
 
   useEffect(() => {
     setPaginaActual(1)
@@ -587,7 +564,7 @@ export default function GestionAnalistas() {
             label="Departamento"
             values={filtros.departamento}
             onChange={(values) => setFiltros({ ...filtros, departamento: values })}
-            options={departamentos}
+            options={Array.from(new Set(entidades.map((e) => e.departamento))).sort()}
             placeholder="Buscar departamento..."
           />
 
@@ -596,7 +573,7 @@ export default function GestionAnalistas() {
             label="Ciudad"
             values={filtros.ciudad}
             onChange={(values) => setFiltros({ ...filtros, ciudad: values })}
-            options={ciudades}
+            options={Array.from(new Set(entidades.map((e) => e.ciudad))).sort()}
             placeholder="Buscar ciudad..."
           />
 
@@ -605,7 +582,7 @@ export default function GestionAnalistas() {
             label="Sector"
             values={filtros.sector}
             onChange={(values) => setFiltros({ ...filtros, sector: values })}
-            options={sectores}
+            options={Array.from(new Set(entidades.map((e) => e.sector))).sort()}
             placeholder="Buscar sector..."
           />
 
@@ -614,7 +591,7 @@ export default function GestionAnalistas() {
             label="Marco Normativo"
             values={filtros.marcoNormativo}
             onChange={(values) => setFiltros({ ...filtros, marcoNormativo: values })}
-            options={marcosNormativos}
+            options={Array.from(new Set(entidades.map((e) => e.marcoNormativo))).sort()}
             placeholder="Buscar marco normativo..."
           />
 
@@ -623,7 +600,7 @@ export default function GestionAnalistas() {
             label="Naturaleza"
             values={filtros.naturaleza}
             onChange={(values) => setFiltros({ ...filtros, naturaleza: values })}
-            options={naturalezas}
+            options={Array.from(new Set(entidades.map((e) => e.naturaleza))).sort()}
             placeholder="Buscar naturaleza..."
           />
 
@@ -632,7 +609,7 @@ export default function GestionAnalistas() {
             label="Depto. Gobierno"
             values={filtros.deptoGobierno}
             onChange={(values) => setFiltros({ ...filtros, deptoGobierno: values })}
-            options={departamentos}
+            options={Array.from(new Set(entidades.map((e) => e.deptoGobierno))).sort()}
             placeholder="Buscar departamento gobierno..."
           />
 
@@ -641,7 +618,7 @@ export default function GestionAnalistas() {
             label="Ciudad Gobierno"
             values={filtros.ciudadGobierno}
             onChange={(values) => setFiltros({ ...filtros, ciudadGobierno: values })}
-            options={ciudades}
+            options={Array.from(new Set(entidades.map((e) => e.ciudadGobierno))).sort()}
             placeholder="Buscar ciudad gobierno..."
           />
 
@@ -650,7 +627,7 @@ export default function GestionAnalistas() {
             label="Analista Actual"
             values={filtros.analistaActual}
             onChange={(values) => setFiltros({ ...filtros, analistaActual: values })}
-            options={analistas}
+            options={Array.from(new Set(entidades.map((e) => e.analistaActual))).sort()}
             placeholder="Buscar analista..."
           />
         </CardContent>
@@ -780,8 +757,7 @@ export default function GestionAnalistas() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>
                 Mostrando {entidadesPaginadas.length > 0 ? (paginaActual - 1) * registrosPorPagina + 1 : 0} -{" "}
-                {Math.min(paginaActual * registrosPorPagina, entidadesFiltradas.length)} de {entidadesFiltradas.length}{" "}
-                resultados
+                {Math.min(paginaActual * registrosPorPagina, entidades.length)} de {entidades.length} resultados
               </span>
               <div className="flex items-center gap-2 ml-4">
                 <Label htmlFor="registros-por-pagina" className="text-sm">
@@ -945,9 +921,9 @@ export default function GestionAnalistas() {
             <DialogTitle>Carga de Trabajo de Analistas</DialogTitle>
             <DialogDescription>
               Cantidad de entidades asignadas a cada analista según los filtros aplicados.
-              {entidadesFiltradas.length !== entidades.length && (
+              {entidades.length !== entidadesIniciales.length && (
                 <span className="block mt-1 text-yellow-600">
-                  Nota: Se muestran datos filtrados ({entidadesFiltradas.length} de {entidades.length} entidades)
+                  Nota: Se muestran datos filtrados ({entidades.length} de {entidadesIniciales.length} entidades)
                 </span>
               )}
             </DialogDescription>
@@ -968,7 +944,7 @@ export default function GestionAnalistas() {
                     <td className="py-3 px-4 text-foreground font-medium">{nombre}</td>
                     <td className="py-3 px-4 text-right text-foreground font-semibold">{cantidad}</td>
                     <td className="py-3 px-4 text-right text-muted-foreground">
-                      {((cantidad / entidadesFiltradas.length) * 100).toFixed(1)}%
+                      {((cantidad / entidades.length) * 100).toFixed(1)}%
                     </td>
                   </tr>
                 ))}
@@ -976,7 +952,7 @@ export default function GestionAnalistas() {
               <tfoot className="sticky bottom-0 bg-card border-t-2 border-border">
                 <tr className="bg-muted/50 font-semibold">
                   <td className="py-3 px-4 text-foreground">Total</td>
-                  <td className="py-3 px-4 text-right text-foreground">{entidadesFiltradas.length}</td>
+                  <td className="py-3 px-4 text-right text-foreground">{entidades.length}</td>
                   <td className="py-3 px-4 text-right text-foreground">100%</td>
                 </tr>
               </tfoot>
