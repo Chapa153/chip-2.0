@@ -923,7 +923,8 @@ export default function GestionAnalistas() {
           <DialogHeader>
             <DialogTitle>Confirmar Asignación</DialogTitle>
             <DialogDescription>
-              ¿Está seguro de asignar el analista <strong>{analistaSeleccionado}</strong> a las entidades seleccionadas?
+              ¿Está seguro de asignar el analista <strong>{analistaSeleccionado}</strong> a{" "}
+              <strong>{entidadesSeleccionadas.length}</strong> entidad(es) seleccionada(s)?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
