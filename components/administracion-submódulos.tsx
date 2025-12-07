@@ -1,5 +1,5 @@
 "use client"
-import { Users, Shield, Building2, BarChart3 } from "lucide-react"
+import { Users, Shield, Building2, BarChart3, UserCog } from "lucide-react"
 import Breadcrumb from "@/components/breadcrumb"
 
 interface AdministracionSubmodulosProps {
@@ -35,7 +35,7 @@ export default function AdministracionSubmodulos({ username, onBack, onModuleSel
       id: "analistas",
       title: "Gestión de Analistas",
       description: "Administra analistas del sistema",
-      icon: Users,
+      icon: UserCog,
       color: "from-teal-50 to-teal-100 dark:from-teal-950 dark:to-teal-900",
     },
     {
