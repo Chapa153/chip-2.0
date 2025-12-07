@@ -14,6 +14,8 @@ import Breadcrumb from "@/components/breadcrumb"
 import Home from "@/components/home"
 import GestionRolesView from "@/components/gestion-roles-view"
 import GestionAnalistas from "@/components/gestion-analistas"
+import ReportesSubmodulos from "@/components/reportes-submodulos"
+import SaldosConciliar from "@/components/saldos-conciliar"
 
 interface NavigationState {
   view: string | null
@@ -55,6 +57,8 @@ export default function Page() {
       setNavigationStack({ view: "formularios", subview: "gestion-formularios" })
     } else if (moduleId === "historico-envios") {
       setNavigationStack({ view: "formularios", subview: "historico-envios" })
+    } else if (moduleId === "saldos-conciliar") {
+      setNavigationStack({ view: "reportes", subview: "saldos-conciliar" })
     } else {
       setNavigationStack({ view: moduleId })
     }
@@ -91,6 +95,10 @@ export default function Page() {
   const goToFormulariosModules = () => {
     setFormularioSection(null)
     setNavigationStack({ view: "formularios" })
+  }
+
+  const goToReportesModules = () => {
+    setNavigationStack({ view: "reportes" })
   }
 
   const handleBack = () => {
@@ -130,6 +138,13 @@ export default function Page() {
       breadcrumbItems.push({ label: "Gestión de Analistas", isActive: true })
     } else if (navigationStack.subview === "auditoria") {
       breadcrumbItems.push({ label: "Auditoría", isActive: true })
+    } else {
+      breadcrumbItems[breadcrumbItems.length - 1].isActive = true
+    }
+  } else if (navigationStack.view === "reportes") {
+    breadcrumbItems.push({ label: "Reportes", onClick: goToReportesModules })
+    if (navigationStack.subview === "saldos-conciliar") {
+      breadcrumbItems.push({ label: "Saldos por Conciliar", isActive: true })
     } else {
       breadcrumbItems[breadcrumbItems.length - 1].isActive = true
     }
@@ -285,6 +300,18 @@ export default function Page() {
         {navigationStack.view === "analistas" && (
           <div className="max-w-7xl mx-auto px-4 py-12">
             <GestionAnalistas onBack={handleBack} />
+          </div>
+        )}
+
+        {navigationStack.view === "reportes" && !navigationStack.subview && (
+          <div className="max-w-7xl mx-auto px-4 py-12">
+            <ReportesSubmodulos onModuleSelect={handleModuleSelect} />
+          </div>
+        )}
+
+        {navigationStack.view === "reportes" && navigationStack.subview === "saldos-conciliar" && (
+          <div className="max-w-7xl mx-auto px-4 py-12">
+            <SaldosConciliar onBack={handleBack} />
           </div>
         )}
       </main>
