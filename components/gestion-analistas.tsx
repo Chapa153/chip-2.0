@@ -681,7 +681,7 @@ export default function GestionAnalistas() {
                 className="text-teal-600 border-teal-600 hover:bg-teal-50"
               >
                 <UserCog className="mr-2 h-4 w-4" />
-                Asignar Analista ({entidadesSeleccionadas.length})
+                Asignar Analista
               </Button>
 
               {entidadesPaginadas.length > 0 && (
@@ -861,7 +861,7 @@ export default function GestionAnalistas() {
           <DialogHeader>
             <DialogTitle>Asignar Analista</DialogTitle>
             <DialogDescription>
-              Selecciona un perfil y luego un analista para asignar a {entidadesSeleccionadas.length} entidad(es).
+              Selecciona un perfil y luego un analista para asignar a las entidades seleccionadas.
             </DialogDescription>
           </DialogHeader>
 
@@ -923,8 +923,7 @@ export default function GestionAnalistas() {
           <DialogHeader>
             <DialogTitle>Confirmar Asignación</DialogTitle>
             <DialogDescription>
-              ¿Está seguro de asignar el analista <strong>{analistaSeleccionado}</strong> a{" "}
-              <strong>{entidadesSeleccionadas.length}</strong> entidad(es)?
+              ¿Está seguro de asignar el analista <strong>{analistaSeleccionado}</strong> a las entidades seleccionadas?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
