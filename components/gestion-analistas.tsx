@@ -1,9 +1,20 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Search, ChevronLeft, UserCog, FilterIcon, ChevronRight, ChevronsLeft, ChevronsRight, X } from "lucide-react"
+import { Search, ChevronLeft, UserCog, FilterIcon, X, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
 
 interface Entidad {
   nit: string
@@ -306,6 +317,8 @@ export default function GestionAnalistas() {
   const naturalezas = useMemo(() => Array.from(new Set(entidades.map((e) => e.naturaleza))).sort(), [entidades])
   const analistas = useMemo(() => Array.from(new Set(entidades.map((e) => e.analistaActual))).sort(), [entidades])
 
+  const toast = useToast()
+
   // Filtrado con búsqueda por coincidencia
   const entidadesFiltradas = useMemo(() => {
     return entidades.filter((entidad) => {
@@ -438,6 +451,70 @@ export default function GestionAnalistas() {
 
   const [paginaActual, setPaginaActual] = useState(1)
   const [registrosPorPagina, setRegistrosPorPagina] = useState(10)
+  const [entidadesSeleccionadas, setEntidadesSeleccionadas] = useState<string[]>([])
+  const [mostrarDialogAsignacion, setMostrarDialogAsignacion] = useState(false)
+  const [perfilSeleccionado, setPerfilSeleccionado] = useState("")
+  const [analistaSeleccionado, setAnalistaSeleccionado] = useState("")
+  const [mostrarCargaAnalistas, setMostrarCargaAnalistas] = useState(false)
+
+  // Datos de perfiles y analistas
+  const perfiles = useMemo(() => ["Analista Senior", "Analista Junior", "Coordinador", "Supervisor"], [])
+
+  const analistasPorPerfil = useMemo(
+    () => ({
+      "Analista Senior": ["MARTINEZ", "JARAMILLO", "DIAZ"],
+      "Analista Junior": ["MOSQUERA", "ESCANDOR", "PATIÑO"],
+      Coordinador: ["GUTIERREZ", "RODRIGUEZ"],
+      Supervisor: ["JIMENEZ", "MORALES"],
+    }),
+    [],
+  )
+
+  const analistasDisponibles = useMemo(() => {
+    if (!perfilSeleccionado) return []
+    return analistasPorPerfil[perfilSeleccionado as keyof typeof analistasPorPerfil] || []
+  }, [perfilSeleccionado, analistasPorPerfil])
+
+  // Calcular carga de trabajo de analistas
+  const cargaAnalistas = useMemo(() => {
+    const carga: { [key: string]: number } = {}
+    entidadesFiltradas.forEach((entidad) => {
+      const analista = entidad.analistaActual
+      carga[analista] = (carga[analista] || 0) + 1
+    })
+    return Object.entries(carga)
+      .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad)
+  }, [entidadesFiltradas])
+
+  // Handlers para selección de entidades
+  const toggleSeleccionEntidad = (nit: string) => {
+    setEntidadesSeleccionadas((prev) => (prev.includes(nit) ? prev.filter((n) => n !== nit) : [...prev, nit]))
+  }
+
+  const seleccionarTodas = () => {
+    const nitsPaginados = entidadesPaginadas.map((e) => e.nit)
+    setEntidadesSeleccionadas(nitsPaginados)
+  }
+
+  const deseleccionarTodas = () => {
+    setEntidadesSeleccionadas([])
+  }
+
+  const handleAsignarAnalista = () => {
+    if (!analistaSeleccionado || entidadesSeleccionadas.length === 0) return
+
+    // Aquí iría la lógica para actualizar las entidades en el backend
+    toast({
+      title: "Asignación exitosa",
+      description: `Se asignó ${analistaSeleccionado} a ${entidadesSeleccionadas.length} entidad(es).`,
+    })
+
+    setMostrarDialogAsignacion(false)
+    setEntidadesSeleccionadas([])
+    setPerfilSeleccionado("")
+    setAnalistaSeleccionado("")
+  }
 
   const entidadesPaginadas = useMemo(() => {
     const inicio = (paginaActual - 1) * registrosPorPagina
@@ -578,133 +655,221 @@ export default function GestionAnalistas() {
         </div>
       </div>
 
-      {/* Resultados */}
-      {showResults && (
-        <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-border bg-muted/50">
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">NIT</th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">Entidad</th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">Estado</th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">Departamento</th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">Ciudad</th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">Sector</th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">Marco Normativo</th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">Naturaleza</th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">Analista Actual</th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entidadesPaginadas.length > 0 ? (
-                  entidadesPaginadas.map((entidad) => (
-                    <tr key={entidad.nit} className="border-b border-border hover:bg-muted/30 transition">
-                      <td className="py-4 px-4 text-foreground font-mono text-sm">{entidad.nit}</td>
-                      <td className="py-4 px-4 text-foreground font-medium">{entidad.nombre}</td>
-                      <td className="py-4 px-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          {entidad.estado}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-foreground text-sm">{entidad.departamento}</td>
-                      <td className="py-4 px-4 text-foreground text-sm">{entidad.ciudad}</td>
-                      <td className="py-4 px-4 text-foreground text-sm">{entidad.sector}</td>
-                      <td className="py-4 px-4 text-foreground text-sm">{entidad.marcoNormativo}</td>
-                      <td className="py-4 px-4 text-foreground text-sm">{entidad.naturaleza}</td>
-                      <td className="py-4 px-4 text-foreground font-semibold">{entidad.analistaActual}</td>
-                      <td className="py-4 px-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-teal-600 border-teal-600 hover:bg-teal-50 bg-transparent"
-                        >
-                          Asignar
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={10} className="py-8 px-4 text-center text-muted-foreground">
-                      No se encontraron entidades con los criterios de búsqueda.
+      {/* Barra de acciones antes de la tabla */}
+      <div className="flex items-center justify-between gap-4 bg-muted/30 p-4 rounded-lg border border-border">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setMostrarDialogAsignacion(true)}
+            disabled={entidadesSeleccionadas.length === 0}
+            className="text-teal-600 border-teal-600 hover:bg-teal-50"
+          >
+            <UserCog className="mr-2 h-4 w-4" />
+            Asignar Analista ({entidadesSeleccionadas.length})
+          </Button>
+
+          {entidadesPaginadas.length > 0 && (
+            <>
+              <Button variant="ghost" size="sm" onClick={seleccionarTodas}>
+                Seleccionar página actual
+              </Button>
+              {entidadesSeleccionadas.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={deseleccionarTodas}>
+                  Limpiar selección
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setMostrarCargaAnalistas(true)}
+          className="text-blue-600 border-blue-600 hover:bg-blue-50"
+        >
+          <BarChart3 className="mr-2 h-4 w-4" />
+          Ver carga de analistas
+        </Button>
+      </div>
+
+      {/* Tabla con checkboxes */}
+      <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b-2 border-border bg-muted/50">
+                <th className="text-left py-4 px-4">
+                  <input
+                    type="checkbox"
+                    checked={
+                      entidadesPaginadas.length > 0 &&
+                      entidadesPaginadas.every((e) => entidadesSeleccionadas.includes(e.nit))
+                    }
+                    onChange={(e) => (e.target.checked ? seleccionarTodas() : deseleccionarTodas())}
+                    className="rounded border-gray-300"
+                  />
+                </th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">NIT</th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">Entidad</th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">Estado</th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">Departamento</th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">Ciudad</th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">Sector</th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">Marco Normativo</th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">Naturaleza</th>
+                <th className="text-left py-4 px-4 font-semibold text-foreground">Analista Actual</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entidadesPaginadas.length > 0 ? (
+                entidadesPaginadas.map((entidad) => (
+                  <tr key={entidad.nit} className="border-b border-border hover:bg-muted/30 transition">
+                    <td className="py-4 px-4">
+                      <input
+                        type="checkbox"
+                        checked={entidadesSeleccionadas.includes(entidad.nit)}
+                        onChange={() => toggleSeleccionEntidad(entidad.nit)}
+                        className="rounded border-gray-300"
+                      />
                     </td>
+                    <td className="py-4 px-4 text-foreground font-mono text-sm">{entidad.nit}</td>
+                    <td className="py-4 px-4 text-foreground font-medium">{entidad.nombre}</td>
+                    <td className="py-4 px-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        {entidad.estado}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-foreground text-sm">{entidad.departamento}</td>
+                    <td className="py-4 px-4 text-foreground text-sm">{entidad.ciudad}</td>
+                    <td className="py-4 px-4 text-foreground text-sm">{entidad.sector}</td>
+                    <td className="py-4 px-4 text-foreground text-sm">{entidad.marcoNormativo}</td>
+                    <td className="py-4 px-4 text-foreground text-sm">{entidad.naturaleza}</td>
+                    <td className="py-4 px-4 text-foreground font-semibold">{entidad.analistaActual}</td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={11} className="py-8 px-4 text-center text-muted-foreground">
+                    No se encontraron entidades con los criterios de búsqueda.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-          <div className="px-6 py-4 bg-muted/30 border-t border-border flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <p className="text-sm text-muted-foreground">
-                Se encontraron <span className="font-semibold">{entidadesFiltradas.length}</span> resultado
-                {entidadesFiltradas.length !== 1 ? "s" : ""}
-              </p>
+      <Dialog open={mostrarDialogAsignacion} onOpenChange={setMostrarDialogAsignacion}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Asignar Analista</DialogTitle>
+            <DialogDescription>
+              Selecciona un perfil y luego un analista para asignar a {entidadesSeleccionadas.length} entidad(es).
+            </DialogDescription>
+          </DialogHeader>
 
-              <div className="flex items-center gap-2">
-                <label htmlFor="registros-por-pagina" className="text-sm text-muted-foreground whitespace-nowrap">
-                  Registros por página:
-                </label>
-                <select
-                  id="registros-por-pagina"
-                  value={registrosPorPagina}
-                  onChange={(e) => {
-                    setRegistrosPorPagina(Number(e.target.value))
-                    setPaginaActual(1)
-                  }}
-                  className="px-3 py-1.5 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-              </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="perfil">Perfil</Label>
+              <Select value={perfilSeleccionado} onValueChange={setPerfilSeleccionado}>
+                <SelectTrigger id="perfil">
+                  <SelectValue placeholder="Seleccionar perfil..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {perfiles.map((perfil) => (
+                    <SelectItem key={perfil} value={perfil}>
+                      {perfil}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {totalPaginas > 1 && (
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={() => setPaginaActual(1)} disabled={paginaActual === 1}>
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPaginaActual((prev) => Math.max(1, prev - 1))}
-                  disabled={paginaActual === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <span className="text-sm text-muted-foreground px-2">
-                  Página <span className="font-semibold">{paginaActual}</span> de{" "}
-                  <span className="font-semibold">{totalPaginas}</span>
-                </span>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPaginaActual((prev) => Math.min(totalPaginas, prev + 1))}
-                  disabled={paginaActual === totalPaginas}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPaginaActual(totalPaginas)}
-                  disabled={paginaActual === totalPaginas}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
+            {perfilSeleccionado && (
+              <div className="space-y-2">
+                <Label htmlFor="analista">Analista</Label>
+                <Select value={analistaSeleccionado} onValueChange={setAnalistaSeleccionado}>
+                  <SelectTrigger id="analista">
+                    <SelectValue placeholder="Seleccionar analista..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {analistasDisponibles.map((analista) => (
+                      <SelectItem key={analista} value={analista}>
+                        {analista}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
-        </div>
-      )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMostrarDialogAsignacion(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAsignarAnalista}
+              disabled={!analistaSeleccionado}
+              className="bg-teal-600 hover:bg-teal-700"
+            >
+              Asignar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={mostrarCargaAnalistas} onOpenChange={setMostrarCargaAnalistas}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Carga de Trabajo de Analistas</DialogTitle>
+            <DialogDescription>
+              Cantidad de entidades asignadas a cada analista según los filtros aplicados.
+              {entidadesFiltradas.length !== entidades.length && (
+                <span className="block mt-1 text-yellow-600">
+                  Nota: Se muestran datos filtrados ({entidadesFiltradas.length} de {entidades.length} entidades)
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-96 overflow-y-auto">
+            <table className="w-full">
+              <thead className="sticky top-0 bg-card">
+                <tr className="border-b-2 border-border bg-muted/50">
+                  <th className="text-left py-3 px-4 font-semibold text-foreground">Analista</th>
+                  <th className="text-right py-3 px-4 font-semibold text-foreground">Cantidad de Entidades</th>
+                  <th className="text-right py-3 px-4 font-semibold text-foreground">Porcentaje</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cargaAnalistas.map(({ nombre, cantidad }) => (
+                  <tr key={nombre} className="border-b border-border hover:bg-muted/30">
+                    <td className="py-3 px-4 text-foreground font-medium">{nombre}</td>
+                    <td className="py-3 px-4 text-right text-foreground font-semibold">{cantidad}</td>
+                    <td className="py-3 px-4 text-right text-muted-foreground">
+                      {((cantidad / entidadesFiltradas.length) * 100).toFixed(1)}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="sticky bottom-0 bg-card border-t-2 border-border">
+                <tr className="bg-muted/50 font-semibold">
+                  <td className="py-3 px-4 text-foreground">Total</td>
+                  <td className="py-3 px-4 text-right text-foreground">{entidadesFiltradas.length}</td>
+                  <td className="py-3 px-4 text-right text-foreground">100%</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setMostrarCargaAnalistas(false)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Mensaje cuando no hay búsqueda realizada */}
       {!showResults && (
