@@ -506,14 +506,31 @@ export default function GestionAnalistas() {
     })
   }
 
+  const entidadesFiltradas = useMemo(() => {
+    if (!filtrosAplicados) return []
+
+    return entidades.filter((entidad) => {
+      if (filtros.entidad && !entidad.nombre.toLowerCase().includes(filtros.entidad.toLowerCase())) return false
+      if (filtros.departamento.length > 0 && !filtros.departamento.includes(entidad.departamento)) return false
+      if (filtros.ciudad.length > 0 && !filtros.ciudad.includes(entidad.ciudad)) return false
+      if (filtros.sector.length > 0 && !filtros.sector.includes(entidad.sector)) return false
+      if (filtros.marcoNormativo.length > 0 && !filtros.marcoNormativo.includes(entidad.marcoNormativo)) return false
+      if (filtros.naturaleza.length > 0 && !filtros.naturaleza.includes(entidad.naturaleza)) return false
+      if (filtros.deptoGobierno.length > 0 && !filtros.deptoGobierno.includes(entidad.deptoGobierno)) return false
+      if (filtros.ciudadGobierno.length > 0 && !filtros.ciudadGobierno.includes(entidad.ciudadGobierno)) return false
+      if (filtros.analistaActual.length > 0 && !filtros.analistaActual.includes(entidad.analistaActual)) return false
+      return true
+    })
+  }, [entidades, filtros, filtrosAplicados])
+
   const entidadesPaginadas = useMemo(() => {
     if (!filtrosAplicados) return []
     const inicio = (paginaActual - 1) * registrosPorPagina
     const fin = inicio + registrosPorPagina
-    return entidades.slice(inicio, fin)
-  }, [entidades, paginaActual, registrosPorPagina, filtrosAplicados])
+    return entidadesFiltradas.slice(inicio, fin)
+  }, [entidadesFiltradas, paginaActual, registrosPorPagina, filtrosAplicados])
 
-  const totalPaginas = Math.ceil(entidades.length / registrosPorPagina)
+  const totalPaginas = Math.ceil(entidadesFiltradas.length / registrosPorPagina)
 
   useEffect(() => {
     setPaginaActual(1)
@@ -755,7 +772,8 @@ export default function GestionAnalistas() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>
                 Mostrando {entidadesPaginadas.length > 0 ? (paginaActual - 1) * registrosPorPagina + 1 : 0} -{" "}
-                {Math.min(paginaActual * registrosPorPagina, entidades.length)} de {entidades.length} resultados
+                {Math.min(paginaActual * registrosPorPagina, entidadesFiltradas.length)} de {entidadesFiltradas.length}{" "}
+                resultados
               </span>
               <div className="flex items-center gap-2 ml-4">
                 <Label htmlFor="registros-por-pagina" className="text-sm">
