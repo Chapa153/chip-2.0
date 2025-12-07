@@ -32,6 +32,13 @@ export default function AdministracionSubmodulos({ username, onBack, onModuleSel
       color: "from-green-50 to-green-100 dark:from-green-950 dark:to-green-900",
     },
     {
+      id: "analistas",
+      title: "Gestión de Analistas",
+      description: "Administra analistas del sistema",
+      icon: Users,
+      color: "from-teal-50 to-teal-100 dark:from-teal-950 dark:to-teal-900",
+    },
+    {
       id: "auditoria",
       title: "Auditoría",
       description: "Revisa registros de auditoría",
