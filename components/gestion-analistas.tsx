@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Search, ChevronLeft, UserCog, FilterIcon, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { Search, ChevronLeft, UserCog, FilterIcon, ChevronRight, ChevronsLeft, ChevronsRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -19,22 +19,18 @@ interface Entidad {
   analistaActual: string
 }
 
-interface GestionAnalistasProps {
-  onBack: () => void
-}
-
-export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
+export default function GestionAnalistas() {
   const [showResults, setShowResults] = useState(false)
   const [filtros, setFiltros] = useState({
     entidad: "",
-    departamento: "",
-    ciudad: "",
-    sector: "",
-    marcoNormativo: "",
-    naturaleza: "",
-    deptoGobierno: "",
-    ciudadGobierno: "",
-    analistaActual: "",
+    departamento: [] as string[],
+    ciudad: [] as string[],
+    sector: [] as string[],
+    marcoNormativo: [] as string[],
+    naturaleza: [] as string[],
+    deptoGobierno: [] as string[],
+    ciudadGobierno: [] as string[],
+    analistaActual: [] as string[],
   })
 
   const [entidades] = useState<Entidad[]>([
@@ -188,7 +184,7 @@ export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
       marcoNormativo: "Empresas no cotizantes",
       departamento: "DISTRITO CAPITAL",
       ciudad: "BOGOTA - DISTRITO CAPITAL",
-      sector: "SECTOR PUBLICO NACIONAL",
+      sector: "SECTOR PUBLICO TERRITORIAL",
       naturaleza: "ADSCRITA",
       deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
       ciudadGobierno: "MEDELLIN",
@@ -315,14 +311,14 @@ export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
     return entidades.filter((entidad) => {
       return (
         (filtros.entidad === "" || entidad.nombre.toLowerCase().includes(filtros.entidad.toLowerCase())) &&
-        (filtros.departamento === "" || entidad.departamento === filtros.departamento) &&
-        (filtros.ciudad === "" || entidad.ciudad === filtros.ciudad) &&
-        (filtros.sector === "" || entidad.sector === filtros.sector) &&
-        (filtros.marcoNormativo === "" || entidad.marcoNormativo === filtros.marcoNormativo) &&
-        (filtros.naturaleza === "" || entidad.naturaleza === filtros.naturaleza) &&
-        (filtros.deptoGobierno === "" || entidad.deptoGobierno === filtros.deptoGobierno) &&
-        (filtros.ciudadGobierno === "" || entidad.ciudadGobierno === filtros.ciudadGobierno) &&
-        (filtros.analistaActual === "" || entidad.analistaActual === filtros.analistaActual)
+        (filtros.departamento.length === 0 || filtros.departamento.includes(entidad.departamento)) &&
+        (filtros.ciudad.length === 0 || filtros.ciudad.includes(entidad.ciudad)) &&
+        (filtros.sector.length === 0 || filtros.sector.includes(entidad.sector)) &&
+        (filtros.marcoNormativo.length === 0 || filtros.marcoNormativo.includes(entidad.marcoNormativo)) &&
+        (filtros.naturaleza.length === 0 || filtros.naturaleza.includes(entidad.naturaleza)) &&
+        (filtros.deptoGobierno.length === 0 || filtros.deptoGobierno.includes(entidad.deptoGobierno)) &&
+        (filtros.ciudadGobierno.length === 0 || filtros.ciudadGobierno.includes(entidad.ciudadGobierno)) &&
+        (filtros.analistaActual.length === 0 || filtros.analistaActual.includes(entidad.analistaActual))
       )
     })
   }, [entidades, filtros])
@@ -334,29 +330,29 @@ export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
   const handleLimpiarFiltros = () => {
     setFiltros({
       entidad: "",
-      departamento: "",
-      ciudad: "",
-      sector: "",
-      marcoNormativo: "",
-      naturaleza: "",
-      deptoGobierno: "",
-      ciudadGobierno: "",
-      analistaActual: "",
+      departamento: [],
+      ciudad: [],
+      sector: [],
+      marcoNormativo: [],
+      naturaleza: [],
+      deptoGobierno: [],
+      ciudadGobierno: [],
+      analistaActual: [],
     })
     setShowResults(false)
+    setPaginaActual(1)
   }
 
-  // Componente de Select con búsqueda
-  const SelectConBusqueda = ({
+  const SelectMultipleConBusqueda = ({
     label,
-    value,
+    values,
     onChange,
     options,
     placeholder,
   }: {
     label: string
-    value: string
-    onChange: (value: string) => void
+    values: string[]
+    onChange: (values: string[]) => void
     options: string[]
     placeholder: string
   }) => {
@@ -365,13 +361,43 @@ export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
 
     const opcionesFiltradas = options.filter((opcion) => opcion.toLowerCase().includes(searchTerm.toLowerCase()))
 
+    const toggleOption = (opcion: string) => {
+      if (values.includes(opcion)) {
+        onChange(values.filter((v) => v !== opcion))
+      } else {
+        onChange([...values, opcion])
+      }
+    }
+
+    const removeValue = (value: string) => {
+      onChange(values.filter((v) => v !== value))
+    }
+
     return (
       <div className="relative">
         <label className="block text-sm font-medium text-foreground mb-2">{label}</label>
+
+        {/* Badges de selección */}
+        {values.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {values.map((value) => (
+              <span
+                key={value}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-md"
+              >
+                {value}
+                <button onClick={() => removeValue(value)} className="hover:text-primary/80" type="button">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
         <div className="relative">
           <input
             type="text"
-            value={value || searchTerm}
+            value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value)
               setIsOpen(true)
@@ -382,18 +408,25 @@ export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
           />
           {isOpen && opcionesFiltradas.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-background border border-input rounded-md shadow-lg max-h-60 overflow-auto">
-              {opcionesFiltradas.map((opcion) => (
-                <div
-                  key={opcion}
-                  onClick={() => {
-                    onChange(opcion)
-                    setSearchTerm("")
-                    setIsOpen(false)
-                  }}
-                  className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
+              {values.length > 0 && (
+                <button
+                  onClick={() => onChange([])}
+                  className="w-full px-3 py-2 text-left text-sm text-destructive hover:bg-muted border-b"
+                  type="button"
                 >
+                  Limpiar selección
+                </button>
+              )}
+              {opcionesFiltradas.map((opcion) => (
+                <label key={opcion} className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={values.includes(opcion)}
+                    onChange={() => toggleOption(opcion)}
+                    className="rounded border-input"
+                  />
                   {opcion}
-                </div>
+                </label>
               ))}
             </div>
           )}
@@ -423,7 +456,7 @@ export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button onClick={onBack} variant="ghost" size="sm" className="gap-2">
+          <Button onClick={() => window.history.back()} variant="ghost" size="sm" className="gap-2">
             <ChevronLeft className="w-4 h-4" />
             Volver
           </Button>
@@ -460,76 +493,76 @@ export default function GestionAnalistas({ onBack }: GestionAnalistasProps) {
             />
           </div>
 
-          {/* Departamento - Select con búsqueda */}
-          <SelectConBusqueda
+          {/* Departamento - Select múltiple con búsqueda */}
+          <SelectMultipleConBusqueda
             label="Departamento"
-            value={filtros.departamento}
-            onChange={(value) => setFiltros({ ...filtros, departamento: value })}
+            values={filtros.departamento}
+            onChange={(values) => setFiltros({ ...filtros, departamento: values })}
             options={departamentos}
-            placeholder="Seleccione departamento"
+            placeholder="Buscar departamento..."
           />
 
-          {/* Ciudad - Select con búsqueda */}
-          <SelectConBusqueda
+          {/* Ciudad - Select múltiple con búsqueda */}
+          <SelectMultipleConBusqueda
             label="Ciudad"
-            value={filtros.ciudad}
-            onChange={(value) => setFiltros({ ...filtros, ciudad: value })}
+            values={filtros.ciudad}
+            onChange={(values) => setFiltros({ ...filtros, ciudad: values })}
             options={ciudades}
-            placeholder="Seleccione ciudad"
+            placeholder="Buscar ciudad..."
           />
 
-          {/* Sector - Select con búsqueda */}
-          <SelectConBusqueda
+          {/* Sector - Select múltiple con búsqueda */}
+          <SelectMultipleConBusqueda
             label="Sector"
-            value={filtros.sector}
-            onChange={(value) => setFiltros({ ...filtros, sector: value })}
+            values={filtros.sector}
+            onChange={(values) => setFiltros({ ...filtros, sector: values })}
             options={sectores}
-            placeholder="Seleccione sector"
+            placeholder="Buscar sector..."
           />
 
-          {/* Marco Normativo - Select con búsqueda */}
-          <SelectConBusqueda
+          {/* Marco Normativo - Select múltiple con búsqueda */}
+          <SelectMultipleConBusqueda
             label="Marco Normativo"
-            value={filtros.marcoNormativo}
-            onChange={(value) => setFiltros({ ...filtros, marcoNormativo: value })}
+            values={filtros.marcoNormativo}
+            onChange={(values) => setFiltros({ ...filtros, marcoNormativo: values })}
             options={marcosNormativos}
-            placeholder="Seleccione marco normativo"
+            placeholder="Buscar marco normativo..."
           />
 
-          {/* Naturaleza - Select con búsqueda */}
-          <SelectConBusqueda
+          {/* Naturaleza - Select múltiple con búsqueda */}
+          <SelectMultipleConBusqueda
             label="Naturaleza"
-            value={filtros.naturaleza}
-            onChange={(value) => setFiltros({ ...filtros, naturaleza: value })}
+            values={filtros.naturaleza}
+            onChange={(values) => setFiltros({ ...filtros, naturaleza: values })}
             options={naturalezas}
-            placeholder="Seleccione naturaleza"
+            placeholder="Buscar naturaleza..."
           />
 
-          {/* Depto. Gobierno - Select con búsqueda */}
-          <SelectConBusqueda
+          {/* Depto. Gobierno - Select múltiple con búsqueda */}
+          <SelectMultipleConBusqueda
             label="Depto. Gobierno"
-            value={filtros.deptoGobierno}
-            onChange={(value) => setFiltros({ ...filtros, deptoGobierno: value })}
+            values={filtros.deptoGobierno}
+            onChange={(values) => setFiltros({ ...filtros, deptoGobierno: values })}
             options={departamentos}
-            placeholder="Seleccione departamento gobierno"
+            placeholder="Buscar departamento gobierno..."
           />
 
-          {/* Ciudad Gobierno - Select con búsqueda */}
-          <SelectConBusqueda
+          {/* Ciudad Gobierno - Select múltiple con búsqueda */}
+          <SelectMultipleConBusqueda
             label="Ciudad Gobierno"
-            value={filtros.ciudadGobierno}
-            onChange={(value) => setFiltros({ ...filtros, ciudadGobierno: value })}
+            values={filtros.ciudadGobierno}
+            onChange={(values) => setFiltros({ ...filtros, ciudadGobierno: values })}
             options={ciudades}
-            placeholder="Seleccione ciudad gobierno"
+            placeholder="Buscar ciudad gobierno..."
           />
 
-          {/* Analista Actual - Select con búsqueda */}
-          <SelectConBusqueda
+          {/* Analista Actual - Select múltiple con búsqueda */}
+          <SelectMultipleConBusqueda
             label="Analista Actual"
-            value={filtros.analistaActual}
-            onChange={(value) => setFiltros({ ...filtros, analistaActual: value })}
+            values={filtros.analistaActual}
+            onChange={(values) => setFiltros({ ...filtros, analistaActual: values })}
             options={analistas}
-            placeholder="Seleccione analista"
+            placeholder="Buscar analista..."
           />
         </div>
 
