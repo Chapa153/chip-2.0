@@ -287,6 +287,7 @@ export default function GestionFormulariosSimple({
     console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
 
     if (todosSeleccionados) {
+      console.log("[v0] Iniciando flujo de validación central")
       // Mostrar diálogo de certificación
       setShowCertificationDialog(true)
       return
