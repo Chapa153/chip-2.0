@@ -1,7 +1,5 @@
 "use client"
 import { useState } from "react"
-import { DialogDescription } from "@/components/ui/dialog"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -39,7 +37,6 @@ import { toast } from "@/components/ui/use-toast" // Corregido import de toast d
 import DataTable from "@/components/data-table" // Assuming DataTable is imported here
 import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog" // Import Dialog components
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // Import Select components
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -111,16 +108,6 @@ export default function GestionFormulariosSimple({
   const [showCentralErrorDialog, setShowCentralErrorDialog] = useState(false)
   const [showEmailFormatDialog, setShowEmailFormatDialog] = useState(false)
   const [isValidatingCentral, setIsValidatingCentral] = useState(false)
-
-  const [showImportDialog, setShowImportDialog] = useState(false)
-  const [showRegistroManualDialog, setShowRegistroManualDialog] = useState(false)
-  const [selectedFormForEdit, setSelectedFormForEdit] = useState<{ id: string; name: string } | null>(null)
-
-  const [showResubmitDialog, setShowResubmitDialog] = useState(false)
-  const [resubmitReason, setResubmitReason] = useState("")
-  const [resubmitJustification, setResubmitJustification] = useState("")
-  const [resubmitAction, setResubmitAction] = useState<"import" | "manual">("import")
-  const [resubmitFormId, setResubmitFormId] = useState<string | null>(null)
   // </CHANGE>
 
   // Define currentView and selectedFormulario here
@@ -130,6 +117,13 @@ export default function GestionFormulariosSimple({
   const [showBalanceSuccessDialog, setShowBalanceSuccessDialog] = useState(false)
   const [showCentralSuccessDialog, setShowCentralSuccessDialog] = useState(false)
   const [showSuccessEmailFormatDialog, setShowSuccessEmailFormatDialog] = useState(false)
+
+  const [showReenvioDialog, setShowReenvioDialog] = useState(false)
+  const [reenvioMotivo, setReenvioMotivo] = useState("")
+  const [reenvioJustificacion, setReenvioJustificacion] = useState("")
+  const [reenvioAction, setReenvioAction] = useState<"importar" | "registro" | null>(null)
+  const [reenvioFormId, setReenvioFormId] = useState<string | null>(null)
+  // </CHANGE>
 
   const [formulariosState, setFormulariosState] = useState<Formulario[]>([
     // Renombrado a setFormulariosState para evitar conflicto
@@ -223,7 +217,7 @@ export default function GestionFormulariosSimple({
 
   const getEstadosPermitidos = () => {
     // Define los estados que se permiten para enviar
-    return ["Pendiente en validar", "Rechazazdo por Deficiencia", "Excepción de validación", "En validación"]
+    return ["Pendiente en validar", "Rechazado por Deficiencia", "Excepción de validación", "En validación"]
   }
 
   const canSendSelectedFormularios = (): boolean => {
@@ -515,6 +509,102 @@ export default function GestionFormulariosSimple({
     }
     return "gray"
   }
+
+  const hayFormulariosAceptadosCategoria = () => {
+    return formulariosState.some((f) => f.estado === "Aceptado" && f.tipo === "Categoría")
+  }
+
+  // Función para manejar click en Importar
+  const handleImportarClick = () => {
+    if (hayFormulariosAceptadosCategoria()) {
+      setReenvioAction("importar")
+      setShowReenvioDialog(true)
+    } else {
+      // Lógica normal de importación
+      alert("Funcionalidad de importación en desarrollo")
+    }
+  }
+
+  // Función para manejar click en Registro Manual
+  const handleRegistroManualClick = (formId: string, formName: string) => {
+    const form = formulariosState.find((f) => f.id === formId)
+    if (form && form.estado === "Aceptado" && form.tipo === "Categoría") {
+      setReenvioFormId(formId)
+      setReenvioAction("registro")
+      setShowReenvioDialog(true)
+    } else {
+      // Lógica normal de registro manual
+      onEditForm?.(formId, formName)
+    }
+  }
+
+  // Función para procesar el reenvío
+  const handleContinuarReenvio = () => {
+    if (!reenvioMotivo || !reenvioJustificacion) {
+      alert("Debe completar tanto el motivo como la justificación")
+      return
+    }
+
+    if (reenvioAction === "importar") {
+      // Todos los formularios quedan en "Pendiente Validar"
+      setFormulariosState((prev) =>
+        prev.map((f) => ({
+          ...f,
+          tipo: "Formulario",
+          estado: "Pendiente en validar",
+          estadoColor: "yellow",
+          fecha: new Date().toLocaleDateString("es-ES"),
+        })),
+      )
+      alert("Importación realizada. Todos los formularios quedaron en estado Pendiente Validar.")
+    } else if (reenvioAction === "registro" && reenvioFormId) {
+      // Solo el formulario seleccionado queda en "Pendiente Validar"
+      // Los demás quedan sin estado de validación
+      setFormulariosState((prev) =>
+        prev.map((f) => {
+          if (f.id === reenvioFormId) {
+            return {
+              ...f,
+              tipo: "Formulario",
+              estado: "Pendiente en validar",
+              estadoColor: "yellow",
+              fecha: new Date().toLocaleDateString("es-ES"),
+            }
+          } else if (f.estado === "Aceptado" && f.tipo === "Categoría") {
+            return {
+              ...f,
+              tipo: "Formulario",
+              estado: "",
+              estadoColor: "gray",
+              fecha: "",
+            }
+          }
+          return f
+        }),
+      )
+      // Abrir el formulario para edición
+      const form = formulariosState.find((f) => f.id === reenvioFormId)
+      if (form) {
+        onEditForm?.(form.id, form.nombre)
+      }
+    }
+
+    // Limpiar y cerrar el diálogo
+    setShowReenvioDialog(false)
+    setReenvioMotivo("")
+    setReenvioJustificacion("")
+    setReenvioAction(null)
+    setReenvioFormId(null)
+  }
+
+  const handleCancelarReenvio = () => {
+    setShowReenvioDialog(false)
+    setReenvioMotivo("")
+    setReenvioJustificacion("")
+    setReenvioAction(null)
+    setReenvioFormId(null)
+  }
+  // </CHANGE>
 
   const handleViewErrorDetails = () => {
     // Renombrado de handleViewErrors a handleViewErrorDetails
@@ -1004,122 +1094,6 @@ export default function GestionFormulariosSimple({
     // onBack?.();
   }
 
-  // Placeholder functions for the undeclared variables
-  const checkResubmitRequired = () => {
-    console.log("[v0] Verificando si se requiere justificación de reenvío")
-    // Verificar si hay formularios en estado Aceptado con tipo Categoría
-    const hasAcceptedCategoryForms = formulariosState.some(
-      (form) => form.estado === "Aceptado" && form.tipo === "Categoría",
-    )
-    console.log("[v0] ¿Hay formularios Aceptados tipo Categoría?:", hasAcceptedCategoryForms)
-    return hasAcceptedCategoryForms
-  }
-
-  const handleImportar = () => {
-    console.log("[v0] handleImportar - Iniciando importación")
-    if (checkResubmitRequired()) {
-      console.log("[v0] Se requiere justificación de reenvío")
-      setResubmitAction("import")
-      setResubmitFormId(null)
-      setShowResubmitDialog(true)
-    } else {
-      console.log("[v0] No se requiere justificación, proceder con importación normal")
-      setShowImportDialog(true)
-    }
-  }
-
-  const handleRegistroManual = (formId: string, formName: string) => {
-    console.log("[v0] handleRegistroManual - Iniciando registro manual para", formId, formName)
-    if (checkResubmitRequired()) {
-      console.log("[v0] Se requiere justificación de reenvío")
-      setResubmitAction("manual")
-      setResubmitFormId(formId)
-      setShowResubmitDialog(true)
-    } else {
-      console.log("[v0] No se requiere justificación, proceder con registro manual normal")
-      setSelectedFormForEdit({ id: formId, name: formName })
-      setShowRegistroManualDialog(true)
-    }
-  }
-
-  const handleContinueResubmit = () => {
-    console.log("[v0] Continuar con reenvío - Acción:", resubmitAction)
-    console.log("[v0] Motivo:", resubmitReason)
-    console.log("[v0] Justificación:", resubmitJustification)
-
-    if (!resubmitReason || !resubmitJustification.trim()) {
-      toast({
-        title: "Campos requeridos",
-        description: "Debe seleccionar un motivo y escribir una justificación.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Actualizar estados según el tipo de acción
-    if (resubmitAction === "import") {
-      // Importar: Todos los formularios pasan a "Pendiente en validar"
-      console.log("[v0] Importar - Todos los formularios a Pendiente en validar")
-      setFormulariosState((prev) =>
-        prev.map((form) => ({
-          ...form,
-          estado: "Pendiente en validar",
-          estadoColor: "yellow",
-          tipo: "Formulario",
-        })),
-      )
-      toast({
-        title: "Importación realizada",
-        description: "Todos los formularios están en estado Pendiente en validar.",
-      })
-      setShowImportDialog(true) // Abrir diálogo de importación después de justificar
-    } else if (resubmitAction === "manual" && resubmitFormId) {
-      // Registro manual: Solo el formulario seleccionado pasa a "Pendiente en validar"
-      // Los demás quedan sin estado de validación
-      console.log("[v0] Registro manual - Solo formulario", resubmitFormId, "a Pendiente en validar")
-      setFormulariosState((prev) =>
-        prev.map((form) =>
-          form.id === resubmitFormId
-            ? {
-                ...form,
-                estado: "Pendiente en validar",
-                estadoColor: "yellow",
-                tipo: "Formulario",
-              }
-            : {
-                ...form,
-                estado: "",
-                estadoColor: "gray",
-                tipo: "Formulario",
-              },
-        ),
-      )
-      toast({
-        title: "Registro manual actualizado",
-        description: "El formulario seleccionado está en estado Pendiente en validar.",
-      })
-      // Encontrar el nombre del formulario para `selectedFormForEdit`
-      const form = formulariosState.find((f) => f.id === resubmitFormId)
-      setSelectedFormForEdit({ id: resubmitFormId, name: form?.nombre || "" })
-      setShowRegistroManualDialog(true) // Abrir diálogo de registro manual después de justificar
-    }
-
-    // Limpiar y cerrar
-    setShowResubmitDialog(false)
-    setResubmitReason("")
-    setResubmitJustification("")
-    setResubmitFormId(null)
-  }
-
-  const handleCancelResubmit = () => {
-    console.log("[v0] Cancelar reenvío")
-    setShowResubmitDialog(false)
-    setResubmitReason("")
-    setResubmitJustification("")
-    setResubmitFormId(null)
-  }
-  // </CHANGE>
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Filtros de Búsqueda */}
@@ -1230,7 +1204,12 @@ export default function GestionFormulariosSimple({
             {/* Barra de Acciones */}
             <div className="p-4 border-b border-border flex items-center justify-between">
               <div className="flex gap-2">
-                <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleImportar}>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handleImportarClick}
+                >
                   <Upload className="w-4 h-4 mr-2" />
                   Importar
                 </Button>
@@ -1429,7 +1408,7 @@ export default function GestionFormulariosSimple({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleRegistroManual(form.id, form.nombre)}>
+                            <DropdownMenuItem onClick={() => handleRegistroManualClick(form.id, form.nombre)}>
                               <Edit className="w-4 h-4 mr-2" />
                               Registro manual
                             </DropdownMenuItem>
@@ -1840,8 +1819,8 @@ export default function GestionFormulariosSimple({
               <p>Respetado(a) Doctor(a):</p>
 
               <p className="mt-4">
-                Respetado(a) Doctor(a): La Contaduría General de la Nación se permite informarle que su envío fue
-                rechazado dado que se encontraron inconsistencias con la información que se reportó, así:
+                La Contaduría General de la Nación se permite informarle que su envío fue rechazado dado que se
+                encontraron inconsistencias con la información que se reportó, así:
               </p>
 
               <div className="mt-4 space-y-1">
@@ -2007,139 +1986,61 @@ export default function GestionFormulariosSimple({
         </DialogContent>
       </Dialog>
 
-      {/* Agregar diálogo de justificación de reenvío antes del cierre del return */}
-      {/* Diálogo de justificación de reenvío */}
-      <Dialog open={showResubmitDialog} onOpenChange={setShowResubmitDialog}>
+      <Dialog open={showReenvioDialog} onOpenChange={setShowReenvioDialog}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded bg-green-100 flex items-center justify-center">
-                <HelpCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <DialogTitle className="text-xl">Justificación del reenvío</DialogTitle>
-            </div>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
+              Justificación del reenvío
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-gray-700">
-              Está realizando una modification a la información reportada, debe justificar el motivo de su reenvío.
-            </p>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Motivo</label>
-              <Select value={resubmitReason} onValueChange={setResubmitReason}>
-                <SelectTrigger className="w-full bg-blue-50">
-                  <SelectValue placeholder="Seleccione un motivo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="error">Por error en el reporte de información</SelectItem>
-                  <SelectItem value="requerimiento">Solicitud de requerimiento por parte de la CGN</SelectItem>
-                  <SelectItem value="conciliacion">Conciliación de saldos pendientes</SelectItem>
-                  <SelectItem value="otra">Otra</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <HelpCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-blue-900">
+                Está realizando una modificación a la información reportada, debe justificar el motivo de su reenvío.
+              </p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Justificación (máx. 500 caracteres)</label>
+              <label className="block text-sm font-medium">Motivo</label>
+              <select
+                value={reenvioMotivo}
+                onChange={(e) => setReenvioMotivo(e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              >
+                <option value="">Seleccione un motivo</option>
+                <option value="Por error en el reporte de información">Por error en el reporte de información</option>
+                <option value="Solicitud de requerimiento por parte de la CGN">
+                  Solicitud de requerimiento por parte de la CGN
+                </option>
+                <option value="Conciliación de saldos pendientes">Conciliación de saldos pendientes</option>
+                <option value="Otra">Otra</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Justificación (max. 500 caracteres)</label>
               <textarea
-                value={resubmitJustification}
-                onChange={(e) => setResubmitJustification(e.target.value.slice(0, 500))}
-                className="w-full min-h-[120px] p-3 border rounded-md resize-none"
-                placeholder="Escriba su justificación aquí..."
+                value={reenvioJustificacion}
+                onChange={(e) => setReenvioJustificacion(e.target.value.slice(0, 500))}
+                placeholder="Escriba aquí la justificación..."
+                className="w-full px-3 py-2 border border-input rounded-md bg-background min-h-[120px] resize-none"
+                maxLength={500}
               />
-              <div className="text-xs text-gray-500 text-right">{resubmitJustification.length}/500 caracteres</div>
+              <div className="text-xs text-gray-500 text-right">{reenvioJustificacion.length}/500 caracteres</div>
             </div>
           </div>
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={handleCancelResubmit}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleCancelarReenvio}>
               Cancelar reenvío
             </Button>
-            <Button onClick={handleContinueResubmit}>Continuar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* </CHANGE> */}
-
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Importar Archivo</DialogTitle>
-            <DialogDescription>
-              Seleccione un archivo para importar la información de los formularios.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <input
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                className="hidden"
-                id="file-upload"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    toast({
-                      title: "Archivo importado",
-                      description: `${e.target.files[0].name} ha sido cargado exitosamente.`,
-                    })
-                    setShowImportDialog(false)
-                  }
-                }}
-              />
-              <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-2">
-                <Upload className="w-12 h-12 text-gray-400" />
-                <span className="text-sm text-gray-600">Haga clic para seleccionar un archivo o arrastre y suelte</span>
-                <span className="text-xs text-gray-500">Excel (.xlsx, .xls) o CSV</span>
-              </label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowImportDialog(false)}>
-              Cancelar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showRegistroManualDialog} onOpenChange={setShowRegistroManualDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Registro Manual - {selectedFormForEdit?.name}</DialogTitle>
-            <DialogDescription>Ingrese la información del formulario manualmente.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Campo 1</label>
-                <input type="text" className="w-full border rounded px-3 py-2" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Campo 2</label>
-                <input type="text" className="w-full border rounded px-3 py-2" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Campo 3</label>
-                <input type="text" className="w-full border rounded px-3 py-2" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Campo 4</label>
-                <input type="text" className="w-full border rounded px-3 py-2" />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRegistroManualDialog(false)}>
-              Cancelar
-            </Button>
             <Button
-              onClick={() => {
-                toast({
-                  title: "Datos guardados",
-                  description: "La información ha sido registrada exitosamente.",
-                })
-                setShowRegistroManualDialog(false)
-              }}
+              onClick={handleContinuarReenvio}
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={!reenvioMotivo || !reenvioJustificacion}
             >
-              Guardar
+              Continuar
             </Button>
           </DialogFooter>
         </DialogContent>
