@@ -103,7 +103,6 @@ export default function GestionFormulariosSimple({
   const [errorData, setErrorData] = useState<ErrorData | null>(null)
   const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({})
 
-  // </CHANGE> Agregando estado para fase 5 en la capa de carga
   const [validationPhase, setValidationPhase] = useState(0)
   const [showCertificationDialog, setShowCertificationDialog] = useState(false)
   const [showCentralErrorDialog, setShowCentralErrorDialog] = useState(false)
@@ -270,7 +269,6 @@ export default function GestionFormulariosSimple({
     const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
     console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
 
-    // </CHANGE> Si todos los formularios están seleccionados, ejecutar flujo especial con fases 1-5
     if (todosSeleccionados) {
       console.log("[v0] Todos los formularios seleccionados - iniciando validación completa con fases 1-5")
       setIsSubmitting(true)
@@ -325,10 +323,11 @@ export default function GestionFormulariosSimple({
 
     let hasInformativeAlert = false
 
-    // Fase 1: Validaciones generales
+    // Fase 1: Contenido de variables
+    setValidationPhase(1) // Manteniendo la fase 1 para el flujo normal
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    // Fase 2: Contenido de variables
+    // Fase 2: Completitud
     setValidationPhase(2)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
@@ -348,7 +347,7 @@ export default function GestionFormulariosSimple({
       )
     }
 
-    // Fase 3: Completitud
+    // Fase 3: Validaciones generales
     setValidationPhase(3)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
@@ -469,7 +468,7 @@ export default function GestionFormulariosSimple({
 
         setFormulariosState((prev) => [...prev, ...formulasCalculadas])
         setSimpleAlertMessage(
-          `El formulario Balance General fue aceptado. Se han generado ${formulasCalculadas.length} formularios calculados que se agregaron al detalle de formularios con estado "Pendiente en validar" y tipo "Formulario".`,
+          "El formulario Balance General fue aceptado. Se han generado formularios calculados que se agregaron al detalle de formularios con estado 'Pendiente en validar' y tipo 'Formulario'.",
         )
         setShowSimpleAlert(true)
       }
@@ -1393,7 +1392,6 @@ export default function GestionFormulariosSimple({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* </CHANGE> Capa de carga con fases 1-5 */}
       {isSubmitting && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-6 max-w-md">
@@ -1409,7 +1407,7 @@ export default function GestionFormulariosSimple({
                   ) : (
                     <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
                   )}
-                  <span className="text-sm">1. Contenido de variables</span>
+                  <span className="text-sm">1. Validaciones generales</span>
                 </div>
                 <div className={`flex items-center gap-3 ${validationPhase >= 2 ? "text-gray-900" : "text-gray-400"}`}>
                   {validationPhase > 2 ? (
@@ -1419,7 +1417,7 @@ export default function GestionFormulariosSimple({
                   ) : (
                     <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
                   )}
-                  <span className="text-sm">2. Completitud</span>
+                  <span className="text-sm">2. Contenido de variables</span>
                 </div>
                 <div className={`flex items-center gap-3 ${validationPhase >= 3 ? "text-gray-900" : "text-gray-400"}`}>
                   {validationPhase > 3 ? (
@@ -1429,7 +1427,7 @@ export default function GestionFormulariosSimple({
                   ) : (
                     <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
                   )}
-                  <span className="text-sm">3. Validaciones generales</span>
+                  <span className="text-sm">3. Completitud</span>
                 </div>
                 <div className={`flex items-center gap-3 ${validationPhase >= 4 ? "text-gray-900" : "text-gray-400"}`}>
                   {validationPhase > 4 ? (
@@ -1441,7 +1439,6 @@ export default function GestionFormulariosSimple({
                   )}
                   <span className="text-sm">4. Expresiones de validación locales</span>
                 </div>
-                {/* </CHANGE> Agregando fase 5 a la capa de carga */}
                 <div className={`flex items-center gap-3 ${validationPhase >= 5 ? "text-gray-900" : "text-gray-400"}`}>
                   {validationPhase > 5 ? (
                     <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
