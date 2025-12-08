@@ -116,6 +116,7 @@ export default function GestionFormulariosSimple({
 
   const [showBalanceSuccessDialog, setShowBalanceSuccessDialog] = useState(false)
   const [showCentralSuccessDialog, setShowCentralSuccessDialog] = useState(false)
+  const [showSuccessEmailFormatDialog, setShowSuccessEmailFormatDialog] = useState(false)
 
   const [formulariosState, setFormulariosState] = useState<Formulario[]>([
     // Renombrado a setFormulariosState para evitar conflicto
@@ -1584,6 +1585,10 @@ export default function GestionFormulariosSimple({
                   <p className="text-sm text-green-800">
                     Todos los formularios han pasado las validaciones centrales (Fase 5) correctamente.
                   </p>
+                  <p className="text-sm text-gray-700 mt-3">
+                    Se ha enviado un correo electrónico automático confirmando la aceptación del envío a la dirección
+                    registrada de la entidad.
+                  </p>
                   <div className="bg-white border border-green-300 rounded p-3 mt-3">
                     <p className="text-sm text-gray-700">
                       <strong className="text-green-900">Estado:</strong> Todos los formularios han sido actualizados a
@@ -1594,8 +1599,21 @@ export default function GestionFormulariosSimple({
                 </div>
               </div>
             </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Mail className="h-4 w-4" />
+              <span>Correo enviado desde: chip@contaduria.gov.co</span>
+            </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCentralSuccessDialog(false)
+                setShowSuccessEmailFormatDialog(true)
+              }}
+            >
+              Ver formato del correo
+            </Button>
             <Button onClick={() => setShowCentralSuccessDialog(false)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
@@ -1649,93 +1667,215 @@ export default function GestionFormulariosSimple({
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <div className="space-y-2 mb-4">
-                <div>
-                  <span className="font-semibold">De:</span> chip@contaduria.gov.co
+            <div className="border-b pb-3 space-y-1 text-sm">
+              <div className="flex gap-2">
+                <span className="font-semibold text-gray-700 w-20">De:</span>
+                <span className="text-gray-600">chip@contaduria.gov.co</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold text-gray-700 w-20">Date:</span>
+                <span className="text-gray-600">mar, 12 ago 2025 a las 8:45</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold text-gray-700 w-20">Subject:</span>
+                <span className="text-gray-600">
+                  Envío Rechazado por Inconsistencias categoría: INFORMACIÓN CONTABLE PUBLICA - CONVERGENCIA
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold text-gray-700 w-20">To:</span>
+                <span className="text-gray-600"></span>
+              </div>
+            </div>
+
+            <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white rounded-lg p-2">
+                  <span className="text-2xl">🏛️</span>
                 </div>
-                <div>
-                  <span className="font-semibold">Asunto:</span> Envío Rechazado por Inconsistencias categoría:
-                  INFORMACIÓN CONTABLE PUBLICA-CONVERGENCIA
-                </div>
+                <h2 className="text-3xl font-bold">Sistema CHIP</h2>
+              </div>
+              <div className="text-right">
+                <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
+              </div>
+            </div>
+
+            <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
+              <p className="font-semibold">Doctor(a)</p>
+              <p className="font-semibold">MARILUZ MUÑOZ MOLINA</p>
+              <p>Contador</p>
+              <p>E.S.P. Empresa de Acueducto y Alcantarillado del Río Palo S.A.S.</p>
+              <p>PUERTO TEJADA - DEPARTAMENTO DE CAUCA</p>
+
+              <p className="mt-4 italic text-gray-600">Este es un correo automático que genera el sistema CHIP.</p>
+
+              <p className="mt-4">Cordial saludo,</p>
+              <p>Respetado(a) Doctor(a):</p>
+
+              <p className="mt-4">
+                La Contaduría General de la Nación se permite informarle que su envío fue rechazado dado que se
+                encontraron inconsistencias con la información que se reportó, así:
+              </p>
+
+              <div className="mt-4 space-y-1">
+                <p>
+                  <span className="font-semibold">Categoría:</span> INFORMACIÓN CONTABLE PUBLICA - CONVERGENCIA
+                </p>
+                <p>
+                  <span className="font-semibold">Formularios:</span> Todos
+                </p>
+                <p>
+                  <span className="font-semibold">Periodo:</span> Abr-Jun
+                </p>
+                <p>
+                  <span className="font-semibold">Año:</span> 2024
+                </p>
+                <p>
+                  <span className="font-semibold">Recepción:</span> 2024-07-31
+                </p>
+                <p>
+                  <span className="font-semibold">Radicado (Id) de Envío:</span> 4512447
+                </p>
               </div>
 
-              <div className="space-y-3 text-gray-700">
-                <p>Doctor(a)</p>
-                <p className="font-semibold">MARILUZ MUÑOZ MOLINA</p>
-                <p>Contador</p>
-                <p>E.S.P. Empresa de Acueducto y Alcantarillado del Río Palo S.A.S.</p>
-                <p>PUERTO TEJADA - DEPARTAMENTO DE CAUCA</p>
+              <p className="mt-4 font-semibold">Los mensajes generados fueron:</p>
 
-                <p className="mt-4 italic">Este es un correo automático que genera el sistema CHIP.</p>
-
-                <p className="mt-4">Cordial saludo,</p>
-                <p>Respetado(a) Doctor(a):</p>
-
-                <p className="mt-4">
-                  La Contaduría General de la Nación se permite informarle que su envío fue rechazado dado que se
-                  encontraron inconsistencias con la información que se reportó, así:
+              <div className="mt-3 space-y-2 max-h-[300px] overflow-y-auto border-l-2 border-red-300 pl-3">
+                <p className="text-xs">
+                  Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
+                  inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
+                  saldo inicial debe ser cero para el concepto 1.1.05.01 ya que no fué reportado en el corte anterior
                 </p>
-
-                <div className="mt-4 space-y-1">
-                  <p>
-                    <span className="font-semibold">Categoría:</span> INFORMACIÓN CONTABLE PUBLICA - CONVERGENCIA
-                  </p>
-                  <p>
-                    <span className="font-semibold">Formularios:</span> Todos
-                  </p>
-                  <p>
-                    <span className="font-semibold">Periodo:</span> Abr-Jun
-                  </p>
-                  <p>
-                    <span className="font-semibold">Año:</span> 2024
-                  </p>
-                  <p>
-                    <span className="font-semibold">Recepción:</span> 2024-07-31
-                  </p>
-                  <p>
-                    <span className="font-semibold">Radicado (Id) de Envío:</span> 4512447
-                  </p>
-                </div>
-
-                <p className="mt-4 font-semibold">Los mensajes generados fueron:</p>
-
-                <div className="mt-3 space-y-2 max-h-[300px] overflow-y-auto border-l-2 border-red-300 pl-3">
-                  <p className="text-xs">
-                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                    saldo inicial debe ser cero para el concepto 1.1.05.01 ya que no fué reportado en el corte anterior
-                  </p>
-                  <p className="text-xs">
-                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                    saldo inicial debe ser cero para el concepto 1.1.05.02 ya que no fué reportado en el corte anterior
-                  </p>
-                  <p className="text-xs">
-                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                    saldo inicial debe ser igual al saldo final del corte anterior revisar concepto:5.8.90.90
-                  </p>
-                  <p className="text-xs">
-                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                    saldo inicial debe ser igual al saldo final del corte anterior revisar concepto:7.5.02.01
-                  </p>
-                  <p className="text-xs text-gray-500 italic">... y 56 errores adicionales</p>
-                </div>
-
-                <p className="mt-4">
-                  Por favor revise y corrija las inconsistencias reportadas antes de realizar un nuevo envío.
+                <p className="text-xs">
+                  Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
+                  inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
+                  saldo inicial debe ser cero para el concepto 1.1.05.02 ya que no fué reportado en el corte anterior
                 </p>
-
-                <p className="mt-4">Atentamente,</p>
-                <p className="font-semibold">Sistema CHIP</p>
-                <p>Contaduría General de la Nación</p>
+                <p className="text-xs">
+                  Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
+                  inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
+                  saldo inicial debe ser igual al saldo final del corte anterior revisar concepto:5.8.90.90
+                </p>
+                <p className="text-xs">
+                  Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
+                  inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
+                  saldo inicial debe ser igual al saldo final del corte anterior revisar concepto:7.5.02.01
+                </p>
+                <p className="text-xs text-gray-500 italic">... y 56 errores adicionales</p>
               </div>
+
+              <p className="mt-4">
+                Por favor revise y corrija las inconsistencias reportadas antes de realizar un nuevo envío.
+              </p>
+
+              <p className="mt-4">Atentamente,</p>
+              <p className="font-semibold">Sistema CHIP</p>
+              <p>Contaduría General de la Nación</p>
             </div>
           </div>
           <DialogFooter>
             <Button onClick={() => setShowEmailFormatDialog(false)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showSuccessEmailFormatDialog} onOpenChange={setShowSuccessEmailFormatDialog}>
+        <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-green-500" />
+              Formato del Correo - Envío Aceptado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Header del correo */}
+            <div className="border-b pb-3 space-y-1 text-sm">
+              <div className="flex gap-2">
+                <span className="font-semibold text-gray-700 w-20">De:</span>
+                <span className="text-gray-600">chip@contaduria.gov.co</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold text-gray-700 w-20">Date:</span>
+                <span className="text-gray-600">mar, 12 ago 2025 a las 8:45</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold text-gray-700 w-20">Subject:</span>
+                <span className="text-gray-600">
+                  Envío en Estado Aceptado categoría INFORMACIÓN CONTABLE PÚBLICA - CONVERGENCIA
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold text-gray-700 w-20">To:</span>
+                <span className="text-gray-600"></span>
+              </div>
+            </div>
+
+            {/* Banner CHIP */}
+            <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white rounded-lg p-2">
+                  <span className="text-2xl">🏛️</span>
+                </div>
+                <h2 className="text-3xl font-bold">Sistema CHIP</h2>
+              </div>
+              <div className="text-right">
+                <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
+              </div>
+            </div>
+
+            {/* Contenido del correo */}
+            <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
+              <p className="font-semibold">Doctor(a)</p>
+              <p className="font-semibold">GABRIELA MORENO ALBA</p>
+              <p>Contador</p>
+              <p>Jenesano</p>
+              <p className="mb-4">JENESANO - DEPARTAMENTO DE BOYACA</p>
+
+              <p className="italic text-gray-600">Este es un correo automático que genera el sistema CHIP</p>
+
+              <p className="mt-4">Cordial saludo,</p>
+
+              <p className="mt-4">Respetado(a) Doctor(a):</p>
+
+              <p className="mt-4 font-semibold">
+                La Contaduría General de la Nación se permite informarle que su envío fue Aceptado.
+              </p>
+
+              <div className="mt-4 space-y-1">
+                <p>
+                  <strong>Categoría:</strong> INFORMACIÓN CONTABLE PÚBLICA - CONVERGENCIA
+                </p>
+                <p>
+                  <strong>Formularios y</strong> REPORTE DE ESTADOS FINANCIEROS
+                </p>
+                <p>
+                  <strong>Periodo:</strong> Oct-Dic
+                </p>
+                <p>
+                  <strong>Año:</strong> 2024
+                </p>
+                <p>
+                  <strong>Recepción:</strong> 2025-08-12
+                </p>
+                <p>
+                  <strong>Radicado (Id) de Envío:</strong> 4589500
+                </p>
+              </div>
+
+              <p className="mt-6">Atentamente,</p>
+
+              <div className="mt-4 pt-4 border-t space-y-1 text-xs text-gray-600">
+                <p className="font-semibold">Contaduría General de la Nación</p>
+                <p className="text-blue-600 underline">chip@contaduria.gov.co</p>
+                <p>Calle 26 No 69 - 76, Edificio Elemento</p>
+                <p>Torre 1 (Aire) - Piso 15, Bogotá D.C. Colombia</p>
+                <p>Código Postal: 111071</p>
+                <p>PBX: +57 (601) 492 6400</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowSuccessEmailFormatDialog(false)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
