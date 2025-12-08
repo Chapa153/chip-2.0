@@ -286,14 +286,6 @@ export default function GestionFormulariosSimple({
     const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
     console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
 
-    if (todosSeleccionados) {
-      console.log("[v0] Iniciando flujo de validación central")
-      // Mostrar diálogo de certificación
-      setShowCertificationDialog(true)
-      return
-    }
-    // </CHANGE>
-
     // Implementación de la lógica de validación con separación de errores por tipo
     setErrorsSeen(false)
     setIsSubmitting(true)
@@ -320,8 +312,12 @@ export default function GestionFormulariosSimple({
 
     let hasInformativeAlert = false
 
-    // Fase 1: Contenido de variables
+    // Fase 1: Validaciones generales
     await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    // Fase 2: Contenido de variables
+    setValidationPhase(2)
+    await new Promise((resolve) => setTimeout(resolve, 800))
 
     if (selectedFormularios.includes("CGN-2025-05")) {
       // Notas a los Estados Financieros
@@ -339,8 +335,8 @@ export default function GestionFormulariosSimple({
       )
     }
 
-    // Fase 2: Completitud
-    setValidationPhase(2)
+    // Fase 3: Completitud
+    setValidationPhase(3)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
     if (selectedFormularios.includes("CGN-2025-04")) {
@@ -359,10 +355,6 @@ export default function GestionFormulariosSimple({
       )
     }
 
-    // Fase 3: Validaciones generales
-    setValidationPhase(3)
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
     if (selectedFormularios.includes("CGN-2025-03")) {
       // Flujo de Efectivo
       hasInformativeAlert = true
@@ -372,7 +364,7 @@ export default function GestionFormulariosSimple({
           "• Las actividades de inversión deben estar correctamente clasificadas\n" +
           "• Las actividades de financiación deben estar correctamente clasificadas",
       )
-      setShowSimpleAlert(true) // Mostrar la alerta informativa
+      setShowSimpleAlert(true)
     }
 
     // Fase 4: Expresiones de validación locales
@@ -404,6 +396,7 @@ export default function GestionFormulariosSimple({
     const totalErrors =
       errorsByType.contenido.length + errorsByType.completitud.length + errorsByType.expresiones.length
 
+    // Si hay errores en fases 1-4, mostrar errores y detener
     if (totalErrors > 0) {
       setErrorData({
         formularios: selectedFormularios
@@ -411,7 +404,7 @@ export default function GestionFormulariosSimple({
             const form = formulariosState.find((f) => f.id === id)
             return form?.nombre || ""
           })
-          .filter(Boolean), // Filtrar nombres vacíos si algún formulario no se encuentra
+          .filter(Boolean),
         contenido: errorsByType.contenido,
         completitud: errorsByType.completitud,
         expresiones: errorsByType.expresiones,
@@ -426,92 +419,54 @@ export default function GestionFormulariosSimple({
     if (hasInformativeAlert) {
       setIsSubmitting(false)
       setValidationPhase(0)
-      // La alerta ya fue mostrada, solo se ajusta el estado
       return
     }
 
-    // Si no hay errores en ninguna fase, continuar con el éxito
+    // Si todos los formularios están seleccionados y pasaron las fases 1-4, continuar con certificación
+    if (todosSeleccionados) {
+      console.log("[v0] Fases 1-4 completadas. Iniciando certificación para fase 5")
+      setIsSubmitting(false)
+      setValidationPhase(0)
+      setShowCertificationDialog(true)
+      return
+    }
 
-    // If it's Información Contable Convergencia category, show specific message
-    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
-      // Renombrado selectedForms a selectedFormularios para consistencia
-      const selectedFormulariosData = formulariosState.filter((f) => selectedFormularios.includes(f.id))
-      const formulariosEnviados = selectedFormulariosData.map((f) => ({
-        nombre: f.nombre,
-        registros: Math.floor(Math.random() * 200) + 50,
-      }))
-
-      const balanceGeneralEnviado = selectedFormulariosData.some((f) => f.nombre === "Balance General")
-      let formulariosCalculados: { nombre: string; registros: number }[] = []
-
-      if (balanceGeneralEnviado) {
-        // Generar formularios calculados automáticamente
-        formulariosCalculados = [
-          { nombre: "Indicadores Financieros", registros: 24 },
-          { nombre: "Análisis Horizontal", registros: 134 },
-          { nombre: "Análisis Vertical", registros: 134 },
-        ]
-      }
-
-      setFormulariosState((prev) => {
-        // Actualizar estado de formularios seleccionados
-        const updatedFormularios = prev.map((f) =>
-          selectedFormularios.includes(f.id) ? { ...f, estado: "Validado", estadoColor: "green" } : f,
-        )
-
-        // Agregar formularios calculados si existen
-        if (formulariosCalculados.length > 0) {
-          const nuevosFormulariosCalculados = formulariosCalculados.map((fc, index) => ({
-            id: `CALC-${Date.now()}-${index}`,
-            nombre: fc.nombre,
+    // Si no todos están seleccionados y no hay errores, marcar como enviado
+    formulariosSeleccionados.forEach((form) => {
+      if (form.id === "CGN-2025-01") {
+        // Balance General genera formularios calculados
+        const formulasCalculadas = [
+          {
+            id: `CALC-${Date.now()}-1`,
+            nombre: "Estado de Resultados Calculado",
             tipo: "Formulario",
             estado: "Pendiente en validar",
-            fecha: new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }),
-            estadoColor: "yellow",
-          }))
+            fecha: new Date().toLocaleDateString("es-ES"),
+            estadoColor: "yellow" as const,
+          },
+          {
+            id: `CALC-${Date.now()}-2`,
+            nombre: "Flujo de Efectivo Calculado",
+            tipo: "Formulario",
+            estado: "Pendiente en validar",
+            fecha: new Date().toLocaleDateString("es-ES"),
+            estadoColor: "yellow" as const,
+          },
+        ]
 
-          return [...updatedFormularios, ...nuevosFormulariosCalculados]
-        }
-
-        return updatedFormularios
-      })
-
-      setValidationResult({
-        success: true, // Agregado para indicar éxito
-        formularios: selectedFormularios,
-        formulariosCalculados:
-          formulariosCalculados.length > 0
-            ? formulariosCalculados.map((fc) => ({
-                codigo: `CALC-${Date.now()}-${Math.random().toString(36).substring(7)}`, // Generar código único
-                nombre: fc.nombre,
-                tipo: "Formulario",
-                estado: "Pendiente en validar",
-                ultimaModificacion: new Date().toLocaleDateString("es-ES", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                }),
-                registros: fc.registros,
-              }))
-            : undefined,
-      })
-      setShowSuccessDialog(true)
-    } else {
-      // Si no es Convergencia, simular éxito general
-      setFormulariosState((prev) =>
-        prev.map((f) => (selectedFormularios.includes(f.id) ? { ...f, estado: "Validado", estadoColor: "green" } : f)),
-      )
-      setValidationResult({
-        success: true,
-        formularios: selectedFormularios,
-      })
-      setShowSuccessDialog(true)
-    }
+        setFormulariosState((prev) => [...prev, ...formulasCalculadas])
+        setSimpleAlertMessage(
+          `El formulario Balance General fue aceptado. Se han generado ${formulasCalculadas.length} formularios calculados que se agregaron al detalle de formularios con estado "Pendiente en validar" y tipo "Formulario".`,
+        )
+        setShowSimpleAlert(true)
+      }
+    })
 
     setIsSubmitting(false)
     setValidationPhase(0)
     setSelectedFormularios([])
   }
+  // </CHANGE>
 
   const getColorForEstado = (estado: string): string => {
     // Exitosos en validación
