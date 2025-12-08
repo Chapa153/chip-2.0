@@ -286,6 +286,12 @@ export default function GestionFormulariosSimple({
     const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
     console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
 
+    if (todosSeleccionados) {
+      console.log("[v0] Todos los formularios seleccionados - omitiendo validaciones locales")
+      setShowCertificationDialog(true)
+      return
+    }
+
     // Implementación de la lógica de validación con separación de errores por tipo
     setErrorsSeen(false)
     setIsSubmitting(true)
@@ -1464,27 +1470,6 @@ export default function GestionFormulariosSimple({
       )}
 
       {/* Ventanas Modales para Flujo de Validación Central */}
-      {/* <AlertDialog open={showCertificationDialog} onOpenChange={setShowCertificationDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Certificación</AlertDialogTitle>
-            <AlertDialogDescription>
-              Todos los formularios fueron seleccionados. Se procederá a la certificación.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              setShowCertificationDialog(false)
-              setShowCentralErrorDialog(true) // Simula el flujo de errores centrales
-            }}>
-              Continuar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog> */}
-
-      {/* Dialog de Certificación Central */}
       <Dialog open={showCertificationDialog} onOpenChange={setShowCertificationDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1528,7 +1513,6 @@ export default function GestionFormulariosSimple({
                     })),
                   )
                 }, 2000) // 2 segundos de simulación
-                // </CHANGE>
               }}
             >
               Aceptar
@@ -1536,7 +1520,6 @@ export default function GestionFormulariosSimple({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* </CHANGE> */}
 
       {isValidatingCentral && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -1546,7 +1529,6 @@ export default function GestionFormulariosSimple({
           </div>
         </div>
       )}
-      {/* </CHANGE> */}
 
       <Dialog open={showCentralErrorDialog} onOpenChange={setShowCentralErrorDialog}>
         <DialogContent className="max-w-2xl">
@@ -1686,7 +1668,6 @@ export default function GestionFormulariosSimple({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* </CHANGE> */}
     </div>
   )
 }
