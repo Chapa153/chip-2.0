@@ -37,6 +37,7 @@ import { toast } from "@/components/ui/use-toast" // Corregido import de toast d
 import DataTable from "@/components/data-table" // Assuming DataTable is imported here
 import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog" // Import Dialog components
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // Import Select components
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -109,11 +110,11 @@ export default function GestionFormulariosSimple({
   const [showEmailFormatDialog, setShowEmailFormatDialog] = useState(false)
   const [isValidatingCentral, setIsValidatingCentral] = useState(false)
 
-  const [showResubmitJustification, setShowResubmitJustification] = useState(false)
+  const [showResubmitDialog, setShowResubmitDialog] = useState(false)
   const [resubmitReason, setResubmitReason] = useState("")
   const [resubmitJustification, setResubmitJustification] = useState("")
-  const [resubmitType, setResubmitType] = useState<"import" | "manual" | null>(null)
-  const [selectedFormForManual, setSelectedFormForManual] = useState<string | null>(null)
+  const [resubmitAction, setResubmitAction] = useState<"import" | "manual">("import")
+  const [resubmitFormId, setResubmitFormId] = useState<string | null>(null)
   // </CHANGE>
 
   // Define currentView and selectedFormulario here
@@ -216,7 +217,7 @@ export default function GestionFormulariosSimple({
 
   const getEstadosPermitidos = () => {
     // Define los estados que se permiten para enviar
-    return ["Pendiente en validar", "Rechazado por Deficiencia", "Excepción de validación", "En validación"]
+    return ["Pendiente en validar", "Rechazazdo por Deficiencia", "Excepción de validación", "En validación"]
   }
 
   const canSendSelectedFormularios = (): boolean => {
@@ -998,44 +999,114 @@ export default function GestionFormulariosSimple({
   }
 
   // Placeholder functions for the undeclared variables
+  const checkResubmitRequired = () => {
+    console.log("[v0] Verificando si se requiere justificación de reenvío")
+    // Verificar si hay formularios en estado Aceptado con tipo Categoría
+    const hasAcceptedCategoryForms = formulariosState.some(
+      (form) => form.estado === "Aceptado" && form.tipo === "Categoría",
+    )
+    console.log("[v0] ¿Hay formularios Aceptados tipo Categoría?:", hasAcceptedCategoryForms)
+    return hasAcceptedCategoryForms
+  }
+
   const handleImportar = () => {
-    console.log("handleImportar called")
-    toast({ title: "Importar no implementado", description: "Esta funcionalidad aún no está disponible." })
+    console.log("[v0] handleImportar - Iniciando importación")
+    if (checkResubmitRequired()) {
+      console.log("[v0] Se requiere justificación de reenvío")
+      setResubmitAction("import")
+      setResubmitFormId(null)
+      setShowResubmitDialog(true)
+    } else {
+      console.log("[v0] No se requiere justificación, proceder con importación normal")
+      toast({ title: "Importar", description: "Funcionalidad de importación." })
+    }
   }
 
   const handleRegistroManual = (formId: string, formName: string) => {
-    console.log("handleRegistroManual called with", formId, formName)
-    // Implement logic for manual registration
-    toast({ title: "Registro manual no implementado", description: "Esta funcionalidad aún no está disponible." })
-  }
-
-  const handleCancelResubmit = () => {
-    console.log("handleCancelResubmit called")
-    setShowResubmitJustification(false)
-    setResubmitReason("")
-    setResubmitJustification("")
-    setResubmitType(null)
-    setSelectedFormForManual(null)
+    console.log("[v0] handleRegistroManual - Iniciando registro manual para", formId, formName)
+    if (checkResubmitRequired()) {
+      console.log("[v0] Se requiere justificación de reenvío")
+      setResubmitAction("manual")
+      setResubmitFormId(formId)
+      setShowResubmitDialog(true)
+    } else {
+      console.log("[v0] No se requiere justificación, proceder con registro manual normal")
+      toast({ title: "Registro manual", description: `Editando ${formName}` })
+    }
   }
 
   const handleContinueResubmit = () => {
-    console.log("handleContinueResubmit called", { resubmitReason, resubmitJustification })
-    if (!resubmitReason || !resubmitJustification) {
+    console.log("[v0] Continuar con reenvío - Acción:", resubmitAction)
+    console.log("[v0] Motivo:", resubmitReason)
+    console.log("[v0] Justificación:", resubmitJustification)
+
+    if (!resubmitReason || !resubmitJustification.trim()) {
       toast({
         title: "Campos requeridos",
-        description: "Por favor, complete el motivo y la justificación.",
+        description: "Debe seleccionar un motivo y escribir una justificación.",
         variant: "destructive",
       })
       return
     }
-    // Here you would typically send the reason and justification to your backend
-    toast({ title: "Justificación enviada", description: "Gracias por proporcionar la información." })
-    setShowResubmitJustification(false)
+
+    // Actualizar estados según el tipo de acción
+    if (resubmitAction === "import") {
+      // Importar: Todos los formularios pasan a "Pendiente en validar"
+      console.log("[v0] Importar - Todos los formularios a Pendiente en validar")
+      setFormulariosState((prev) =>
+        prev.map((form) => ({
+          ...form,
+          estado: "Pendiente en validar",
+          estadoColor: "yellow",
+          tipo: "Formulario",
+        })),
+      )
+      toast({
+        title: "Importación realizada",
+        description: "Todos los formularios están en estado Pendiente en validar.",
+      })
+    } else if (resubmitAction === "manual" && resubmitFormId) {
+      // Registro manual: Solo el formulario seleccionado pasa a "Pendiente en validar"
+      // Los demás quedan sin estado de validación
+      console.log("[v0] Registro manual - Solo formulario", resubmitFormId, "a Pendiente en validar")
+      setFormulariosState((prev) =>
+        prev.map((form) =>
+          form.id === resubmitFormId
+            ? {
+                ...form,
+                estado: "Pendiente en validar",
+                estadoColor: "yellow",
+                tipo: "Formulario",
+              }
+            : {
+                ...form,
+                estado: "",
+                estadoColor: "gray",
+                tipo: "Formulario",
+              },
+        ),
+      )
+      toast({
+        title: "Registro manual actualizado",
+        description: "El formulario seleccionado está en estado Pendiente en validar.",
+      })
+    }
+
+    // Limpiar y cerrar
+    setShowResubmitDialog(false)
     setResubmitReason("")
     setResubmitJustification("")
-    setResubmitType(null)
-    setSelectedFormForManual(null)
+    setResubmitFormId(null)
   }
+
+  const handleCancelResubmit = () => {
+    console.log("[v0] Cancelar reenvío")
+    setShowResubmitDialog(false)
+    setResubmitReason("")
+    setResubmitJustification("")
+    setResubmitFormId(null)
+  }
+  // </CHANGE>
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -1924,52 +1995,49 @@ export default function GestionFormulariosSimple({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showResubmitJustification} onOpenChange={setShowResubmitJustification}>
-        <DialogContent className="max-w-2xl">
+      {/* Agregar diálogo de justificación de reenvío antes del cierre del return */}
+      {/* Diálogo de justificación de reenvío */}
+      <Dialog open={showResubmitDialog} onOpenChange={setShowResubmitDialog}>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded bg-green-100 flex items-center justify-center">
-                <HelpCircle className="w-5 h-5 text-green-700" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded bg-green-100 flex items-center justify-center">
+                <HelpCircle className="w-6 h-6 text-green-600" />
               </div>
-              <DialogTitle className="text-lg font-semibold">Justificación del reenvío</DialogTitle>
+              <DialogTitle className="text-xl">Justificación del reenvío</DialogTitle>
             </div>
           </DialogHeader>
-
           <div className="space-y-4 py-4">
-            <p className="text-sm text-gray-700">
+            <p className="text-gray-700">
               Está realizando una modification a la información reportada, debe justificar el motivo de su reenvío.
             </p>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Motivo</label>
-              <select
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={resubmitReason}
-                onChange={(e) => setResubmitReason(e.target.value)}
-              >
-                <option value="">Seleccione un motivo</option>
-                <option value="Por error en el reporte de información">Por error en el reporte de información</option>
-                <option value="Solicitud de requerimiento por parte de la CGN">
-                  Solicitud de requerimiento por parte de la CGN
-                </option>
-                <option value="Conciliación de saldos pendientes">Conciliación de saldos pendientes</option>
-                <option value="Otra">Otra</option>
-              </select>
+              <Select value={resubmitReason} onValueChange={setResubmitReason}>
+                <SelectTrigger className="w-full bg-blue-50">
+                  <SelectValue placeholder="Seleccione un motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="error">Por error en el reporte de información</SelectItem>
+                  <SelectItem value="requerimiento">Solicitud de requerimiento por parte de la CGN</SelectItem>
+                  <SelectItem value="conciliacion">Conciliación de saldos pendientes</SelectItem>
+                  <SelectItem value="otra">Otra</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Justificación (max. 500 caracteres)</label>
+              <label className="text-sm font-medium text-gray-700">Justificación (máx. 500 caracteres)</label>
               <textarea
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] resize-none"
-                maxLength={500}
                 value={resubmitJustification}
-                onChange={(e) => setResubmitJustification(e.target.value)}
-                placeholder="Escriba la justificación del reenvío..."
+                onChange={(e) => setResubmitJustification(e.target.value.slice(0, 500))}
+                className="w-full min-h-[120px] p-3 border rounded-md resize-none"
+                placeholder="Escriba su justificación aquí..."
               />
-              <p className="text-xs text-gray-500 text-right">{resubmitJustification.length}/500 caracteres</p>
+              <div className="text-xs text-gray-500 text-right">{resubmitJustification.length}/500 caracteres</div>
             </div>
           </div>
-
           <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={handleCancelResubmit}>
               Cancelar reenvío
