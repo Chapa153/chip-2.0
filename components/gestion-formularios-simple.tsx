@@ -59,6 +59,23 @@ interface Formulario {
   estadoColor: string
 }
 
+// Define Error Types
+interface ErrorDetails {
+  formulario: string
+  concepto: string
+  mensaje: string
+  codigo?: string
+  permisible?: string
+  necesitaComentario?: string
+}
+
+interface ErrorData {
+  formularios: string[]
+  contenido: ErrorDetails[]
+  completitud: ErrorDetails[]
+  expresiones: ErrorDetails[]
+}
+
 export default function GestionFormulariosSimple({
   onEditForm,
   filtrosPrevios,
@@ -76,47 +93,18 @@ export default function GestionFormulariosSimple({
   const [filtrosModificados, setFiltrosModificados] = useState(false)
   const [selectedFormularios, setSelectedFormularios] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
-  const [validationPhase, setValidationPhase] = useState(0)
-  const [validationResult, setValidationResult] = useState<{
-    success?: boolean
-    formularios: string[]
-    formulariosCalculados?: Array<{
-      codigo: string
-      nombre: string
-      tipo: string
-      estado: string
-      ultimaModificacion: string
-      registros: number
-    }>
-  } | null>(null)
+
+  // State variables for error handling and alerts
   const [showSimpleAlert, setShowSimpleAlert] = useState(false)
   const [simpleAlertMessage, setSimpleAlertMessage] = useState("")
   const [errorsSeen, setErrorsSeen] = useState(false)
   const [showErrorAlert, setShowErrorAlert] = useState(false)
   const [showErrorsView, setShowErrorsView] = useState(false)
-  const [errorData, setErrorData] = useState<{
-    formularios: string[]
-    contenido: Array<{
-      formulario: string
-      concepto: string
-      mensaje: string
-    }>
-    completitud: Array<{
-      formulario: string
-      concepto: string
-      mensaje: string
-    }>
-    expresiones: Array<{
-      formulario: string
-      codigo: string
-      mensaje: string
-      permisible: string
-      necesitaComentario: string
-    }>
-    detalles?: any
-  } | null>(null)
+  const [errorData, setErrorData] = useState<ErrorData | null>(null)
   const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({})
+
+  // </CHANGE> Agregando estado para fase 5 en la capa de carga
+  const [validationPhase, setValidationPhase] = useState(0)
   const [showCertificationDialog, setShowCertificationDialog] = useState(false)
   const [showCentralErrorDialog, setShowCentralErrorDialog] = useState(false)
   const [showEmailFormatDialog, setShowEmailFormatDialog] = useState(false)
@@ -270,10 +258,6 @@ export default function GestionFormulariosSimple({
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  // const [showSimpleAlert, setShowSimpleAlert] = useState(false) // Reubicado al inicio
-  // const [simpleAlertMessage, setSimpleAlertMessage] = useState("") // Reubicado al inicio
-  // const [errorsSeen, setErrorsSeen] = useState(false) // Reubicado al inicio
-
   // Reemplazo de `selectedForms` con `selectedFormularios` y ajuste en `handleEnviar` para usar `id` en lugar de `codigo`
   const handleEnviar = async () => {
     console.log("[v0] handleEnviar - Iniciando envío")
@@ -286,11 +270,34 @@ export default function GestionFormulariosSimple({
     const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
     console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
 
+    // </CHANGE> Si todos los formularios están seleccionados, ejecutar flujo especial con fases 1-5
     if (todosSeleccionados) {
-      console.log("[v0] Todos los formularios seleccionados - omitiendo validaciones locales")
+      console.log("[v0] Todos los formularios seleccionados - iniciando validación completa con fases 1-5")
+      setIsSubmitting(true)
+
+      // Fase 1: Contenido de variables
+      setValidationPhase(1)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Fase 2: Completitud
+      setValidationPhase(2)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Fase 3: Validaciones generales
+      setValidationPhase(3)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Fase 4: Expresiones de validación locales
+      setValidationPhase(4)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Ocultar capa de carga y mostrar certificación antes de fase 5
+      setIsSubmitting(false)
+      setValidationPhase(0)
       setShowCertificationDialog(true)
       return
     }
+    // </CHANGE>
 
     // Implementación de la lógica de validación con separación de errores por tipo
     setErrorsSeen(false)
@@ -681,31 +688,6 @@ export default function GestionFormulariosSimple({
     )
   }
 
-  // const [showErrorAlert, setShowErrorAlert] = useState(false) // Reubicado al inicio
-  // const [showErrorsView, setShowErrorsView] = useState(false) // Reubicado al inicio
-  // const [errorData, setErrorData] = useState<{ // Reubicado al inicio
-  //   formularios: string[]
-  //   contenido: Array<{
-  //     formulario: string
-  //     concepto: string
-  //     mensaje: string
-  //   }>
-  //   completitud: Array<{
-  //     formulario: string
-  //     concepto: string
-  //     mensaje: string
-  //   }>
-  //   expresiones: Array<{
-  //     formulario: string
-  //     codigo: string
-  //     mensaje: string
-  //     permisible: string
-  //     necesitaComentario: string
-  //   }>
-  //   detalles?: any // Agregado para compatibilidad con el Dialog obsoleto
-  // } | null>(null)
-  // const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({}) // Reubicado al inicio
-
   const handleCommentChange = (index: number, value: string) => {
     if (value.length <= 250) {
       setErrorComments((prev) => ({ ...prev, [index]: value }))
@@ -1008,10 +990,6 @@ export default function GestionFormulariosSimple({
     // If you have an onBack prop, you can call it:
     // onBack?.();
   }
-
-  // State variables for current view and selected form
-  // const [currentView, setCurrentView] = useState("list") // Reubicado al inicio
-  // const [selectedFormulario, setSelectedFormulario] = useState<Formulario | null>(null) // Reubicado al inicio
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -1415,13 +1393,13 @@ export default function GestionFormulariosSimple({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Capa de carga */}
+      {/* </CHANGE> Capa de carga con fases 1-5 */}
       {isSubmitting && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-6 max-w-md">
             <Loader2 className="w-16 h-16 animate-spin text-primary" />
             <div className="text-center space-y-4 w-full">
-              <h3 className="text-lg font-semibold text-gray-900">Validando formulario</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Validando formularios</h3>
               <div className="space-y-3 text-left">
                 <div className={`flex items-center gap-3 ${validationPhase >= 1 ? "text-gray-900" : "text-gray-400"}`}>
                   {validationPhase > 1 ? (
@@ -1463,45 +1441,60 @@ export default function GestionFormulariosSimple({
                   )}
                   <span className="text-sm">4. Expresiones de validación locales</span>
                 </div>
+                {/* </CHANGE> Agregando fase 5 a la capa de carga */}
+                <div className={`flex items-center gap-3 ${validationPhase >= 5 ? "text-gray-900" : "text-gray-400"}`}>
+                  {validationPhase > 5 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  ) : validationPhase === 5 ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                  )}
+                  <span className="text-sm">5. Expresiones de validación centrales</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Ventanas Modales para Flujo de Validación Central */}
+      {/* </CHANGE> Modal de certificación CAPTURA047 entre fase 4 y 5 */}
       <Dialog open={showCertificationDialog} onOpenChange={setShowCertificationDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Info className="h-5 w-5 text-blue-500" />
-              CHIP - Mensaje del Sistema
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="font-semibold text-blue-900 mb-3">CAPTURA047</div>
-              <div className="text-sm text-gray-700 space-y-3">
-                <p className="font-medium">Con el envío de la información, usted certifica que:</p>
-                <ol className="list-decimal list-inside space-y-2 ml-2">
-                  <li>Los datos básicos y los responsables de la entidad están actualizados.</li>
-                  <li>La información remitida está acorde con la normatividad expedida para cada categoría.</li>
-                </ol>
-                <div className="mt-4 pt-3 border-t border-blue-200">
-                  <p className="font-medium">Nota: La información Contable Pública debe reportarse en pesos.</p>
-                </div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <Info className="w-6 h-6 text-blue-600" />
               </div>
+              <DialogTitle className="text-lg">CHIP - Mensaje del Sistema</DialogTitle>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="font-semibold text-gray-900">CAPTURA047</p>
+            <p className="text-sm text-gray-700">Con el envío de la información, usted certifica que:</p>
+            <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
+              <li>Los datos básicos y los responsables de la entidad están actualizados.</li>
+              <li>La información remitida está acorde con la normatividad expedida para cada categoría.</li>
+            </ol>
+            <div className="bg-amber-50 border border-amber-200 rounded p-3 mt-4">
+              <p className="text-sm text-gray-700">
+                <strong>Nota:</strong> La información Contable Pública debe reportarse en pesos.
+              </p>
             </div>
           </div>
           <DialogFooter>
             <Button
               onClick={() => {
                 setShowCertificationDialog(false)
-                setIsValidatingCentral(true)
-                // Simular proceso de validación
+                // </CHANGE> Continuar con fase 5 después de certificación
+                setIsSubmitting(true)
+                setValidationPhase(5)
+
                 setTimeout(() => {
-                  setIsValidatingCentral(false)
+                  setIsSubmitting(false)
+                  setValidationPhase(0)
                   setShowCentralErrorDialog(true)
+
                   // Actualizar todos los formularios a Categoría y Rechazado por Deficiencia
                   setFormulariosState((prev) =>
                     prev.map((f) => ({
@@ -1512,7 +1505,7 @@ export default function GestionFormulariosSimple({
                       fecha: new Date().toLocaleDateString("es-ES"),
                     })),
                   )
-                }, 2000) // 2 segundos de simulación
+                }, 2000)
               }}
             >
               Aceptar
@@ -1520,15 +1513,6 @@ export default function GestionFormulariosSimple({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {isValidatingCentral && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-            <p className="text-sm text-gray-700">Procesando validación central (Fase 5)...</p>
-          </div>
-        </div>
-      )}
 
       <Dialog open={showCentralErrorDialog} onOpenChange={setShowCentralErrorDialog}>
         <DialogContent className="max-w-2xl">
