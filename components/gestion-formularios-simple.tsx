@@ -108,6 +108,12 @@ export default function GestionFormulariosSimple({
   const [showCentralErrorDialog, setShowCentralErrorDialog] = useState(false)
   const [showEmailFormatDialog, setShowEmailFormatDialog] = useState(false)
   const [isValidatingCentral, setIsValidatingCentral] = useState(false)
+
+  const [showResubmitJustification, setShowResubmitJustification] = useState(false)
+  const [resubmitReason, setResubmitReason] = useState("")
+  const [resubmitJustification, setResubmitJustification] = useState("")
+  const [resubmitType, setResubmitType] = useState<"import" | "manual" | null>(null)
+  const [selectedFormForManual, setSelectedFormForManual] = useState<string | null>(null)
   // </CHANGE>
 
   // Define currentView and selectedFormulario here
@@ -991,6 +997,46 @@ export default function GestionFormulariosSimple({
     // onBack?.();
   }
 
+  // Placeholder functions for the undeclared variables
+  const handleImportar = () => {
+    console.log("handleImportar called")
+    toast({ title: "Importar no implementado", description: "Esta funcionalidad aún no está disponible." })
+  }
+
+  const handleRegistroManual = (formId: string, formName: string) => {
+    console.log("handleRegistroManual called with", formId, formName)
+    // Implement logic for manual registration
+    toast({ title: "Registro manual no implementado", description: "Esta funcionalidad aún no está disponible." })
+  }
+
+  const handleCancelResubmit = () => {
+    console.log("handleCancelResubmit called")
+    setShowResubmitJustification(false)
+    setResubmitReason("")
+    setResubmitJustification("")
+    setResubmitType(null)
+    setSelectedFormForManual(null)
+  }
+
+  const handleContinueResubmit = () => {
+    console.log("handleContinueResubmit called", { resubmitReason, resubmitJustification })
+    if (!resubmitReason || !resubmitJustification) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor, complete el motivo y la justificación.",
+        variant: "destructive",
+      })
+      return
+    }
+    // Here you would typically send the reason and justification to your backend
+    toast({ title: "Justificación enviada", description: "Gracias por proporcionar la información." })
+    setShowResubmitJustification(false)
+    setResubmitReason("")
+    setResubmitJustification("")
+    setResubmitType(null)
+    setSelectedFormForManual(null)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Filtros de Búsqueda */}
@@ -1101,10 +1147,11 @@ export default function GestionFormulariosSimple({
             {/* Barra de Acciones */}
             <div className="p-4 border-b border-border flex items-center justify-between">
               <div className="flex gap-2">
-                <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleImportar}>
                   <Upload className="w-4 h-4 mr-2" />
                   Importar
                 </Button>
+                {/* </CHANGE> */}
                 <Button variant="outline" size="sm">
                   <FileDown className="w-4 h-4 mr-2" />
                   Envíos
@@ -1299,10 +1346,11 @@ export default function GestionFormulariosSimple({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onEditForm?.(form.id, form.nombre)}>
+                            <DropdownMenuItem onClick={() => handleRegistroManual(form.id, form.nombre)}>
                               <Edit className="w-4 h-4 mr-2" />
                               Registro manual
                             </DropdownMenuItem>
+                            {/* </CHANGE> */}
                             <DropdownMenuItem>
                               <FileSpreadsheet className="w-4 h-4 mr-2" />
                               Generar protocolo importación
@@ -1599,10 +1647,6 @@ export default function GestionFormulariosSimple({
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Mail className="h-4 w-4" />
-              <span>Correo enviado desde: chip@contaduria.gov.co</span>
-            </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
@@ -1879,6 +1923,62 @@ export default function GestionFormulariosSimple({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showResubmitJustification} onOpenChange={setShowResubmitJustification}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-green-100 flex items-center justify-center">
+                <HelpCircle className="w-5 h-5 text-green-700" />
+              </div>
+              <DialogTitle className="text-lg font-semibold">Justificación del reenvío</DialogTitle>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-gray-700">
+              Está realizando una modification a la información reportada, debe justificar el motivo de su reenvío.
+            </p>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Motivo</label>
+              <select
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={resubmitReason}
+                onChange={(e) => setResubmitReason(e.target.value)}
+              >
+                <option value="">Seleccione un motivo</option>
+                <option value="Por error en el reporte de información">Por error en el reporte de información</option>
+                <option value="Solicitud de requerimiento por parte de la CGN">
+                  Solicitud de requerimiento por parte de la CGN
+                </option>
+                <option value="Conciliación de saldos pendientes">Conciliación de saldos pendientes</option>
+                <option value="Otra">Otra</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Justificación (max. 500 caracteres)</label>
+              <textarea
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] resize-none"
+                maxLength={500}
+                value={resubmitJustification}
+                onChange={(e) => setResubmitJustification(e.target.value)}
+                placeholder="Escriba la justificación del reenvío..."
+              />
+              <p className="text-xs text-gray-500 text-right">{resubmitJustification.length}/500 caracteres</p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={handleCancelResubmit}>
+              Cancelar reenvío
+            </Button>
+            <Button onClick={handleContinueResubmit}>Continuar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* </CHANGE> */}
     </div>
   )
 }
