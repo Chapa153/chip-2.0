@@ -114,6 +114,9 @@ export default function GestionFormulariosSimple({
   const [currentView, setCurrentView] = useState("list") // Added currentView
   const [selectedFormulario, setSelectedFormulario] = useState<Formulario | null>(null) // Added selectedFormulario
 
+  const [showBalanceSuccessDialog, setShowBalanceSuccessDialog] = useState(false)
+  const [showCentralSuccessDialog, setShowCentralSuccessDialog] = useState(false)
+
   const [formulariosState, setFormulariosState] = useState<Formulario[]>([
     // Renombrado a setFormulariosState para evitar conflicto
     {
@@ -467,10 +470,7 @@ export default function GestionFormulariosSimple({
         ]
 
         setFormulariosState((prev) => [...prev, ...formulasCalculadas])
-        setSimpleAlertMessage(
-          "El formulario Balance General fue aceptado. Se han generado formularios calculados que se agregaron al detalle de formularios con estado 'Pendiente en validar' y tipo 'Formulario'.",
-        )
-        setShowSimpleAlert(true)
+        setShowBalanceSuccessDialog(true)
       }
     })
 
@@ -1483,30 +1483,120 @@ export default function GestionFormulariosSimple({
             <Button
               onClick={() => {
                 setShowCertificationDialog(false)
-                // </CHANGE> Continuar con fase 5 después de certificación
                 setIsSubmitting(true)
                 setValidationPhase(5)
 
                 setTimeout(() => {
                   setIsSubmitting(false)
                   setValidationPhase(0)
-                  setShowCentralErrorDialog(true)
 
-                  // Actualizar todos los formularios a Categoría y Rechazado por Deficiencia
-                  setFormulariosState((prev) =>
-                    prev.map((f) => ({
-                      ...f,
-                      tipo: "Categoría",
-                      estado: "Rechazado por Deficiencia",
-                      estadoColor: "red",
-                      fecha: new Date().toLocaleDateString("es-ES"),
-                    })),
-                  )
+                  // Verificar categoría para determinar éxito o error
+                  if (categoria === "INFORMACIÓN PRESUPUESTAL") {
+                    setShowCentralSuccessDialog(true)
+                    // Actualizar todos los formularios a Categoría y Aceptado
+                    setFormulariosState((prev) =>
+                      prev.map((f) => ({
+                        ...f,
+                        tipo: "Categoría",
+                        estado: "Aceptado",
+                        estadoColor: "green",
+                        fecha: new Date().toLocaleDateString("es-ES"),
+                      })),
+                    )
+                  } else {
+                    setShowCentralErrorDialog(true)
+                    // Actualizar todos los formularios a Categoría y Rechazado por Deficiencia
+                    setFormulariosState((prev) =>
+                      prev.map((f) => ({
+                        ...f,
+                        tipo: "Categoría",
+                        estado: "Rechazado por Deficiencia",
+                        estadoColor: "red",
+                        fecha: new Date().toLocaleDateString("es-ES"),
+                      })),
+                    )
+                  }
                 }, 2000)
               }}
             >
               Aceptar
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showBalanceSuccessDialog} onOpenChange={setShowBalanceSuccessDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-green-500" />
+              Validación Exitosa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                <div className="space-y-3">
+                  <p className="font-semibold text-green-900">
+                    El formulario Balance General fue aceptado exitosamente.
+                  </p>
+                  <p className="text-sm text-green-800">
+                    Se han generado automáticamente los siguientes formularios calculados:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-green-800 ml-2">
+                    <li>Estado de Resultados Calculado</li>
+                    <li>Flujo de Efectivo Calculado</li>
+                  </ul>
+                  <div className="bg-white border border-green-300 rounded p-3 mt-3">
+                    <p className="text-sm text-gray-700">
+                      <strong className="text-green-900">Estado:</strong> Los formularios calculados han sido agregados
+                      al detalle de formularios con estado <span className="font-semibold">'Pendiente en validar'</span>{" "}
+                      y tipo <span className="font-semibold">'Formulario'</span>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowBalanceSuccessDialog(false)}>Aceptar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCentralSuccessDialog} onOpenChange={setShowCentralSuccessDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-green-500" />
+              Validación Central Exitosa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                <div className="space-y-3">
+                  <p className="font-semibold text-green-900">
+                    La categoría {categoria} ha sido procesada exitosamente.
+                  </p>
+                  <p className="text-sm text-green-800">
+                    Todos los formularios han pasado las validaciones centrales (Fase 5) correctamente.
+                  </p>
+                  <div className="bg-white border border-green-300 rounded p-3 mt-3">
+                    <p className="text-sm text-gray-700">
+                      <strong className="text-green-900">Estado:</strong> Todos los formularios han sido actualizados a
+                      tipo <span className="font-semibold">'Categoría'</span> con estado{" "}
+                      <span className="font-semibold text-green-700">'Aceptado'</span>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowCentralSuccessDialog(false)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
