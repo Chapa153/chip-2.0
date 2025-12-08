@@ -1,5 +1,7 @@
 "use client"
 import { useState } from "react"
+import { DialogDescription } from "@/components/ui/dialog"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -109,6 +111,10 @@ export default function GestionFormulariosSimple({
   const [showCentralErrorDialog, setShowCentralErrorDialog] = useState(false)
   const [showEmailFormatDialog, setShowEmailFormatDialog] = useState(false)
   const [isValidatingCentral, setIsValidatingCentral] = useState(false)
+
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showRegistroManualDialog, setShowRegistroManualDialog] = useState(false)
+  const [selectedFormForEdit, setSelectedFormForEdit] = useState<{ id: string; name: string } | null>(null)
 
   const [showResubmitDialog, setShowResubmitDialog] = useState(false)
   const [resubmitReason, setResubmitReason] = useState("")
@@ -1018,7 +1024,7 @@ export default function GestionFormulariosSimple({
       setShowResubmitDialog(true)
     } else {
       console.log("[v0] No se requiere justificación, proceder con importación normal")
-      toast({ title: "Importar", description: "Funcionalidad de importación." })
+      setShowImportDialog(true)
     }
   }
 
@@ -1031,7 +1037,8 @@ export default function GestionFormulariosSimple({
       setShowResubmitDialog(true)
     } else {
       console.log("[v0] No se requiere justificación, proceder con registro manual normal")
-      toast({ title: "Registro manual", description: `Editando ${formName}` })
+      setSelectedFormForEdit({ id: formId, name: formName })
+      setShowRegistroManualDialog(true)
     }
   }
 
@@ -1065,6 +1072,7 @@ export default function GestionFormulariosSimple({
         title: "Importación realizada",
         description: "Todos los formularios están en estado Pendiente en validar.",
       })
+      setShowImportDialog(true) // Abrir diálogo de importación después de justificar
     } else if (resubmitAction === "manual" && resubmitFormId) {
       // Registro manual: Solo el formulario seleccionado pasa a "Pendiente en validar"
       // Los demás quedan sin estado de validación
@@ -1090,6 +1098,10 @@ export default function GestionFormulariosSimple({
         title: "Registro manual actualizado",
         description: "El formulario seleccionado está en estado Pendiente en validar.",
       })
+      // Encontrar el nombre del formulario para `selectedFormForEdit`
+      const form = formulariosState.find((f) => f.id === resubmitFormId)
+      setSelectedFormForEdit({ id: resubmitFormId, name: form?.nombre || "" })
+      setShowRegistroManualDialog(true) // Abrir diálogo de registro manual después de justificar
     }
 
     // Limpiar y cerrar
@@ -1828,8 +1840,8 @@ export default function GestionFormulariosSimple({
               <p>Respetado(a) Doctor(a):</p>
 
               <p className="mt-4">
-                La Contaduría General de la Nación se permite informarle que su envío fue rechazado dado que se
-                encontraron inconsistencias con la información que se reportó, así:
+                Respetado(a) Doctor(a): La Contaduría General de la Nación se permite informarle que su envío fue
+                rechazado dado que se encontraron inconsistencias con la información que se reportó, así:
               </p>
 
               <div className="mt-4 space-y-1">
@@ -2043,6 +2055,92 @@ export default function GestionFormulariosSimple({
               Cancelar reenvío
             </Button>
             <Button onClick={handleContinueResubmit}>Continuar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* </CHANGE> */}
+
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Importar Archivo</DialogTitle>
+            <DialogDescription>
+              Seleccione un archivo para importar la información de los formularios.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+                id="file-upload"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    toast({
+                      title: "Archivo importado",
+                      description: `${e.target.files[0].name} ha sido cargado exitosamente.`,
+                    })
+                    setShowImportDialog(false)
+                  }
+                }}
+              />
+              <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                <Upload className="w-12 h-12 text-gray-400" />
+                <span className="text-sm text-gray-600">Haga clic para seleccionar un archivo o arrastre y suelte</span>
+                <span className="text-xs text-gray-500">Excel (.xlsx, .xls) o CSV</span>
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImportDialog(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRegistroManualDialog} onOpenChange={setShowRegistroManualDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Registro Manual - {selectedFormForEdit?.name}</DialogTitle>
+            <DialogDescription>Ingrese la información del formulario manualmente.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Campo 1</label>
+                <input type="text" className="w-full border rounded px-3 py-2" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Campo 2</label>
+                <input type="text" className="w-full border rounded px-3 py-2" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Campo 3</label>
+                <input type="text" className="w-full border rounded px-3 py-2" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Campo 4</label>
+                <input type="text" className="w-full border rounded px-3 py-2" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRegistroManualDialog(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                toast({
+                  title: "Datos guardados",
+                  description: "La información ha sido registrada exitosamente.",
+                })
+                setShowRegistroManualDialog(false)
+              }}
+            >
+              Guardar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
