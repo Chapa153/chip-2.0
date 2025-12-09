@@ -1,7 +1,6 @@
 "use client"
-
-import { useState } from "react"
-import { ChevronLeft, Check, Plus, Trash2, ChevronRight, ChevronDown, AlertCircle } from "lucide-react"
+import { useState, useMemo } from "react"
+import { ChevronLeft, Check, Plus, Trash2, ChevronRight, ChevronDown, AlertCircle, Edit, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getDepartamentos, getMunicipios } from "@/lib/colombia-data"
 import { getNombresClasificadores, getClasificador, type NodoClasificador } from "@/lib/clasificadores-data"
@@ -42,12 +41,15 @@ interface ClasificadorAsignado {
 }
 
 export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
-  const [activeTab, setActiveTab] = useState<"info" | "estado" | "ambito" | "responsables" | "clasificadores">("info")
+  const [activeTab, setActiveTab] = useState<
+    "info" | "estado" | "ambito" | "responsables" | "clasificadores" | "composicion" | "cuin"
+  >("info")
   const [infoGuardada, setInfoGuardada] = useState(false)
   const [estadoGuardado, setEstadoGuardado] = useState(false)
   const [ambitoGuardado, setAmbitoGuardado] = useState(false)
   const [responsablesGuardado, setResponsablesGuardado] = useState(false)
   const [atributosGuardado, setAtributosGuardado] = useState(false)
+  const [composicionGuardada, setComposicionGuardada] = useState(false)
 
   const [erroresInfo, setErroresInfo] = useState<Record<string, string>>({})
   const [erroresEstado, setErroresEstado] = useState<Record<string, string>>({})
@@ -236,6 +238,104 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
   const [nodoExpandido, setNodoExpandido] = useState<string[]>([])
   const [nodoSeleccionado, setNodoSeleccionado] = useState<{ codigo: string; nombre: string } | null>(null)
   const [clasificadoresAsignados, setClasificadoresAsignados] = useState<ClasificadorAsignado[]>([])
+
+  const [entidadesSocietarias, setEntidadesSocietarias] = useState<
+    Array<{
+      id: string
+      nit: string
+      codigo: string
+      razonSocial: string
+      departamento: string
+      municipio: string
+      estado: string
+      sector: string
+      naturaleza: string
+      porcentaje: number
+    }>
+  >([])
+
+  const [showBuscarEntidad, setShowBuscarEntidad] = useState(false)
+  const [showFormReferenciada, setShowFormReferenciada] = useState(false)
+  const [busquedaEntidad, setBusquedaEntidad] = useState("")
+  const [resultadosBusqueda, setResultadosBusqueda] = useState<
+    Array<{
+      nit: string
+      codigo: string
+      razonSocial: string
+      departamento: string
+      municipio: string
+      estado: string
+      sector: string
+      naturaleza: string
+    }>
+  >([])
+  const [entidadSeleccionada, setEntidadSeleccionada] = useState<{
+    nit: string
+    codigo: string
+    razonSocial: string
+    departamento: string
+    municipio: string
+    estado: string
+    sector: string
+    naturaleza: string
+  } | null>(null)
+  const [porcentajeParticipacion, setPorcentajeParticipacion] = useState("")
+  const [editandoEntidad, setEditandoEntidad] = useState<string | null>(null)
+
+  // Form for referenced entity
+  const [formReferenciada, setFormReferenciada] = useState({
+    nit: "",
+    razonSocial: "",
+    sigla: "",
+    departamento: "",
+    municipio: "",
+    naturaleza: "",
+    sector: "",
+  })
+  const [erroresReferenciada, setErroresReferenciada] = useState<Record<string, string>>({})
+
+  // Sample entities for search
+  const entidadesDisponibles = [
+    {
+      nit: "800123456",
+      codigo: "001",
+      razonSocial: "Empresa ABC S.A.",
+      departamento: "CUNDINAMARCA",
+      municipio: "BOGOTÁ",
+      estado: "ACTIVO",
+      sector: "Sector público territorial",
+      naturaleza: "Vinculada directa societaria",
+    },
+    {
+      nit: "800789012",
+      codigo: "002",
+      razonSocial: "Corporación XYZ",
+      departamento: "ANTIOQUIA",
+      municipio: "MEDELLÍN",
+      estado: "ACTIVO",
+      sector: "Sector público territorial",
+      naturaleza: "Vinculada indirecta societaria",
+    },
+    {
+      nit: "800345678",
+      codigo: "003",
+      razonSocial: "Holding Nacional S.A.S",
+      departamento: "VALLE DEL CAUCA",
+      municipio: "CALI",
+      estado: "ACTIVO",
+      sector: "Sector público nacional",
+      naturaleza: "Vinculada",
+    },
+  ]
+
+  // Check if naturaleza allows composición patrimonial
+  const permitirComposicion =
+    formInfo.naturaleza === "Vinculada directa societaria" || formInfo.naturaleza === "Vinculada indirecta societaria"
+
+  // Calculate total percentage
+  const totalPorcentaje = useMemo(() => {
+    return entidadesSocietarias.reduce((sum, ent) => sum + ent.porcentaje, 0)
+  }, [entidadesSocietarias])
 
   const departamentos = getDepartamentos()
   const municipios = formInfo.departamento ? getMunicipios(formInfo.departamento) : []
@@ -485,6 +585,10 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
       "Atributos extensibles guardados. Ahora puedes configurar la composición patrimonial de la entidad.",
     )
     setShowValidationModal(true)
+    // Mover a la siguiente pestaña después de guardar los atributos
+    setTimeout(() => {
+      setActiveTab("composicion")
+    }, 100)
   }
 
   const toggleNodo = (codigo: string) => {
@@ -545,6 +649,137 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
     onBack()
   }
 
+  // Search entities
+  const handleBuscarEntidad = () => {
+    if (busquedaEntidad.trim()) {
+      const resultados = entidadesDisponibles.filter(
+        (ent) =>
+          ent.nit.includes(busquedaEntidad) || ent.razonSocial.toLowerCase().includes(busquedaEntidad.toLowerCase()),
+      )
+      setResultadosBusqueda(resultados)
+    } else {
+      setResultadosBusqueda([])
+    }
+  }
+
+  // Add entity to composition
+  const handleAgregarEntidad = () => {
+    if (!entidadSeleccionada || !porcentajeParticipacion) return
+
+    const porcentaje = Number.parseFloat(porcentajeParticipacion)
+    if (isNaN(porcentaje) || porcentaje <= 0 || porcentaje > 1) {
+      setValidationMessage("El porcentaje debe estar entre 0 y 1 (ej: 0.5 para 50%)")
+      setShowValidationModal(true)
+      return
+    }
+
+    if (editandoEntidad) {
+      setEntidadesSocietarias((prev) =>
+        prev.map((ent) => (ent.id === editandoEntidad ? { ...ent, ...entidadSeleccionada, porcentaje } : ent)),
+      )
+      setEditandoEntidad(null)
+    } else {
+      const nuevaEntidad = {
+        id: Date.now().toString(),
+        ...entidadSeleccionada,
+        porcentaje,
+      }
+      setEntidadesSocietarias((prev) => [...prev, nuevaEntidad])
+    }
+
+    setEntidadSeleccionada(null)
+    setPorcentajeParticipacion("")
+    setShowBuscarEntidad(false)
+    setBusquedaEntidad("")
+    setResultadosBusqueda([])
+  }
+
+  // Validate and save referenced entity
+  const handleGuardarReferenciada = () => {
+    const errores: Record<string, string> = {}
+    if (!formReferenciada.nit) errores.nit = "NIT es obligatorio"
+    if (!formReferenciada.razonSocial) errores.razonSocial = "Razón Social es obligatoria"
+    if (!formReferenciada.sigla) errores.sigla = "Sigla es obligatoria"
+    if (!formReferenciada.departamento) errores.departamento = "Departamento es obligatorio"
+    if (!formReferenciada.municipio) errores.municipio = "Municipio es obligatorio"
+    if (!formReferenciada.naturaleza) errores.naturaleza = "Naturaleza es obligatoria"
+    if (!formReferenciada.sector) errores.sector = "Sector es obligatorio"
+
+    if (Object.keys(errores).length > 0) {
+      setErroresReferenciada(errores)
+      setValidationMessage("Por favor completa los campos obligatorios de la entidad referenciada.")
+      setShowValidationModal(true)
+      return
+    }
+
+    setEntidadSeleccionada({
+      nit: formReferenciada.nit,
+      codigo: "REF-" + Date.now().toString().slice(-4),
+      razonSocial: formReferenciada.razonSocial,
+      departamento: formReferenciada.departamento,
+      municipio: formReferenciada.municipio,
+      estado: "REFERENCIA",
+      sector: formReferenciada.sector,
+      naturaleza: formReferenciada.naturaleza,
+    })
+
+    setShowFormReferenciada(false)
+    setFormReferenciada({
+      nit: "",
+      razonSocial: "",
+      sigla: "",
+      departamento: "",
+      municipio: "",
+      naturaleza: "",
+      sector: "",
+    })
+    setErroresReferenciada({})
+  }
+
+  // Edit entity
+  const handleEditarEntidad = (entidad: (typeof entidadesSocietarias)[0]) => {
+    setEntidadSeleccionada({
+      nit: entidad.nit,
+      codigo: entidad.codigo,
+      razonSocial: entidad.razonSocial,
+      departamento: entidad.departamento,
+      municipio: entidad.municipio,
+      estado: entidad.estado,
+      sector: entidad.sector,
+      naturaleza: entidad.naturaleza,
+    })
+    setPorcentajeParticipacion(entidad.porcentaje.toString())
+    setEditandoEntidad(entidad.id)
+    setShowBuscarEntidad(true)
+  }
+
+  // Delete entity
+  const handleEliminarEntidadSocietaria = (id: string) => {
+    setEntidadesSocietarias((prev) => prev.filter((ent) => ent.id !== id))
+  }
+
+  // Save Composición Patrimonial
+  const handleSaveComposicion = () => {
+    if (entidadesSocietarias.length > 0 && Math.abs(totalPorcentaje - 1) > 0.0000000001) {
+      setValidationMessage("La composición patrimonial no suma el 100%")
+      setShowValidationModal(true)
+      return
+    }
+
+    setComposicionGuardada(true)
+    setValidationMessage("Composición Patrimonial guardada. Ahora puedes configurar el CUIN de la entidad.")
+    setShowValidationModal(true)
+    setActiveTab("cuin")
+  }
+
+  // Skip Composición if naturaleza doesn't allow it
+  const handleSkipComposicion = () => {
+    setComposicionGuardada(true)
+    setValidationMessage("La naturaleza de la entidad no permite registrar composición patrimonial.")
+    setShowValidationModal(true)
+    setActiveTab("cuin")
+  }
+
   const renderNodoArbol = (nodo: NodoClasificador, nivel = 0) => {
     const tieneHijos = nodo.hijos && nodo.hijos.length > 0
     const estaExpandido = nodoExpandido.includes(nodo.codigo)
@@ -582,7 +817,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
   const clasificadorActual = clasificadorSeleccionado ? getClasificador(clasificadorSeleccionado) : null
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <div className="p-8 bg-background min-h-screen">
       <Dialog open={showValidationModal} onOpenChange={setShowValidationModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -613,9 +848,9 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-6 border-b border-border">
-        <div className="flex gap-4">
+      {/* Tabs de navegación */}
+      <div className="mb-6">
+        <div className="flex border-b border-border overflow-x-auto">
           <button
             onClick={() => setActiveTab("info")}
             className={`py-3 px-4 font-medium transition-all border-b-2 ${
@@ -686,7 +921,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
             4. Responsables
             {ambitoGuardado && <Check size={16} className="inline ml-2" />}
           </button>
-          {/* Nuevo tab para atributos extensibles */}
+
           <button
             onClick={() => {
               if (responsablesGuardado) {
@@ -696,7 +931,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                 setShowValidationModal(true)
               }
             }}
-            className={`py-3 px-4 font-medium transition-all border-b-2 ${
+            className={`py-3 px-4 font-medium transition-all border-b-2 whitespace-nowrap ${
               activeTab === "clasificadores"
                 ? "border-primary text-primary"
                 : `border-transparent ${
@@ -708,6 +943,56 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
           >
             5. Atributos Extensibles
             {responsablesGuardado && <Check size={16} className="inline ml-2" />}
+          </button>
+
+          <button
+            onClick={() => {
+              if (atributosGuardado) {
+                if (!permitirComposicion) {
+                  handleSkipComposicion()
+                } else {
+                  setActiveTab("composicion")
+                }
+              } else {
+                setValidationMessage("Debes guardar los Atributos Extensibles primero.")
+                setShowValidationModal(true)
+              }
+            }}
+            className={`py-3 px-4 font-medium transition-all border-b-2 whitespace-nowrap ${
+              activeTab === "composicion"
+                ? "border-primary text-primary"
+                : `border-transparent ${
+                    atributosGuardado
+                      ? "text-muted-foreground hover:text-foreground"
+                      : "text-muted-foreground opacity-50"
+                  }`
+            }`}
+          >
+            6. Composición Patrimonial
+            {atributosGuardado && <Check size={16} className="inline ml-2" />}
+          </button>
+
+          <button
+            onClick={() => {
+              if (composicionGuardada) {
+                setActiveTab("cuin")
+              } else {
+                setValidationMessage("Debes completar la Composición Patrimonial primero.")
+                setShowValidationModal(true)
+              }
+            }}
+            className={`py-3 px-4 font-medium transition-all border-b-2 whitespace-nowrap ${
+              activeTab === "cuin"
+                ? "border-primary text-primary"
+                : `border-transparent ${
+                    composicionGuardada
+                      ? "text-muted-foreground hover:text-foreground"
+                      : "text-muted-foreground opacity-50"
+                  }`
+            }`}
+          >
+            7. CUIN
+            {composicionGuardada && <Check size={16} className="inline ml-2" />}
           </button>
         </div>
       </div>
@@ -1885,6 +2170,550 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
           </div>
         </div>
       )}
+
+      {activeTab === "composicion" && (
+        <div className="bg-card border border-border rounded-lg p-8">
+          {/* Información de la entidad */}
+          <div className="bg-muted rounded-lg p-4 mb-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">NIT</p>
+                <p className="text-lg font-semibold text-foreground">{formInfo.nit || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Razón Social</p>
+                <p className="text-lg font-semibold text-foreground">{formInfo.razonSocial || "—"}</p>
+              </div>
+            </div>
+          </div>
+
+          <h3 className="text-xl font-bold text-foreground mb-4">Composición Patrimonial</h3>
+          <p className="text-muted-foreground mb-6">
+            Agregue las entidades que tienen participación patrimonial en esta entidad. El total de participación debe
+            sumar exactamente 100%.
+          </p>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-blue-800 text-sm">
+              No es obligatorio el diligenciamiento del tab "Composición Patrimonial". Puedes continuar sin agregar
+              entidades societarias.
+            </p>
+          </div>
+
+          {/* Botón para agregar entidad */}
+          <div className="mb-6">
+            <Button onClick={() => setShowBuscarEntidad(true)} className="bg-green-600 hover:bg-green-700">
+              <Plus size={18} className="mr-2" />
+              Agregar Entidad Societaria
+            </Button>
+          </div>
+
+          {/* Tabla de entidades agregadas */}
+          {entidadesSocietarias.length > 0 && (
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-foreground mb-4">Entidades Societarias Agregadas</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-muted">
+                      <th className="border border-border px-4 py-2 text-left text-sm font-semibold">NIT</th>
+                      <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Código</th>
+                      <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Razón Social</th>
+                      <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Departamento</th>
+                      <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Municipio</th>
+                      <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Estado</th>
+                      <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Sector</th>
+                      <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Naturaleza</th>
+                      <th className="border border-border px-4 py-2 text-right text-sm font-semibold">Porcentaje</th>
+                      <th className="border border-border px-4 py-2 text-center text-sm font-semibold">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entidadesSocietarias.map((entidad) => (
+                      <tr key={entidad.id} className="hover:bg-muted/50">
+                        <td className="border border-border px-4 py-2 text-sm font-mono">{entidad.nit}</td>
+                        <td className="border border-border px-4 py-2 text-sm">{entidad.codigo}</td>
+                        <td className="border border-border px-4 py-2 text-sm">{entidad.razonSocial}</td>
+                        <td className="border border-border px-4 py-2 text-sm">{entidad.departamento}</td>
+                        <td className="border border-border px-4 py-2 text-sm">{entidad.municipio}</td>
+                        <td className="border border-border px-4 py-2 text-sm">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              entidad.estado === "REFERENCIA"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {entidad.estado}
+                          </span>
+                        </td>
+                        <td className="border border-border px-4 py-2 text-sm">{entidad.sector}</td>
+                        <td className="border border-border px-4 py-2 text-sm">{entidad.naturaleza}</td>
+                        <td className="border border-border px-4 py-2 text-sm text-right font-mono">
+                          {(entidad.porcentaje * 100).toFixed(2)}%
+                        </td>
+                        <td className="border border-border px-4 py-2">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={() => handleEditarEntidad(entidad)}
+                              className="p-1 hover:bg-blue-100 rounded text-blue-600"
+                              title="Editar"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleEliminarEntidadSocietaria(entidad.id)}
+                              className="p-1 hover:bg-red-100 rounded text-red-600"
+                              title="Eliminar"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-muted font-semibold">
+                      <td colSpan={8} className="border border-border px-4 py-2 text-right">
+                        Total Participación:
+                      </td>
+                      <td
+                        className={`border border-border px-4 py-2 text-right font-mono ${
+                          Math.abs(totalPorcentaje - 1) < 0.0000000001 ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {(totalPorcentaje * 100).toFixed(2)}%
+                      </td>
+                      <td className="border border-border"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {Math.abs(totalPorcentaje - 1) > 0.0000000001 && entidadesSocietarias.length > 0 && (
+                <p className="text-red-500 text-sm mt-2">
+                  El total de participación debe ser exactamente 100% para poder guardar.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Botones */}
+          <div className="flex gap-4 justify-end">
+            <Button
+              onClick={() => setActiveTab("clasificadores")}
+              variant="outline"
+              className="border-border hover:bg-muted"
+            >
+              Volver
+            </Button>
+            <Button onClick={handleSaveComposicion} className="bg-primary hover:bg-primary/90">
+              <Check size={18} className="mr-2" />
+              Guardar Composición Patrimonial
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "cuin" && (
+        <div className="bg-card border border-border rounded-lg p-8">
+          {/* Información de la entidad */}
+          <div className="bg-muted rounded-lg p-4 mb-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">NIT</p>
+                <p className="text-lg font-semibold text-foreground">{formInfo.nit || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Razón Social</p>
+                <p className="text-lg font-semibold text-foreground">{formInfo.razonSocial || "—"}</p>
+              </div>
+            </div>
+          </div>
+
+          <h3 className="text-xl font-bold text-foreground mb-4">Configuración CUIN</h3>
+          <p className="text-muted-foreground mb-6">
+            Configure el Código Único de Identificación Nacional (CUIN) para la entidad.
+          </p>
+
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+            <div className="flex items-center gap-3">
+              <Check className="text-green-600" size={24} />
+              <div>
+                <p className="text-green-800 font-semibold">Entidad creada correctamente</p>
+                <p className="text-green-700 text-sm">
+                  La entidad ha sido registrada en el sistema. Puede finalizar el proceso o configurar opciones
+                  adicionales.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Botones */}
+          <div className="flex gap-4 justify-end">
+            <Button
+              onClick={() => setActiveTab("composicion")}
+              variant="outline"
+              className="border-border hover:bg-muted"
+            >
+              Volver
+            </Button>
+            <Button onClick={onBack} className="bg-primary hover:bg-primary/90">
+              <Check size={18} className="mr-2" />
+              Finalizar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={showBuscarEntidad} onOpenChange={setShowBuscarEntidad}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editandoEntidad ? "Editar Entidad Societaria" : "Agregar Entidad Societaria"}</DialogTitle>
+          </DialogHeader>
+
+          {!entidadSeleccionada ? (
+            <div className="space-y-4">
+              {/* Búsqueda */}
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Buscar Entidad</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={busquedaEntidad}
+                    onChange={(e) => setBusquedaEntidad(e.target.value)}
+                    placeholder="Buscar por NIT o Razón Social..."
+                    className="flex-1 px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    onKeyDown={(e) => e.key === "Enter" && handleBuscarEntidad()}
+                  />
+                  <Button onClick={handleBuscarEntidad} className="bg-primary hover:bg-primary/90">
+                    <Search size={18} className="mr-2" />
+                    Buscar
+                  </Button>
+                </div>
+              </div>
+
+              {/* Resultados */}
+              {resultadosBusqueda.length > 0 && (
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-muted">
+                        <th className="px-4 py-2 text-left text-sm font-semibold">NIT</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold">Razón Social</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold">Estado</th>
+                        <th className="px-4 py-2 text-center text-sm font-semibold">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resultadosBusqueda.map((ent) => (
+                        <tr key={ent.nit} className="hover:bg-muted/50">
+                          <td className="px-4 py-2 text-sm font-mono">{ent.nit}</td>
+                          <td className="px-4 py-2 text-sm">{ent.razonSocial}</td>
+                          <td className="px-4 py-2 text-sm">
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                              {ent.estado}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <Button
+                              size="sm"
+                              onClick={() => setEntidadSeleccionada(ent)}
+                              className="bg-primary hover:bg-primary/90"
+                            >
+                              Seleccionar
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* No results message */}
+              {busquedaEntidad && resultadosBusqueda.length === 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-yellow-800 text-sm mb-3">No se encontraron resultados para "{busquedaEntidad}".</p>
+                  <Button
+                    onClick={() => {
+                      setShowFormReferenciada(true)
+                      setShowBuscarEntidad(false)
+                    }}
+                    variant="outline"
+                    className="border-yellow-400 text-yellow-800 hover:bg-yellow-100"
+                  >
+                    <Plus size={18} className="mr-2" />
+                    Agregar como Referenciada
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => {
+                    setShowBuscarEntidad(false)
+                    setBusquedaEntidad("")
+                    setResultadosBusqueda([])
+                    setEditandoEntidad(null)
+                  }}
+                  variant="outline"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Entidad seleccionada */}
+              <div className="bg-muted rounded-lg p-4">
+                <h4 className="font-semibold text-foreground mb-2">Entidad Seleccionada</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">NIT:</span> {entidadSeleccionada.nit}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Código:</span> {entidadSeleccionada.codigo}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Razón Social:</span> {entidadSeleccionada.razonSocial}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Estado:</span>
+                    <span
+                      className={`ml-1 px-2 py-0.5 rounded text-xs font-medium ${
+                        entidadSeleccionada.estado === "REFERENCIA"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-green-100 text-green-800"
+                      }`}
+                    >
+                      {entidadSeleccionada.estado}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Porcentaje */}
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">
+                  Porcentaje de Participación *
+                </label>
+                <input
+                  type="text"
+                  value={porcentajeParticipacion}
+                  onChange={(e) => setPorcentajeParticipacion(e.target.value)}
+                  placeholder="Ej: 0.5 para 50%, 0.025 para 2.5%"
+                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ingrese el porcentaje en decimales (0.5 = 50%, 0.025 = 2.5%). Permite hasta 10 cifras decimales.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={() => {
+                    setEntidadSeleccionada(null)
+                    setPorcentajeParticipacion("")
+                  }}
+                  variant="outline"
+                >
+                  Cambiar Entidad
+                </Button>
+                <Button
+                  onClick={handleAgregarEntidad}
+                  disabled={!porcentajeParticipacion}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  <Check size={18} className="mr-2" />
+                  {editandoEntidad ? "Actualizar" : "Agregar"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showFormReferenciada} onOpenChange={setShowFormReferenciada}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Agregar Entidad Referenciada</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Complete los datos de la entidad que no se encuentra registrada en el sistema.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">NIT *</label>
+                <input
+                  type="text"
+                  value={formReferenciada.nit}
+                  onChange={(e) => setFormReferenciada({ ...formReferenciada, nit: e.target.value })}
+                  className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                    erroresReferenciada.nit ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                  }`}
+                />
+                {erroresReferenciada.nit && <p className="text-red-500 text-xs mt-1">{erroresReferenciada.nit}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Sigla o Nombre Corto *</label>
+                <input
+                  type="text"
+                  value={formReferenciada.sigla}
+                  onChange={(e) => setFormReferenciada({ ...formReferenciada, sigla: e.target.value })}
+                  className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                    erroresReferenciada.sigla ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                  }`}
+                />
+                {erroresReferenciada.sigla && <p className="text-red-500 text-xs mt-1">{erroresReferenciada.sigla}</p>}
+              </div>
+
+              <div className="col-span-2">
+                <label className="block text-sm font-semibold text-foreground mb-2">Razón Social *</label>
+                <input
+                  type="text"
+                  value={formReferenciada.razonSocial}
+                  onChange={(e) => setFormReferenciada({ ...formReferenciada, razonSocial: e.target.value })}
+                  className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                    erroresReferenciada.razonSocial
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-input focus:ring-primary"
+                  }`}
+                />
+                {erroresReferenciada.razonSocial && (
+                  <p className="text-red-500 text-xs mt-1">{erroresReferenciada.razonSocial}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Departamento *</label>
+                <select
+                  value={formReferenciada.departamento}
+                  onChange={(e) =>
+                    setFormReferenciada({ ...formReferenciada, departamento: e.target.value, municipio: "" })
+                  }
+                  className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                    erroresReferenciada.departamento
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-input focus:ring-primary"
+                  }`}
+                >
+                  <option value="">Selecciona...</option>
+                  {departamentos.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+                {erroresReferenciada.departamento && (
+                  <p className="text-red-500 text-xs mt-1">{erroresReferenciada.departamento}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Municipio *</label>
+                <select
+                  value={formReferenciada.municipio}
+                  onChange={(e) => setFormReferenciada({ ...formReferenciada, municipio: e.target.value })}
+                  disabled={!formReferenciada.departamento}
+                  className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 disabled:bg-muted ${
+                    erroresReferenciada.municipio
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-input focus:ring-primary"
+                  }`}
+                >
+                  <option value="">Selecciona...</option>
+                  {municipios.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                {erroresReferenciada.municipio && (
+                  <p className="text-red-500 text-xs mt-1">{erroresReferenciada.municipio}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Sector *</label>
+                <select
+                  value={formReferenciada.sector}
+                  onChange={(e) => setFormReferenciada({ ...formReferenciada, sector: e.target.value, naturaleza: "" })}
+                  className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                    erroresReferenciada.sector ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                  }`}
+                >
+                  <option value="">Selecciona...</option>
+                  {sectorOptions.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+                {erroresReferenciada.sector && (
+                  <p className="text-red-500 text-xs mt-1">{erroresReferenciada.sector}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Naturaleza *</label>
+                <select
+                  value={formReferenciada.naturaleza}
+                  onChange={(e) => setFormReferenciada({ ...formReferenciada, naturaleza: e.target.value })}
+                  disabled={!formReferenciada.sector}
+                  className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 disabled:bg-muted ${
+                    erroresReferenciada.naturaleza
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-input focus:ring-primary"
+                  }`}
+                >
+                  <option value="">Selecciona...</option>
+                  {formReferenciada.sector &&
+                    naturalezaBySetor[formReferenciada.sector]?.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                </select>
+                {erroresReferenciada.naturaleza && (
+                  <p className="text-red-500 text-xs mt-1">{erroresReferenciada.naturaleza}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                onClick={() => {
+                  setShowFormReferenciada(false)
+                  setShowBuscarEntidad(true)
+                  setFormReferenciada({
+                    nit: "",
+                    razonSocial: "",
+                    sigla: "",
+                    departamento: "",
+                    municipio: "",
+                    naturaleza: "",
+                    sector: "",
+                  })
+                  setErroresReferenciada({})
+                }}
+                variant="outline"
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleGuardarReferenciada} className="bg-primary hover:bg-primary/90">
+                <Check size={18} className="mr-2" />
+                Guardar y Seleccionar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
