@@ -989,7 +989,8 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                       ? "text-muted-foreground hover:text-foreground"
                       : "text-muted-foreground opacity-50"
                   }`
-            }`}
+            }
+            `}
           >
             7. CUIN
             {composicionGuardada && <Check size={16} className="inline ml-2" />}
@@ -2200,12 +2201,170 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
             </p>
           </div>
 
-          {/* Botón para agregar entidad */}
-          <div className="mb-6">
-            <Button onClick={() => setShowBuscarEntidad(true)} className="bg-green-600 hover:bg-green-700">
-              <Plus size={18} className="mr-2" />
-              Agregar Entidad Societaria
-            </Button>
+          <div className="bg-white border border-border rounded-lg p-6 mb-6">
+            <h4 className="text-lg font-semibold text-foreground mb-4">
+              {editandoEntidad ? "Editar Entidad Societaria" : "Agregar Entidad Societaria"}
+            </h4>
+
+            {!entidadSeleccionada ? (
+              <div className="space-y-4">
+                {/* Búsqueda */}
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">
+                    Buscar Entidad por NIT o Razón Social
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={busquedaEntidad}
+                      onChange={(e) => {
+                        setBusquedaEntidad(e.target.value)
+                        handleBuscarEntidad(e.target.value)
+                      }}
+                      placeholder="Ej: 1234567890 o EMPRESA NACIONAL..."
+                      className="flex-1 px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      onKeyDown={(e) => e.key === "Enter" && handleBuscarEntidad()}
+                    />
+                    <Button onClick={() => handleBuscarEntidad()} className="bg-primary hover:bg-primary/90">
+                      <Search size={18} className="mr-2" />
+                      Buscar
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Prueba buscando: 1234567890, 9876543210, o parte de la razón social
+                  </p>
+                </div>
+
+                {/* Resultados de búsqueda */}
+                {resultadosBusqueda.length > 0 && (
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="px-4 py-2 text-left text-sm font-semibold">NIT</th>
+                          <th className="px-4 py-2 text-left text-sm font-semibold">Razón Social</th>
+                          <th className="px-4 py-2 text-left text-sm font-semibold">Departamento</th>
+                          <th className="px-4 py-2 text-left text-sm font-semibold">Estado</th>
+                          <th className="px-4 py-2 text-center text-sm font-semibold">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {resultadosBusqueda.map((ent) => (
+                          <tr key={ent.nit} className="hover:bg-muted/50 border-t border-border">
+                            <td className="px-4 py-2 text-sm font-mono">{ent.nit}</td>
+                            <td className="px-4 py-2 text-sm">{ent.razonSocial}</td>
+                            <td className="px-4 py-2 text-sm">{ent.departamento}</td>
+                            <td className="px-4 py-2 text-sm">
+                              <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                {ent.estado}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              <Button
+                                size="sm"
+                                onClick={() => setEntidadSeleccionada(ent)}
+                                className="bg-primary hover:bg-primary/90"
+                              >
+                                Seleccionar
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* No results message */}
+                {busquedaEntidad && resultadosBusqueda.length === 0 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-yellow-800 text-sm mb-3">
+                      No se encontraron resultados para "{busquedaEntidad}".
+                    </p>
+                    <Button
+                      onClick={() => setShowFormReferenciada(true)}
+                      variant="outline"
+                      className="border-yellow-400 text-yellow-800 hover:bg-yellow-100"
+                    >
+                      <Plus size={18} className="mr-2" />
+                      Agregar como Entidad Referenciada
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Entidad seleccionada */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-green-800">Entidad Seleccionada:</p>
+                      <p className="text-green-700 text-sm mt-1">
+                        <span className="font-mono">{entidadSeleccionada.nit}</span> - {entidadSeleccionada.razonSocial}
+                      </p>
+                      <p className="text-green-600 text-xs mt-1">
+                        {entidadSeleccionada.departamento} | {entidadSeleccionada.sector} |{" "}
+                        {entidadSeleccionada.naturaleza}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEntidadSeleccionada(null)
+                        setBusquedaEntidad("")
+                        setResultadosBusqueda([])
+                      }}
+                      className="text-red-600 border-red-300 hover:bg-red-50"
+                    >
+                      Cambiar
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Porcentaje de participación */}
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">
+                    Porcentaje de Participación (en decimales)
+                  </label>
+                  <input
+                    type="text"
+                    value={porcentajeParticipacion}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (/^[0-9]*\.?[0-9]*$/.test(value)) {
+                        setPorcentajeParticipacion(value)
+                      }
+                    }}
+                    placeholder="Ej: 0.25 para 25%, 0.5 para 50%"
+                    className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ingrese el porcentaje en formato decimal (ej: 0.25 para 25%, 0.5 para 50%)
+                  </p>
+                </div>
+
+                {/* Botones de acción */}
+                <div className="flex gap-3">
+                  <Button onClick={handleAgregarEntidad} className="bg-green-600 hover:bg-green-700">
+                    <Plus size={18} className="mr-2" />
+                    {editandoEntidad ? "Actualizar Entidad" : "Agregar a la Lista"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEntidadSeleccionada(null)
+                      setPorcentajeParticipacion("")
+                      setBusquedaEntidad("")
+                      setResultadosBusqueda([])
+                      setEditandoEntidad(null)
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Tabla de entidades agregadas */}
@@ -2367,6 +2526,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
         </div>
       )}
 
+      {/* Dialog para agregar entidad referenciada */}
       <Dialog open={showFormReferenciada} onOpenChange={setShowFormReferenciada}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
