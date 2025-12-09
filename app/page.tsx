@@ -201,7 +201,6 @@ export default function Page() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {console.log("[v0] Navigation state:", navigationStack)}
       {/* Header - ahora centralizado */}
       <Home username={username} onLogout={handleLogout} onModuleSelect={handleModuleSelect} />
 
@@ -262,7 +261,6 @@ export default function Page() {
 
         {navigationStack.view === "formularios" && navigationStack.subview === "gestion-formularios" && (
           <div className="max-w-7xl mx-auto px-4 py-6">
-            {console.log("[v0] Renderizando GestionFormulariosSimple")}
             <GestionFormulariosSimple
               onEditForm={handleEditFormulario}
               filtrosPrevios={filtrosGestionFormularios}
