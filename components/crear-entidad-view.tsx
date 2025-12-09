@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, Check, Plus, Trash2, ChevronRight, ChevronDown } from "lucide-react"
+import { ChevronLeft, Check, Plus, Trash2, ChevronRight, ChevronDown, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getDepartamentos, getMunicipios } from "@/lib/colombia-data"
 import { getNombresClasificadores, getClasificador, type NodoClasificador } from "@/lib/clasificadores-data"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 interface CrearEntidadViewProps {
   onBack: () => void
@@ -45,8 +46,16 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
   const [infoGuardada, setInfoGuardada] = useState(false)
   const [estadoGuardado, setEstadoGuardado] = useState(false)
   const [ambitoGuardado, setAmbitoGuardado] = useState(false)
-  // Agregar estado para responsables guardado
   const [responsablesGuardado, setResponsablesGuardado] = useState(false)
+  const [atributosGuardado, setAtributosGuardado] = useState(false)
+
+  const [erroresInfo, setErroresInfo] = useState<Record<string, string>>({})
+  const [erroresEstado, setErroresEstado] = useState<Record<string, string>>({})
+  const [erroresAmbito, setErroresAmbito] = useState<Record<string, string>>({})
+  const [erroresResponsables, setErroresResponsables] = useState<Record<string, string>>({})
+
+  const [showValidationModal, setShowValidationModal] = useState(false)
+  const [validationMessage, setValidationMessage] = useState("")
 
   const documentoTypes = [
     "Ley",
@@ -184,6 +193,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
     agregadora: false,
     consolidadora: false,
     planeadora: false,
+    nombreUsuario: "",
   })
 
   const [formEstado, setFormEstado] = useState({
@@ -249,26 +259,48 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
   }
 
   const handleSaveInfo = () => {
-    // Validaciones de campos obligatorios
-    const requiredFields = ["nit", "razonSocial", "departamento", "municipio", "sector"]
-    const missingFields = requiredFields.filter((field) => !formInfo[field as keyof typeof formInfo])
+    const errores: Record<string, string> = {}
 
-    if (missingFields.length > 0) {
-      alert(`Por favor completa los campos obligatorios: ${missingFields.join(", ")}`)
-      return
-    }
+    // Campos obligatorios
+    if (!formInfo.nit) errores.nit = "El NIT es obligatorio"
+    if (!formInfo.sigla) errores.sigla = "La sigla es obligatoria"
+    if (!formInfo.razonSocial) errores.razonSocial = "La razón social es obligatoria"
+    if (!formInfo.objeto) errores.objeto = "El objeto es obligatorio"
+    if (!formInfo.tipoDocumento) errores.tipoDocumento = "El tipo de documento es obligatorio"
+    if (!formInfo.numeroDocumento) errores.numeroDocumento = "El número de documento es obligatorio"
+    if (!formInfo.fechaDocumento) errores.fechaDocumento = "La fecha del documento es obligatoria"
+    if (!formInfo.departamento) errores.departamento = "El departamento es obligatorio"
+    if (!formInfo.municipio) errores.municipio = "El municipio es obligatorio"
+    if (!formInfo.direccion) errores.direccion = "La dirección es obligatoria"
+    if (!formInfo.codigoPostal) errores.codigoPostal = "El código postal es obligatorio"
+    if (!formInfo.telefono) errores.telefono = "El teléfono es obligatorio"
+    if (!formInfo.email) errores.email = "El correo electrónico es obligatorio"
+    if (!formInfo.sector) errores.sector = "El sector es obligatorio"
+    if (!formInfo.naturaleza) errores.naturaleza = "La naturaleza es obligatoria"
+    if (!formInfo.departamentoTerritorial)
+      errores.departamentoTerritorial = "El departamento territorial es obligatorio"
+    if (!formInfo.municipioTerritorial) errores.municipioTerritorial = "El municipio territorial es obligatorio"
+    if (!formInfo.nombreUsuario) errores.nombreUsuario = "El nombre de usuario es obligatorio"
 
     // Validar email si está completado
-    if (!isValidEmail(formInfo.email)) {
-      alert("Por favor ingresa un correo electrónico válido")
+    if (formInfo.email && !isValidEmail(formInfo.email)) {
+      errores.email = "El correo electrónico no es válido"
+    }
+
+    // Validar página web si está completada (no obligatoria)
+    if (formInfo.paginaWeb && !isValidUrl(formInfo.paginaWeb)) {
+      errores.paginaWeb = "La URL no es válida"
+    }
+
+    if (Object.keys(errores).length > 0) {
+      setErroresInfo(errores)
+      setValidationMessage("Por favor completa los campos obligatorios marcados en rojo.")
+      setShowValidationModal(true)
       return
     }
 
-    // Validar página web si está completada
-    if (!isValidUrl(formInfo.paginaWeb)) {
-      alert("Por favor ingresa una URL válida")
-      return
-    }
+    // Limpiar errores
+    setErroresInfo({})
 
     // Actualizar formulario de estado con datos de la entidad
     setFormEstado({
@@ -279,12 +311,38 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
     })
 
     setInfoGuardada(true)
-    alert("Información general guardada. Ahora puedes configurar los cambios de estado.")
+    setValidationMessage("Información general guardada. Ahora puedes configurar los cambios de estado.")
+    setShowValidationModal(true)
+    // Mover al siguiente tab después de cerrar el modal
+    setTimeout(() => {
+      setActiveTab("estado")
+    }, 100)
   }
 
   const handleSaveEstado = () => {
+    const errores: Record<string, string> = {}
+
+    if (!formEstado.nuevoEstado) errores.nuevoEstado = "El nuevo estado es obligatorio"
+    if (formEstado.nuevoEstado === "ACTIVO" && !formEstado.subestadoNuevo) {
+      errores.subestadoNuevo = "El subestado es obligatorio cuando el estado es ACTIVO"
+    }
+    if (!formEstado.fechaNuevoEstado) errores.fechaNuevoEstado = "La fecha del nuevo estado es obligatoria"
+    if (!formEstado.actoAdministrativo) errores.actoAdministrativo = "El acto administrativo es obligatorio"
+
+    if (Object.keys(errores).length > 0) {
+      setErroresEstado(errores)
+      setValidationMessage("Por favor completa los campos obligatorios marcados en rojo.")
+      setShowValidationModal(true)
+      return
+    }
+
+    setErroresEstado({})
     setEstadoGuardado(true)
-    alert("Cambio de estado guardado. Ahora puedes configurar el ámbito.")
+    setValidationMessage("Cambio de estado guardado. Ahora puedes configurar los ámbitos.")
+    setShowValidationModal(true)
+    setTimeout(() => {
+      setActiveTab("ambito")
+    }, 100)
   }
 
   const handleAgregarCategoria = () => {
@@ -325,13 +383,13 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
   }
 
   const handleSaveAmbito = () => {
-    if (categoriasAgregadas.length === 0) {
-      alert("Debes agregar al menos una categoría antes de continuar")
-      return
-    }
-
+    // Ámbito no es obligatorio, pero si hay categorías agregadas se valida
     setAmbitoGuardado(true)
-    alert("Ámbito guardado. Ahora puedes agregar los responsables.")
+    setValidationMessage("Ámbitos guardados. Ahora puedes configurar los Responsables.")
+    setShowValidationModal(true)
+    setTimeout(() => {
+      setActiveTab("responsables")
+    }, 100)
   }
 
   const handleAgregarResponsable = () => {
@@ -399,19 +457,34 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
     setResponsablesAgregados(responsablesAgregados.filter((resp) => resp.id !== id))
   }
 
-  const handleFinalizarCreacion = () => {
-    // Validar que existan al menos Representante Legal y Contador
-    const tieneRepresentante = responsablesAgregados.some((resp) => resp.tipo === "Representante Legal")
-    const tieneContador = responsablesAgregados.some((resp) => resp.tipo === "Contador")
-
-    if (!tieneRepresentante || !tieneContador) {
-      alert("Debes agregar al menos un Representante Legal y un Contador")
+  const handleSaveResponsables = () => {
+    // Solo se puede guardar si se ha guardado el ámbito
+    if (!ambitoGuardado) {
+      setValidationMessage("Debes guardar el Ámbito primero para poder guardar los Responsables.")
+      setShowValidationModal(true)
       return
     }
 
-    // Actualizar estado y mensaje
+    if (responsablesAgregados.length === 0) {
+      setValidationMessage("Debes agregar al menos un responsable.")
+      setShowValidationModal(true)
+      return
+    }
+
     setResponsablesGuardado(true)
-    alert("Responsables guardados. Ahora puedes configurar los atributos extensibles.")
+    setValidationMessage("Responsables guardados. Ahora puedes configurar los Atributos extensibles de la entidad.")
+    setShowValidationModal(true)
+    setTimeout(() => {
+      setActiveTab("clasificadores")
+    }, 100)
+  }
+
+  const handleSaveAtributos = () => {
+    setAtributosGuardado(true)
+    setValidationMessage(
+      "Atributos extensibles guardados. Ahora puedes configurar la composición patrimonial de la entidad.",
+    )
+    setShowValidationModal(true)
   }
 
   const toggleNodo = (codigo: string) => {
@@ -509,7 +582,24 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
   const clasificadorActual = clasificadorSeleccionado ? getClasificador(clasificadorSeleccionado) : null
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-8">
+      <Dialog open={showValidationModal} onOpenChange={setShowValidationModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-500" />
+              Mensaje del Sistema
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-foreground">{validationMessage}</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowValidationModal(false)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-6">
@@ -541,7 +631,8 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
               if (infoGuardada) {
                 setActiveTab("estado")
               } else {
-                alert("Debes guardar la Información General primero")
+                setValidationMessage("Debes guardar la Información General primero.")
+                setShowValidationModal(true)
               }
             }}
             className={`py-3 px-4 font-medium transition-all border-b-2 ${
@@ -560,7 +651,8 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
               if (estadoGuardado) {
                 setActiveTab("ambito")
               } else {
-                alert("Debes guardar el Cambio de Estado primero")
+                setValidationMessage("Debes guardar el Cambio de Estado primero.")
+                setShowValidationModal(true)
               }
             }}
             className={`py-3 px-4 font-medium transition-all border-b-2 ${
@@ -579,7 +671,8 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
               if (ambitoGuardado) {
                 setActiveTab("responsables")
               } else {
-                alert("Debes guardar el Ámbito primero")
+                setValidationMessage("Debes guardar el Ámbito primero.")
+                setShowValidationModal(true)
               }
             }}
             className={`py-3 px-4 font-medium transition-all border-b-2 ${
@@ -599,7 +692,8 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
               if (responsablesGuardado) {
                 setActiveTab("clasificadores")
               } else {
-                alert("Debes guardar los Responsables primero")
+                setValidationMessage("Debes guardar los Responsables primero.")
+                setShowValidationModal(true)
               }
             }}
             className={`py-3 px-4 font-medium transition-all border-b-2 ${
@@ -630,20 +724,26 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                 value={formInfo.nit}
                 onChange={(e) => setFormInfo({ ...formInfo, nit: e.target.value })}
                 placeholder="Ej: 1234567890"
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.nit ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresInfo.nit && <p className="text-red-500 text-xs mt-1">{erroresInfo.nit}</p>}
             </div>
 
             {/* SIGLA */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Sigla</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Sigla *</label>
               <input
                 type="text"
                 value={formInfo.sigla}
                 onChange={(e) => setFormInfo({ ...formInfo, sigla: e.target.value })}
                 placeholder="Ej: EPS"
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.sigla ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresInfo.sigla && <p className="text-red-500 text-xs mt-1">{erroresInfo.sigla}</p>}
             </div>
 
             {/* RAZÓN SOCIAL */}
@@ -654,29 +754,37 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                 value={formInfo.razonSocial}
                 onChange={(e) => setFormInfo({ ...formInfo, razonSocial: e.target.value })}
                 placeholder="Nombre completo de la entidad"
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.razonSocial ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresInfo.razonSocial && <p className="text-red-500 text-xs mt-1">{erroresInfo.razonSocial}</p>}
             </div>
 
             {/* OBJETO */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Objeto</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Objeto *</label>
               <textarea
                 value={formInfo.objeto}
                 onChange={(e) => setFormInfo({ ...formInfo, objeto: e.target.value })}
                 placeholder="Descripción del objeto de la entidad"
                 rows={2}
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 resize-none ${
+                  erroresInfo.objeto ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresInfo.objeto && <p className="text-red-500 text-xs mt-1">{erroresInfo.objeto}</p>}
             </div>
 
             {/* TIPO DOCUMENTO */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Documento de Creación</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Documento de Creación *</label>
               <select
                 value={formInfo.tipoDocumento}
                 onChange={(e) => setFormInfo({ ...formInfo, tipoDocumento: e.target.value })}
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.tipoDocumento ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               >
                 <option value="">Selecciona un tipo...</option>
                 {documentoTypes.map((tipo) => (
@@ -685,32 +793,55 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   </option>
                 ))}
               </select>
+              {erroresInfo.tipoDocumento && <p className="text-red-500 text-xs mt-1">{erroresInfo.tipoDocumento}</p>}
             </div>
 
             {/* NÚMERO DOCUMENTO */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Número de Documento</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Número de Documento *</label>
               <input
                 type="text"
                 value={formInfo.numeroDocumento}
                 onChange={(e) => setFormInfo({ ...formInfo, numeroDocumento: e.target.value })}
                 placeholder="Ej: 123456"
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.numeroDocumento ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresInfo.numeroDocumento && (
+                <p className="text-red-500 text-xs mt-1">{erroresInfo.numeroDocumento}</p>
+              )}
             </div>
 
             {/* FECHA */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Fecha</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Fecha *</label>
               <input
                 type="date"
                 value={formInfo.fechaDocumento}
                 onChange={(e) => setFormInfo({ ...formInfo, fechaDocumento: e.target.value })}
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.fechaDocumento ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresInfo.fechaDocumento && <p className="text-red-500 text-xs mt-1">{erroresInfo.fechaDocumento}</p>}
             </div>
 
-            {/* DEPARTAMENTO - Convertido a select simple */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Nombre de Usuario *</label>
+              <input
+                type="text"
+                value={formInfo.nombreUsuario}
+                onChange={(e) => setFormInfo({ ...formInfo, nombreUsuario: e.target.value })}
+                placeholder="Ej: usuario_entidad"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.nombreUsuario ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
+              />
+              {erroresInfo.nombreUsuario && <p className="text-red-500 text-xs mt-1">{erroresInfo.nombreUsuario}</p>}
+            </div>
+
+            {/* DEPARTAMENTO */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">Departamento *</label>
               <select
@@ -719,10 +850,12 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   setFormInfo({
                     ...formInfo,
                     departamento: e.target.value,
-                    municipio: "", // Reset municipio al cambiar departamento
+                    municipio: "",
                   })
                 }
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.departamento ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               >
                 <option value="">Selecciona un departamento...</option>
                 {departamentos.map((depto) => (
@@ -731,16 +864,19 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   </option>
                 ))}
               </select>
+              {erroresInfo.departamento && <p className="text-red-500 text-xs mt-1">{erroresInfo.departamento}</p>}
             </div>
 
-            {/* MUNICIPIO - Convertido a select simple */}
+            {/* MUNICIPIO */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">Municipio *</label>
               <select
                 value={formInfo.municipio}
                 onChange={(e) => setFormInfo({ ...formInfo, municipio: e.target.value })}
                 disabled={!formInfo.departamento}
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 disabled:bg-muted disabled:text-muted-foreground ${
+                  erroresInfo.municipio ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               >
                 <option value="">
                   {!formInfo.departamento ? "Selecciona departamento primero" : "Selecciona un municipio..."}
@@ -751,42 +887,52 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   </option>
                 ))}
               </select>
+              {erroresInfo.municipio && <p className="text-red-500 text-xs mt-1">{erroresInfo.municipio}</p>}
             </div>
 
             {/* DIRECCIÓN */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Dirección</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Dirección *</label>
               <input
                 type="text"
                 value={formInfo.direccion}
                 onChange={(e) => setFormInfo({ ...formInfo, direccion: e.target.value })}
                 placeholder="Ej: Carrera 5 # 10-50"
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.direccion ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresInfo.direccion && <p className="text-red-500 text-xs mt-1">{erroresInfo.direccion}</p>}
             </div>
 
             {/* CÓDIGO POSTAL */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Código Postal</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Código Postal *</label>
               <input
                 type="text"
                 value={formInfo.codigoPostal}
                 onChange={(e) => setFormInfo({ ...formInfo, codigoPostal: e.target.value })}
                 placeholder="Ej: 110111"
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.codigoPostal ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresInfo.codigoPostal && <p className="text-red-500 text-xs mt-1">{erroresInfo.codigoPostal}</p>}
             </div>
 
             {/* TELÉFONO */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Teléfono</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Teléfono *</label>
               <input
                 type="tel"
                 value={formInfo.telefono}
                 onChange={(e) => setFormInfo({ ...formInfo, telefono: e.target.value })}
                 placeholder="Ej: 6012341234"
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.telefono ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresInfo.telefono && <p className="text-red-500 text-xs mt-1">{erroresInfo.telefono}</p>}
             </div>
 
             {/* FAX */}
@@ -803,7 +949,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
 
             {/* EMAIL */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">E-mail</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">E-mail *</label>
               <div>
                 <input
                   type="email"
@@ -811,18 +957,14 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   onChange={(e) => setFormInfo({ ...formInfo, email: e.target.value })}
                   placeholder=" correo@example.com"
                   className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
-                    !isValidEmail(formInfo.email) && formInfo.email !== ""
-                      ? "border-red-500 focus:ring-red-500"
-                      : "border-input focus:ring-primary"
+                    erroresInfo.email ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
                   }`}
                 />
-                {!isValidEmail(formInfo.email) && formInfo.email !== "" && (
-                  <p className="text-red-500 text-xs mt-1">Correo electrónico inválido</p>
-                )}
+                {erroresInfo.email && <p className="text-red-500 text-xs mt-1">{erroresInfo.email}</p>}
               </div>
             </div>
 
-            {/* PÁGINA WEB */}
+            {/* PÁGINA WEB - No obligatoria */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">Página Web</label>
               <div>
@@ -832,14 +974,10 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   onChange={(e) => setFormInfo({ ...formInfo, paginaWeb: e.target.value })}
                   placeholder="https://www.example.com"
                   className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
-                    !isValidUrl(formInfo.paginaWeb) && formInfo.paginaWeb !== ""
-                      ? "border-red-500 focus:ring-red-500"
-                      : "border-input focus:ring-primary"
+                    erroresInfo.paginaWeb ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
                   }`}
                 />
-                {!isValidUrl(formInfo.paginaWeb) && formInfo.paginaWeb !== "" && (
-                  <p className="text-red-500 text-xs mt-1">URL inválida</p>
-                )}
+                {erroresInfo.paginaWeb && <p className="text-red-500 text-xs mt-1">{erroresInfo.paginaWeb}</p>}
               </div>
             </div>
 
@@ -852,10 +990,12 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   setFormInfo({
                     ...formInfo,
                     sector: e.target.value,
-                    naturaleza: "", // Reset naturaleza
+                    naturaleza: "",
                   })
                 }
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.sector ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               >
                 <option value="">Selecciona un sector...</option>
                 {sectorOptions.map((sector) => (
@@ -864,16 +1004,19 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   </option>
                 ))}
               </select>
+              {erroresInfo.sector && <p className="text-red-500 text-xs mt-1">{erroresInfo.sector}</p>}
             </div>
 
-            {/* NATURALEZA (Dependiente de Sector) */}
+            {/* NATURALEZA */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Naturaleza</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Naturaleza *</label>
               <select
                 value={formInfo.naturaleza}
                 onChange={(e) => setFormInfo({ ...formInfo, naturaleza: e.target.value })}
                 disabled={!formInfo.sector}
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 disabled:bg-muted disabled:text-muted-foreground ${
+                  erroresInfo.naturaleza ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               >
                 <option value="">
                   {!formInfo.sector ? "Selecciona un sector primero" : "Selecciona una naturaleza..."}
@@ -885,11 +1028,12 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                     </option>
                   ))}
               </select>
+              {erroresInfo.naturaleza && <p className="text-red-500 text-xs mt-1">{erroresInfo.naturaleza}</p>}
             </div>
 
             {/* DEPARTAMENTO TERRITORIAL */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Departamento Territorial</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Departamento Territorial *</label>
               <select
                 value={formInfo.departamentoTerritorial}
                 onChange={(e) =>
@@ -899,7 +1043,11 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                     municipioTerritorial: "",
                   })
                 }
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresInfo.departamentoTerritorial
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-input focus:ring-primary"
+                }`}
               >
                 <option value="">Selecciona un departamento...</option>
                 {departamentos.map((depto) => (
@@ -908,16 +1056,23 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   </option>
                 ))}
               </select>
+              {erroresInfo.departamentoTerritorial && (
+                <p className="text-red-500 text-xs mt-1">{erroresInfo.departamentoTerritorial}</p>
+              )}
             </div>
 
             {/* MUNICIPIO TERRITORIAL */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Municipio Territorial</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Municipio Territorial *</label>
               <select
                 value={formInfo.municipioTerritorial}
                 onChange={(e) => setFormInfo({ ...formInfo, municipioTerritorial: e.target.value })}
                 disabled={!formInfo.departamentoTerritorial}
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 disabled:bg-muted disabled:text-muted-foreground ${
+                  erroresInfo.municipioTerritorial
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-input focus:ring-primary"
+                }`}
               >
                 <option value="">
                   {!formInfo.departamentoTerritorial ? "Selecciona departamento primero" : "Selecciona un municipio..."}
@@ -928,12 +1083,15 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   </option>
                 ))}
               </select>
+              {erroresInfo.municipioTerritorial && (
+                <p className="text-red-500 text-xs mt-1">{erroresInfo.municipioTerritorial}</p>
+              )}
             </div>
           </div>
 
           {/* CHECKBOXES */}
           <div className="bg-muted rounded-lg p-4 mb-8">
-            <p className="text-sm font-semibold text-foreground mb-4">Características Especiales</p>
+            <p className="text-sm font-semibold text-foreground mb-4">Características Especiales (opcionales)</p>
             <div className="flex flex-wrap gap-6">
               {[
                 { key: "agregadora", label: "Agregadora" },
@@ -1008,7 +1166,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
 
             {/* NUEVO ESTADO */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Nuevo Estado</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Nuevo Estado *</label>
               <select
                 value={formEstado.nuevoEstado}
                 onChange={(e) =>
@@ -1018,7 +1176,9 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                     subestadoNuevo: "",
                   })
                 }
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresEstado.nuevoEstado ? "border-red-500 focus:ring-red-500" : "border-input focus:ring-primary"
+                }`}
               >
                 {nuevoEstadoOptions.map((estado) => (
                   <option key={estado} value={estado}>
@@ -1026,16 +1186,21 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                   </option>
                 ))}
               </select>
+              {erroresEstado.nuevoEstado && <p className="text-red-500 text-xs mt-1">{erroresEstado.nuevoEstado}</p>}
             </div>
 
-            {/* SUBESTADO NUEVO (Solo si se selecciona ACTIVO) */}
+            {/* SUBESTADO NUEVO */}
             {formEstado.nuevoEstado === "ACTIVO" && (
               <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Subestado Nuevo</label>
+                <label className="block text-sm font-semibold text-foreground mb-2">Subestado Nuevo *</label>
                 <select
                   value={formEstado.subestadoNuevo}
                   onChange={(e) => setFormEstado({ ...formEstado, subestadoNuevo: e.target.value })}
-                  className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                    erroresEstado.subestadoNuevo
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-input focus:ring-primary"
+                  }`}
                 >
                   <option value="">Selecciona un subestado...</option>
                   {subestadoOptions.map((subestado) => (
@@ -1044,30 +1209,47 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
                     </option>
                   ))}
                 </select>
+                {erroresEstado.subestadoNuevo && (
+                  <p className="text-red-500 text-xs mt-1">{erroresEstado.subestadoNuevo}</p>
+                )}
               </div>
             )}
 
             {/* FECHA INICIAL NUEVO ESTADO */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Fecha Inicial Nuevo Estado</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Fecha Inicial Nuevo Estado *</label>
               <input
                 type="date"
                 value={formEstado.fechaNuevoEstado}
                 onChange={(e) => setFormEstado({ ...formEstado, fechaNuevoEstado: e.target.value })}
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresEstado.fechaNuevoEstado
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresEstado.fechaNuevoEstado && (
+                <p className="text-red-500 text-xs mt-1">{erroresEstado.fechaNuevoEstado}</p>
+              )}
             </div>
 
             {/* ACTO ADMINISTRATIVO */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Acto Administrativo</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Acto Administrativo *</label>
               <input
                 type="text"
                 value={formEstado.actoAdministrativo}
                 onChange={(e) => setFormEstado({ ...formEstado, actoAdministrativo: e.target.value })}
                 placeholder="Ej: Resolución 001-2024"
-                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 ${
+                  erroresEstado.actoAdministrativo
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-input focus:ring-primary"
+                }`}
               />
+              {erroresEstado.actoAdministrativo && (
+                <p className="text-red-500 text-xs mt-1">{erroresEstado.actoAdministrativo}</p>
+              )}
             </div>
           </div>
 
@@ -1114,6 +1296,12 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
           </div>
 
           <h3 className="text-xl font-bold text-foreground mb-6">Configuración de Ámbito</h3>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-blue-800 text-sm">
+              El diligenciamiento del ámbito no es obligatorio. Puedes continuar sin agregar categorías.
+            </p>
+          </div>
 
           {/* Formulario para agregar categorías */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -1289,6 +1477,14 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
           </div>
 
           <h3 className="text-xl font-bold text-foreground mb-6">Agregar Responsables</h3>
+
+          {!ambitoGuardado && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <p className="text-yellow-800 text-sm">
+                Debes guardar el Ámbito primero para poder diligenciar y guardar los Responsables.
+              </p>
+            </div>
+          )}
 
           {/* Formulario para agregar responsables */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -1534,8 +1730,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
             !responsablesAgregados.some((r) => r.tipo === "Contador")) && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
               <p className="text-yellow-800 text-sm">
-                Debes agregar al menos un <strong>Representante Legal</strong> y un <strong>Contador</strong> para
-                finalizar la creación de la entidad.
+                Debes agregar al menos un Representante Legal y un Contador para finalizar la creación de la entidad.
               </p>
             </div>
           )}
@@ -1546,21 +1741,18 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
               Volver
             </Button>
             <Button
-              onClick={handleFinalizarCreacion}
+              onClick={handleSaveResponsables}
               className="bg-primary hover:bg-primary/90"
-              disabled={
-                !responsablesAgregados.some((r) => r.tipo === "Representante Legal") ||
-                !responsablesAgregados.some((r) => r.tipo === "Contador")
-              }
+              disabled={!ambitoGuardado}
             >
               <Check size={18} className="mr-2" />
-              Crear Entidad
+              Guardar Responsables
             </Button>
           </div>
         </div>
       )}
 
-      {/* TAB 5: ATRIBUTOS EXTENSIBLES (CLASIFICADORES) */}
+      {/* TAB 5: ATRIBUTOS EXTENSIBLES */}
       {activeTab === "clasificadores" && (
         <div className="bg-card border border-border rounded-lg p-8">
           {/* Información de la entidad */}
@@ -1582,6 +1774,13 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
             Los atributos extensibles permiten clasificar la entidad según diferentes árboles jerárquicos. Selecciona un
             clasificador y luego elige el nodo específico que aplica a la entidad.
           </p>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-blue-800 text-sm">
+              El diligenciamiento de los atributos extensibles no es obligatorio. Puedes continuar sin agregar
+              clasificadores.
+            </p>
+          </div>
 
           {/* Selector de clasificador */}
           <div className="mb-6">
@@ -1679,13 +1878,9 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
             >
               Volver
             </Button>
-            <Button
-              onClick={handleFinalizarEntidad}
-              className="bg-primary hover:bg-primary/90"
-              disabled={clasificadoresAsignados.length === 0}
-            >
+            <Button onClick={handleSaveAtributos} className="bg-primary hover:bg-primary/90">
               <Check size={18} className="mr-2" />
-              Finalizar Creación de Entidad
+              Guardar Atributos Extensibles
             </Button>
           </div>
         </div>
