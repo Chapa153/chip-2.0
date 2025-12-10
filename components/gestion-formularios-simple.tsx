@@ -1064,8 +1064,9 @@ export default function GestionFormulariosSimple({
                                 value={errorComments[index] || ""}
                                 onChange={(e) => handleCommentChange(index, e.target.value)}
                                 placeholder="Caja de texto"
-                                className="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                 maxLength={250}
+                                disabled={detalle.necesitaComentario === "NO"}
                               />
                               <div className="text-xs text-gray-500 mt-1 text-right">
                                 {errorComments[index]?.length || 0}/250
