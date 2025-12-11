@@ -282,8 +282,19 @@ export default function GestionFormulariosSimple({
     const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
     console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
 
+    const todosValidados = formulariosSeleccionados.every((f) => f.estado === "Validado")
+    console.log("[v0] ¿Todos los formularios validados?:", todosValidados)
+    // </CHANGE>
+
     if (todosSeleccionados) {
-      console.log("[v0] Todos los formularios seleccionados - iniciando validación completa con fases 1-5")
+      if (todosValidados) {
+        console.log("[v0] Todos los formularios están validados - iniciando validación central (Fase 5)")
+        setShowCertificationDialog(true)
+        return
+      }
+      // </CHANGE>
+
+      console.log("[v0] Todos los formularios seleccionados - iniciando validación completa con fases 1-4")
       setIsSubmitting(true)
 
       // Fase 1: Contenido de variables
@@ -455,15 +466,6 @@ export default function GestionFormulariosSimple({
     if (hasInformativeAlert) {
       setIsSubmitting(false)
       setValidationPhase(0)
-      return
-    }
-
-    // Si todos los formularios están seleccionados y pasaron las fases 1-4, continuar con certificación
-    if (todosSeleccionados) {
-      console.log("[v0] Fases 1-4 completadas. Iniciando certificación para fase 5")
-      setIsSubmitting(false)
-      setValidationPhase(0)
-      setShowCertificationDialog(true)
       return
     }
 
@@ -2012,7 +2014,7 @@ export default function GestionFormulariosSimple({
             <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <HelpCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-blue-900">
-                Está realizando una modificación a la información reportada, debe justificar el motivo de su reenvío.
+                Está realizando una modification a la información reportada, debe justificar el motivo de su reenvío.
               </p>
             </div>
 
@@ -2060,13 +2062,14 @@ export default function GestionFormulariosSimple({
         </DialogContent>
       </Dialog>
       {/* </CHANGE> */}
+
       {/* Dialogo de éxito para todos los formularios */}
       <Dialog open={showAllFormsSuccessDialog} onOpenChange={setShowAllFormsSuccessDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-6 w-6 text-green-500" />
-              Envío de Formularios Exitoso
+              Validaciones Locales Exitosas
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -2075,19 +2078,19 @@ export default function GestionFormulariosSimple({
                 <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                 <div className="space-y-3">
                   <p className="font-semibold text-green-900">
-                    Todos los formularios seleccionados han sido validados y aceptados exitosamente.
+                    Todos los formularios seleccionados han pasado las validaciones locales (Fases 1-4) exitosamente.
                   </p>
                   <p className="text-sm text-green-800">
-                    Se ha completado el proceso de validación central y los formularios han sido actualizados a estado
-                    'Validado'.
+                    Los formularios han sido actualizados a estado <span className="font-semibold">'Validado'</span>.
                   </p>
-                  <div className="bg-white border border-green-300 rounded p-3 mt-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
                     <p className="text-sm text-gray-700">
-                      <strong className="text-green-900">Estado:</strong> Todos los formularios han sido actualizados a
-                      tipo <span className="font-semibold">'Categoría'</span> con estado{" "}
-                      <span className="font-semibold text-green-700">'Validado'</span>.
+                      <strong className="text-blue-900">Siguiente paso:</strong> Puede seleccionar nuevamente todos los
+                      formularios y hacer clic en <span className="font-semibold">'Enviar'</span> para ejecutar las{" "}
+                      <span className="font-semibold">validaciones centrales (Fase 5)</span>.
                     </p>
                   </div>
+                  {/* </CHANGE> */}
                 </div>
               </div>
             </div>
