@@ -219,8 +219,7 @@ export default function GestionFormulariosSimple({
   }
 
   const getEstadosPermitidos = () => {
-    // Define los estados que se permiten para enviar
-    return ["Pendiente en validar", "Rechazado por Deficiencia", "Excepción de validación", "En validación"]
+    return ["Pendiente en validar", "Rechazado por Deficiencia", "Excepción de validación", "En validación", "Validado"]
   }
 
   const canSendSelectedFormularios = (): boolean => {
