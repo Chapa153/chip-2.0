@@ -226,6 +226,18 @@ export default function GestionFormulariosSimple({
     // Obtener los formularios seleccionados
     const formularios = formulariosState.filter((f) => selectedFormularios.includes(f.id))
 
+    // Para la categoría Información Contable, permitir enviar formularios en estado Validado
+    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
+      const todosSeleccionados = formularios.length === formulariosState.length
+      const todosValidados = formularios.every((f) => f.tipo === "Formulario" && f.estado === "Validado")
+
+      // Si todos están seleccionados y validados, permitir envío para validaciones centrales
+      if (todosSeleccionados && todosValidados) {
+        return true
+      }
+    }
+    // </CHANGE>
+
     // Verificar que todos los formularios seleccionados tengan estados válidos
     const result = formularios.every((f) => {
       const estado = f.estado
