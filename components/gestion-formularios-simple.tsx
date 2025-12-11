@@ -270,29 +270,64 @@ export default function GestionFormulariosSimple({
 
   // Reemplazo de `selectedForms` con `selectedFormularios` y ajuste en `handleEnviar` para usar `id` en lugar de `codigo`
   const handleEnviar = async () => {
-    console.log("[v0] handleEnviar - Iniciando envío")
     const allowedStates = getEstadosPermitidos()
-    console.log("[v0] Estados permitidos:", allowedStates)
 
     const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
-    console.log("[v0] Formularios seleccionados:", formulariosSeleccionados)
 
     const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
-    console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
 
-    if (todosSeleccionados) {
-      console.log("[v0] Todos los formularios seleccionados - iniciando validación completa con fases 1-5")
+    if (todosSeleccionados && categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
       setIsSubmitting(true)
 
-      // Fase 1: Contenido de variables
+      // Fase 1: Validaciones generales
       setValidationPhase(1)
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // Fase 2: Completitud
+      // Fase 2: Contenido de variables
       setValidationPhase(2)
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // Fase 3: Validaciones generales
+      // Fase 3: Completitud
+      setValidationPhase(3)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Fase 4: Expresiones de validación locales
+      setValidationPhase(4)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Actualizar todos los formularios a estado Validado y tipo Formulario
+      setFormulariosState((prev) =>
+        prev.map((f) => ({
+          ...f,
+          tipo: "Formulario",
+          estado: "Validado",
+          estadoColor: "green",
+          fecha: new Date().toLocaleDateString("es-ES"),
+        })),
+      )
+
+      setIsSubmitting(false)
+      setValidationPhase(0)
+
+      // Mostrar mensaje informativo indicando que deben estar validados para fase 5
+      alert(
+        "Todos los formularios han sido validados exitosamente. Ahora puede proceder con las validaciones centrales (Fase 5).",
+      )
+      return
+    }
+
+    if (todosSeleccionados) {
+      setIsSubmitting(true)
+
+      // Fase 1: Validaciones generales
+      setValidationPhase(1)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Fase 2: Contenido de variables
+      setValidationPhase(2)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Fase 3: Completitud
       setValidationPhase(3)
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
@@ -303,10 +338,19 @@ export default function GestionFormulariosSimple({
       // Ocultar capa de carga y mostrar certificación antes de fase 5
       setIsSubmitting(false)
       setValidationPhase(0)
+
+      const todosValidados = formulariosSeleccionados.every((f) => f.tipo === "Formulario" && f.estado === "Validado")
+
+      if (!todosValidados) {
+        alert(
+          "Para continuar con las validaciones centrales (Fase 5), todos los formularios deben estar en tipo 'Formulario' y estado 'Validado'.",
+        )
+        return
+      }
+
       setShowCertificationDialog(true)
       return
     }
-    // </CHANGE>
 
     // Implementación de la lógica de validación con separación de errores por tipo
     setErrorsSeen(false)
@@ -486,7 +530,39 @@ export default function GestionFormulariosSimple({
     setValidationPhase(0)
     setSelectedFormularios([])
   }
-  // </CHANGE>
+
+  const handleValidarSeleccionados = () => {
+    if (selectedFormularios.length === 0) {
+      return
+    }
+
+    const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+    const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
+
+    if (todosSeleccionados && categoria === "INFORMACIÓN CONTABLE PÚBLICA CONVERGENCIA") {
+      const todosValidados = formulariosSeleccionados.every((f) => f.tipo === "Formulario" && f.estado === "Validado")
+
+      if (!todosValidados) {
+        alert(
+          "Para continuar con las validaciones centrales (Fase 5), todos los formularios deben estar en tipo 'Formulario' y estado 'Validado'. Por favor, primero envíe los formularios.",
+        )
+        return
+      }
+
+      // Mostrar certificación y ejecutar fase 5
+      setShowCertificationDialog(true)
+      return
+    }
+
+    setFormulariosState((prev) =>
+      prev.map((f) =>
+        selectedFormularios.includes(f.id)
+          ? { ...f, estado: "Validado", estadoColor: "green" as const, fecha: new Date().toLocaleDateString("es-ES") }
+          : f,
+      ),
+    )
+    setSelectedFormularios([])
+  }
 
   const getColorForEstado = (estado: string): string => {
     // Exitosos en validación
@@ -1616,6 +1692,7 @@ export default function GestionFormulariosSimple({
                       })),
                     )
                   } else {
+                    // Para Información Contable genera error central
                     setShowCentralErrorDialog(true)
                     // Actualizar todos los formularios a Categoría y Rechazado por Deficiencia
                     setFormulariosState((prev) =>
