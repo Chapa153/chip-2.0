@@ -318,6 +318,8 @@ export default function GestionAnalistas() {
   const [mostrarCargaAnalistas, setMostrarCargaAnalistas] = useState(false)
   const [filtrosAplicados, setFiltrosAplicados] = useState(false)
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
+  const [mostrarExito, setMostrarExito] = useState(false)
+  const [numEntidadesActualizadas, setNumEntidadesActualizadas] = useState(0)
   const toast = useToast()
 
   const SelectMultipleConBusqueda = ({
@@ -483,6 +485,8 @@ export default function GestionAnalistas() {
   }
 
   const confirmarAsignacion = () => {
+    const numEntidades = entidadesSeleccionadas.length
+
     // Actualizar las entidades en el estado local
     setEntidades((prevEntidades) =>
       prevEntidades.map((entidad) =>
@@ -499,11 +503,8 @@ export default function GestionAnalistas() {
     setPerfilSeleccionado("")
     setAnalistaSeleccionado("")
 
-    // Mostrar notificación de éxito
-    toast.toast({
-      title: "Asignación exitosa",
-      description: `Se asignó ${analistaSeleccionado} a ${entidadesSeleccionadas.length} entidad(es).`,
-    })
+    setNumEntidadesActualizadas(numEntidades)
+    setMostrarExito(true)
   }
 
   const entidadesFiltradas = useMemo(() => {
@@ -925,6 +926,22 @@ export default function GestionAnalistas() {
             </Button>
             <Button onClick={confirmarAsignacion} className="bg-teal-600 hover:bg-teal-700">
               Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={mostrarExito} onOpenChange={setMostrarExito}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-green-600">Asignación Exitosa</DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              Se ha actualizado con éxito <strong>{numEntidadesActualizadas}</strong> entidad(es) seleccionada(s).
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setMostrarExito(false)} className="bg-teal-600 hover:bg-teal-700">
+              Aceptar
             </Button>
           </DialogFooter>
         </DialogContent>
