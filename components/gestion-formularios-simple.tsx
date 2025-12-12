@@ -131,11 +131,10 @@ export default function GestionFormulariosSimple({
       setNombreAdjunto(nombreGenerado)
     }
   }
-  // </CHANGE>
+
   const [showCentralErrorDialog, setShowCentralErrorDialog] = useState(false)
   const [showEmailFormatDialog, setShowEmailFormatDialog] = useState(false)
   const [isValidatingCentral, setIsValidatingCentral] = useState(false)
-  // </CHANGE>
 
   // Define currentView and selectedFormulario here
   const [currentView, setCurrentView] = useState("list") // Added currentView
@@ -150,10 +149,8 @@ export default function GestionFormulariosSimple({
   const [reenvioJustificacion, setReenvioJustificacion] = useState("")
   const [reenvioAction, setReenvioAction] = useState<"importar" | "registro" | null>(null)
   const [reenvioFormId, setReenvioFormId] = useState<string | null>(null)
-  // </CHANGE>
 
   const [showAllFormsSuccessDialog, setShowAllFormsSuccessDialog] = useState(false)
-  // </CHANGE>
 
   const [formulariosState, setFormulariosState] = useState<Formulario[]>([
     // Renombrado a setFormulariosState para evitar conflicto
@@ -311,7 +308,6 @@ export default function GestionFormulariosSimple({
 
     const todosValidados = formulariosSeleccionados.every((f) => f.estado === "Validado")
     console.log("[v0] ¿Todos los formularios validados?:", todosValidados)
-    // </CHANGE>
 
     if (todosSeleccionados) {
       if (todosValidados) {
@@ -319,7 +315,6 @@ export default function GestionFormulariosSimple({
         setShowCertificationDialog(true)
         return
       }
-      // </CHANGE>
 
       console.log("[v0] Todos los formularios seleccionados - iniciando validación completa con fases 1-4")
       setIsSubmitting(true)
@@ -356,7 +351,6 @@ export default function GestionFormulariosSimple({
       setShowAllFormsSuccessDialog(true)
       setSelectedFormularios([])
       return
-      // </CHANGE>
     }
 
     // Implementación de la lógica de validación con separación de errores por tipo
@@ -528,7 +522,6 @@ export default function GestionFormulariosSimple({
     setValidationPhase(0)
     setSelectedFormularios([])
   }
-  // </CHANGE>
 
   const getColorForEstado = (estado: string): string => {
     // Exitosos en validación
@@ -646,7 +639,6 @@ export default function GestionFormulariosSimple({
     setReenvioAction(null)
     setReenvioFormId(null)
   }
-  // </CHANGE>
 
   const handleViewErrorDetails = () => {
     // Renombrado de handleViewErrors a handleViewErrorDetails
@@ -1283,8 +1275,8 @@ export default function GestionFormulariosSimple({
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Download className="w-4 h-4 mr-2" />
+                    <Button variant="outline" className="flex items-center gap-2 bg-transparent">
+                      <Download className="w-4 h-4" />
                       Exportar
                     </Button>
                   </DropdownMenuTrigger>
@@ -1307,7 +1299,9 @@ export default function GestionFormulariosSimple({
                           </div>
                         </TooltipContent>
                       </Tooltip>
+                    </TooltipProvider>
 
+                    <TooltipProvider>
                       <Tooltip delayDuration={0}>
                         <TooltipTrigger asChild>
                           <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("excel")}>
@@ -1327,7 +1321,9 @@ export default function GestionFormulariosSimple({
                           </div>
                         </TooltipContent>
                       </Tooltip>
+                    </TooltipProvider>
 
+                    <TooltipProvider>
                       <Tooltip delayDuration={0}>
                         <TooltipTrigger asChild>
                           <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("pdf")}>
@@ -1346,157 +1342,156 @@ export default function GestionFormulariosSimple({
                           </div>
                         </TooltipContent>
                       </Tooltip>
+                    </Tooltip>
+                  </TooltipProvider>
 
-                      <Tooltip delayDuration={0}>
-                        <TooltipTrigger asChild>
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
-                            <FileText className="w-4 h-4 mr-2" />
-                            TXT
-                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                          </DropdownMenuItem>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-xs">
-                          <div className="text-xs space-y-1">
-                            <p className="font-semibold">TXT - Sin límite de filas</p>
-                            <ul className="list-disc pl-4 space-y-0.5">
-                              <li>Encoding UTF-8</li>
-                              <li>Formato de texto plano</li>
-                            </ul>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Barra de Búsqueda */}
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por código o nombre..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
+                          <FileText className="w-4 h-4 mr-2" />
+                          TXT
+                          <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                        </DropdownMenuItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        <div className="text-xs space-y-1">
+                          <p className="font-semibold">TXT - Sin límite de filas</p>
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            <li>Encoding UTF-8</li>
+                            <li>Formato de texto plano</li>
+                          </ul>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
-            {/* Tabla */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                \
-                <thead className="bg-gray-50 border-b border-border">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                      <input
-                        type="checkbox"
-                        className="rounded"
-                        checked={selectedFormularios.length === formulariosState.length}
-                        onChange={toggleSelectAll}
-                      />
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      CÓDIGO ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      NOMBRE DEL FORMULARIO ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      TIPO ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ESTADO DE VALIDACIÓN ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ÚLTIMA MODIFICACIÓN ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ACCIONES
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-border">
-                  {filteredFormularios.map((form) => (
-                    <tr key={form.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <Checkbox
-                          checked={selectedFormularios.includes(form.id)}
-                          onCheckedChange={() => {
-                            handleToggleSelectFormulario(form.id)
-                            // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
-                          }}
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
-                        >
-                          {form.estado}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
-                      <td className="px-4 py-3">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleRegistroManualClick(form.id, form.nombre)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Registro manual
-                            </DropdownMenuItem>
-                            {/* </CHANGE> */}
-                            <DropdownMenuItem>
-                              <FileSpreadsheet className="w-4 h-4 mr-2" />
-                              Generar protocolo importación
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Paginación */}
-            <div className="p-4 border-t border-border flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Registros por página:</span>
-                <select className="px-2 py-1 border border-input rounded-md text-sm">
-                  <option>10</option>
-                  <option>25</option>
-                  <option>50</option>
-                </select>
-                <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  Primera
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Anterior
-                </Button>
-                <Button variant="default" size="sm">
-                  Página 1 de 1
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Siguiente
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Última
-                </Button>
-              </div>
+            {/* Barra de Búsqueda */}
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Buscar por código o nombre..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Tabla */}
+          <div className="overflow-x-auto">
+            <table className="w-full">\
+              <thead className="bg-gray-50 border-b border-border">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      checked={selectedFormularios.length === formulariosState.length}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    CÓDIGO ↕
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    NOMBRE DEL FORMULARIO ↕
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    TIPO ↕
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ESTADO DE VALIDACIÓN ↕
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ÚLTIMA MODIFICACIÓN ↕
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ACCIONES
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-border">
+                {filteredFormularios.map((form) => (
+                  <tr key={form.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <Checkbox
+                        checked={selectedFormularios.includes(form.id)}
+                        onCheckedChange={() => {
+                          handleToggleSelectFormulario(form.id)
+                        }}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
+                      >
+                        {form.estado}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
+                    <td className="px-4 py-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleRegistroManualClick(form.id, form.nombre)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Registro manual
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <FileSpreadsheet className="w-4 h-4 mr-2" />
+                            Generar protocolo importación
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Paginación */}
+          <div className="p-4 border-t border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Registros por página:</span>
+              <select className="px-2 py-1 border border-input rounded-md text-sm">
+                <option>10</option>
+                <option>25</option>
+                <option>50</option>
+              </select>
+              <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled>
+                Primera
+              </Button>
+              <Button variant="outline" size="sm" disabled>
+                Anterior
+              </Button>
+              <Button variant="default" size="sm">
+                Página 1 de 1
+              </Button>
+              <Button variant="outline" size="sm" disabled>
+                Siguiente
+              </Button>
+              <Button variant="outline" size="sm" disabled>
+                Última
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!showErrorsView && currentView === "dataTable" && selectedFormulario && (
         <DataTable
@@ -1638,14 +1633,14 @@ export default function GestionFormulariosSimple({
                 onChange={handleFileChange}
                 className="cursor-pointer"
               />
-              {errorAdjunto && <p className="text-sm text-red-600">{errorAdjunto}</p>}
+              {errorAdjunto && (
+                <p className="text-sm text-red-600">{errorAdjunto}</p>
+              )}
               {adjuntoPDF && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>
-                      {adjuntoPDF.name} ({(adjuntoPDF.size / 1024 / 1024).toFixed(2)} MB)
-                    </span>
+                    <span>{adjuntoPDF.name} ({(adjuntoPDF.size / 1024 / 1024).toFixed(2)} MB)</span>
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="nombre-adjunto" className="text-xs text-gray-600">
@@ -1663,7 +1658,6 @@ export default function GestionFormulariosSimple({
               )}
               <p className="text-xs text-gray-500">Tamaño máximo: 10MB. Solo archivos PDF.</p>
             </div>
-            {/* </CHANGE> */}
           </div>
           <DialogFooter>
             <Button
@@ -1689,7 +1683,7 @@ export default function GestionFormulariosSimple({
                         estado: "Aceptado",
                         estadoColor: "green",
                         fecha: new Date().toLocaleDateString("es-ES"),
-                      })),
+                      }))
                     )
                   } else {
                     setShowCentralErrorDialog(true)
@@ -1700,7 +1694,7 @@ export default function GestionFormulariosSimple({
                         estado: "Rechazado por Deficiencia",
                         estadoColor: "red",
                         fecha: new Date().toLocaleDateString("es-ES"),
-                      })),
+                      }))
                     )
                   }
                 }, 2000)
@@ -1725,9 +1719,7 @@ export default function GestionFormulariosSimple({
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                 <div className="space-y-3">
-                  <p className="font-semibold text-green-900">
-                    El formulario Balance General fue aceptado exitosamente.
-                  </p>
+                  <p className="font-semibold text-green-900">El formulario Balance General fue aceptado exitosamente.</p>
                   <p className="text-sm text-green-800">
                     Se han generado automáticamente los siguientes formularios calculados:
                   </p>
@@ -1737,9 +1729,9 @@ export default function GestionFormulariosSimple({
                   </ul>
                   <div className="bg-white border border-green-300 rounded p-3 mt-3">
                     <p className="text-sm text-gray-700">
-                      <strong className="text-green-900">Estado:</strong> Los formularios calculados han sido agregados
-                      al detalle de formularios con estado <span className="font-semibold">'Pendiente en validar'</span>{" "}
-                      y tipo <span className="font-semibold">'Formulario'</span>.
+                      <strong className="text-green-900">Estado:</strong> Los formularios calculados han sido agregados al
+                      detalle de formularios con estado <span className="font-semibold">'Pendiente en validar'</span> y
+                      tipo <span className="font-semibold">'Formulario'</span>.
                     </p>
                   </div>
                 </div>
@@ -1765,9 +1757,7 @@ export default function GestionFormulariosSimple({
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                 <div className="space-y-3">
-                  <p className="font-semibold text-green-900">
-                    La categoría {categoria} ha sido procesada exitosamente.
-                  </p>
+                  <p className="font-semibold text-green-900">La categoría {categoria} ha sido procesada exitosamente.</p>
                   <p className="text-sm text-green-800">
                     Todos los formularios han pasado las validaciones centrales (Fase 5) correctamente.
                   </p>
@@ -2020,7 +2010,8 @@ export default function GestionFormulariosSimple({
               <p className="mt-4">Respetado(a) Doctor(a):</p>
 
               <p className="mt-4 font-semibold">
-                La Contaduría General de la Nación se permite informarle que su envío fue Aceptado.
+                La Contaduría General de la Nación se permite informarle que su
+                envío fue Aceptado.
               </p>
 
               <div className="mt-4 space-y-1">
@@ -2148,7 +2139,6 @@ export default function GestionFormulariosSimple({
                       <span className="font-semibold">validaciones centrales (Fase 5)</span>.
                     </p>
                   </div>
-                  {/* </CHANGE> */}
                 </div>
               </div>
             </div>
