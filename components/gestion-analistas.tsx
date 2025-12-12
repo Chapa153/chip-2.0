@@ -402,7 +402,7 @@ export default function GestionAnalistas() {
                     type="checkbox"
                     checked={values.includes(opcion)}
                     onChange={() => toggleOption(opcion)}
-                    className="rounded border-input"
+                    className="rounded border-gray-300"
                   />
                   {opcion}
                 </label>
@@ -432,17 +432,47 @@ export default function GestionAnalistas() {
     return analistasPorPerfil[perfilSeleccionado as keyof typeof analistasPorPerfil] || []
   }, [perfilSeleccionado, analistasPorPerfil])
 
-  // Calcular carga de trabajo de analistas
+  const entidadesFiltradas = useMemo(() => {
+    if (!filtrosAplicados) return []
+
+    return entidades.filter((entidad) => {
+      if (filtros.entidad && !entidad.nombre.toLowerCase().includes(filtros.entidad.toLowerCase())) return false
+      if (filtros.departamento.length > 0 && !filtros.departamento.includes(entidad.departamento)) return false
+      if (filtros.ciudad.length > 0 && !filtros.ciudad.includes(entidad.ciudad)) return false
+      if (filtros.sector.length > 0 && !filtros.sector.includes(entidad.sector)) return false
+      if (filtros.marcoNormativo.length > 0 && !filtros.marcoNormativo.includes(entidad.marcoNormativo)) return false
+      if (filtros.naturaleza.length > 0 && !filtros.naturaleza.includes(entidad.naturaleza)) return false
+      if (filtros.deptoGobierno.length > 0 && !filtros.deptoGobierno.includes(entidad.deptoGobierno)) return false
+      if (filtros.ciudadGobierno.length > 0 && !filtros.ciudadGobierno.includes(entidad.ciudadGobierno)) return false
+      if (filtros.analistaActual.length > 0 && !filtros.analistaActual.includes(entidad.analistaActual)) return false
+      return true
+    })
+  }, [entidades, filtros, filtrosAplicados])
+
   const cargaAnalistas = useMemo(() => {
+    // Usar entidades filtradas si hay filtros aplicados, sino todas las entidades
+    const entidadesParaCarga = filtrosAplicados ? entidadesFiltradas : entidades
+
+    // Obtener todos los analistas únicos del sistema
+    const todosAnalistas = Array.from(new Set(entidades.map((e) => e.analistaActual)))
+
     const carga: { [key: string]: number } = {}
-    entidades.forEach((entidad) => {
+
+    // Inicializar todos los analistas con 0
+    todosAnalistas.forEach((analista) => {
+      carga[analista] = 0
+    })
+
+    // Contar entidades asignadas
+    entidadesParaCarga.forEach((entidad) => {
       const analista = entidad.analistaActual
       carga[analista] = (carga[analista] || 0) + 1
     })
+
     return Object.entries(carga)
       .map(([nombre, cantidad]) => ({ nombre, cantidad }))
       .sort((a, b) => b.cantidad - a.cantidad)
-  }, [entidades])
+  }, [entidades, entidadesFiltradas, filtrosAplicados])
 
   // Handlers para selección de entidades
   const toggleSeleccionEntidad = (nit: string) => {
@@ -506,23 +536,6 @@ export default function GestionAnalistas() {
     setNumEntidadesActualizadas(numEntidades)
     setMostrarExito(true)
   }
-
-  const entidadesFiltradas = useMemo(() => {
-    if (!filtrosAplicados) return []
-
-    return entidades.filter((entidad) => {
-      if (filtros.entidad && !entidad.nombre.toLowerCase().includes(filtros.entidad.toLowerCase())) return false
-      if (filtros.departamento.length > 0 && !filtros.departamento.includes(entidad.departamento)) return false
-      if (filtros.ciudad.length > 0 && !filtros.ciudad.includes(entidad.ciudad)) return false
-      if (filtros.sector.length > 0 && !filtros.sector.includes(entidad.sector)) return false
-      if (filtros.marcoNormativo.length > 0 && !filtros.marcoNormativo.includes(entidad.marcoNormativo)) return false
-      if (filtros.naturaleza.length > 0 && !filtros.naturaleza.includes(entidad.naturaleza)) return false
-      if (filtros.deptoGobierno.length > 0 && !filtros.deptoGobierno.includes(entidad.deptoGobierno)) return false
-      if (filtros.ciudadGobierno.length > 0 && !filtros.ciudadGobierno.includes(entidad.ciudadGobierno)) return false
-      if (filtros.analistaActual.length > 0 && !filtros.analistaActual.includes(entidad.analistaActual)) return false
-      return true
-    })
-  }, [entidades, filtros, filtrosAplicados])
 
   const entidadesPaginadas = useMemo(() => {
     if (!filtrosAplicados) return []
@@ -953,11 +966,15 @@ export default function GestionAnalistas() {
           <DialogHeader>
             <DialogTitle>Carga de Trabajo de Analistas</DialogTitle>
             <DialogDescription>
-              Cantidad de entidades asignadas a cada analista según los filtros aplicados.
-              {entidades.length !== entidadesIniciales.length && (
-                <span className="block mt-1 text-yellow-600">
-                  Nota: Se muestran datos filtrados ({entidades.length} de {entidadesIniciales.length} entidades)
-                </span>
+              {filtrosAplicados ? (
+                <>
+                  Cantidad de entidades asignadas a cada analista según los filtros aplicados.
+                  <span className="block mt-1 text-yellow-600">
+                    Nota: Se muestran datos filtrados ({entidadesFiltradas.length} de {entidades.length} entidades)
+                  </span>
+                </>
+              ) : (
+                "Cantidad de entidades asignadas a cada analista en todo el sistema."
               )}
             </DialogDescription>
           </DialogHeader>
@@ -972,20 +989,25 @@ export default function GestionAnalistas() {
                 </tr>
               </thead>
               <tbody>
-                {cargaAnalistas.map(({ nombre, cantidad }) => (
-                  <tr key={nombre} className="border-b border-border hover:bg-muted/30">
-                    <td className="py-3 px-4 text-foreground font-medium">{nombre}</td>
-                    <td className="py-3 px-4 text-right text-foreground font-semibold">{cantidad}</td>
-                    <td className="py-3 px-4 text-right text-muted-foreground">
-                      {((cantidad / entidades.length) * 100).toFixed(1)}%
-                    </td>
-                  </tr>
-                ))}
+                {cargaAnalistas.map(({ nombre, cantidad }) => {
+                  const totalEntidades = filtrosAplicados ? entidadesFiltradas.length : entidades.length
+                  const porcentaje = totalEntidades > 0 ? Math.round((cantidad / totalEntidades) * 100) : 0
+
+                  return (
+                    <tr key={nombre} className="border-b border-border hover:bg-muted/30">
+                      <td className="py-3 px-4 text-foreground font-medium">{nombre}</td>
+                      <td className="py-3 px-4 text-right text-foreground font-semibold">{cantidad}</td>
+                      <td className="py-3 px-4 text-right text-muted-foreground">{porcentaje}%</td>
+                    </tr>
+                  )
+                })}
               </tbody>
               <tfoot className="sticky bottom-0 bg-card border-t-2 border-border">
                 <tr className="bg-muted/50 font-semibold">
                   <td className="py-3 px-4 text-foreground">Total</td>
-                  <td className="py-3 px-4 text-right text-foreground">{entidades.length}</td>
+                  <td className="py-3 px-4 text-right text-foreground">
+                    {filtrosAplicados ? entidadesFiltradas.length : entidades.length}
+                  </td>
                   <td className="py-3 px-4 text-right text-foreground">100%</td>
                 </tr>
               </tfoot>
