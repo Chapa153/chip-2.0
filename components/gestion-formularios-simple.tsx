@@ -111,30 +111,11 @@ export default function GestionFormulariosSimple({
   const [adjuntoPDF, setAdjuntoPDF] = useState<File | null>(null)
   const [nombreAdjunto, setNombreAdjunto] = useState("")
   const [errorAdjunto, setErrorAdjunto] = useState("")
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      if (file.type !== "application/pdf") {
-        setErrorAdjunto("Solo se permiten archivos PDF")
-        setAdjuntoPDF(null)
-        return
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        setErrorAdjunto("El archivo no debe superar 10MB")
-        setAdjuntoPDF(null)
-        return
-      }
-      setErrorAdjunto("")
-      setAdjuntoPDF(file)
-      const nombreGenerado = `${categoria?.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`
-      setNombreAdjunto(nombreGenerado)
-    }
-  }
-
+  // </CHANGE>
   const [showCentralErrorDialog, setShowCentralErrorDialog] = useState(false)
   const [showEmailFormatDialog, setShowEmailFormatDialog] = useState(false)
   const [isValidatingCentral, setIsValidatingCentral] = useState(false)
+  // </CHANGE>
 
   // Define currentView and selectedFormulario here
   const [currentView, setCurrentView] = useState("list") // Added currentView
@@ -149,8 +130,10 @@ export default function GestionFormulariosSimple({
   const [reenvioJustificacion, setReenvioJustificacion] = useState("")
   const [reenvioAction, setReenvioAction] = useState<"importar" | "registro" | null>(null)
   const [reenvioFormId, setReenvioFormId] = useState<string | null>(null)
+  // </CHANGE>
 
   const [showAllFormsSuccessDialog, setShowAllFormsSuccessDialog] = useState(false)
+  // </CHANGE>
 
   const [formulariosState, setFormulariosState] = useState<Formulario[]>([
     // Renombrado a setFormulariosState para evitar conflicto
@@ -308,6 +291,7 @@ export default function GestionFormulariosSimple({
 
     const todosValidados = formulariosSeleccionados.every((f) => f.estado === "Validado")
     console.log("[v0] ¿Todos los formularios validados?:", todosValidados)
+    // </CHANGE>
 
     if (todosSeleccionados) {
       if (todosValidados) {
@@ -315,6 +299,7 @@ export default function GestionFormulariosSimple({
         setShowCertificationDialog(true)
         return
       }
+      // </CHANGE>
 
       console.log("[v0] Todos los formularios seleccionados - iniciando validación completa con fases 1-4")
       setIsSubmitting(true)
@@ -351,6 +336,7 @@ export default function GestionFormulariosSimple({
       setShowAllFormsSuccessDialog(true)
       setSelectedFormularios([])
       return
+      // </CHANGE>
     }
 
     // Implementación de la lógica de validación con separación de errores por tipo
@@ -522,6 +508,7 @@ export default function GestionFormulariosSimple({
     setValidationPhase(0)
     setSelectedFormularios([])
   }
+  // </CHANGE>
 
   const getColorForEstado = (estado: string): string => {
     // Exitosos en validación
@@ -593,7 +580,7 @@ export default function GestionFormulariosSimple({
       )
       alert("Importación realizada. Todos los formularios quedaron en estado Pendiente Validar.")
     } else if (reenvioAction === "registro" && reenvioFormId) {
-      // Solo el formulario seleccionado queda en "Pendiente en Validar"
+      // Solo el formulario seleccionado queda en "Pendiente Validar"
       // Los demás quedan sin estado de validación
       setFormulariosState((prev) =>
         prev.map((f) => {
@@ -639,6 +626,7 @@ export default function GestionFormulariosSimple({
     setReenvioAction(null)
     setReenvioFormId(null)
   }
+  // </CHANGE>
 
   const handleViewErrorDetails = () => {
     // Renombrado de handleViewErrors a handleViewErrorDetails
@@ -1059,25 +1047,23 @@ export default function GestionFormulariosSimple({
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-gray-300">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                             Formulario
                           </th>
-                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                             Código del Error
                           </th>
-                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
-                            Mensaje
-                          </th>
-                          <th className="p-3 text-center text-sm font-semibold text-gray-700 border border-gray-300">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mensaje</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                             Permisible
                           </th>
-                          <th className="p-3 text-center text-sm font-semibold text-gray-700 border border-gray-300">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                             Necesita comentario
                           </th>
-                          <th className="p-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                             Comentario (Máximo 250 caracteres)
                           </th>
                         </tr>
@@ -1088,10 +1074,8 @@ export default function GestionFormulariosSimple({
                             <td className="p-3 text-sm border border-gray-300">{detalle.formulario}</td>
                             <td className="p-3 text-sm border border-gray-300">{detalle.codigo}</td>
                             <td className="p-3 text-sm border border-gray-300">{detalle.mensaje}</td>
-                            <td className="p-3 text-sm text-center border border-gray-300">{detalle.permisible}</td>
-                            <td className="p-3 text-sm text-center border border-gray-300">
-                              {detalle.necesitaComentario}
-                            </td>
+                            <td className="p-3 text-center border border-gray-300">{detalle.permisible}</td>
+                            <td className="p-3 text-center border border-gray-300">{detalle.necesitaComentario}</td>
                             <td className="p-3 border border-gray-300">
                               <input
                                 type="text"
@@ -1129,7 +1113,25 @@ export default function GestionFormulariosSimple({
     // onBack?.();
   }
 
-  // Removed handleFileChange as it's moved into the Dialog Certificación Central
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        // 10MB limit
+        setErrorAdjunto("El archivo excede el tamaño máximo permitido (10MB).")
+        setAdjuntoPDF(null)
+        setNombreAdjunto("")
+      } else if (!file.name.toLowerCase().endsWith(".pdf")) {
+        setErrorAdjunto("Solo se permiten archivos PDF.")
+        setAdjuntoPDF(null)
+        setNombreAdjunto("")
+      } else {
+        setAdjuntoPDF(file)
+        setNombreAdjunto(file.name) // Set initial name
+        setErrorAdjunto("")
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -1250,6 +1252,7 @@ export default function GestionFormulariosSimple({
                   <Upload className="w-4 h-4 mr-2" />
                   Importar
                 </Button>
+                {/* </CHANGE> */}
                 <Button variant="outline" size="sm">
                   <FileDown className="w-4 h-4 mr-2" />
                   Envíos
@@ -1273,8 +1276,35 @@ export default function GestionFormulariosSimple({
                     </>
                   )}
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Download className="w-4 h-4 mr-2" />
+                      Exportar
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleExportErrors("csv")}>
+                      <FileSpreadsheet className="w-4 h-4 mr-2" />
+                      CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportErrors("excel")}>
+                      <FileSpreadsheet className="w-4 h-4 mr-2" />
+                      Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportErrors("pdf")}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportErrors("txt")}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      TXT
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              
+
+              {/* Barra de Búsqueda */}
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
@@ -1327,6 +1357,7 @@ export default function GestionFormulariosSimple({
                           checked={selectedFormularios.includes(form.id)}
                           onCheckedChange={() => {
                             handleToggleSelectFormulario(form.id)
+                            // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
                           }}
                         />
                       </td>
@@ -1353,6 +1384,7 @@ export default function GestionFormulariosSimple({
                               <Edit className="w-4 h-4 mr-2" />
                               Registro manual
                             </DropdownMenuItem>
+                            {/* </CHANGE> */}
                             <DropdownMenuItem>
                               <FileSpreadsheet className="w-4 h-4 mr-2" />
                               Generar protocolo importación
@@ -1398,661 +1430,684 @@ export default function GestionFormulariosSimple({
           </div>
         )}
 
-      {!showErrorsView && currentView === "dataTable" && selectedFormulario && (
-        <DataTable
-          title={selectedFormulario.nombre}
-          onBack={handleBackToList}
-          filtrosPrevios={{ categoria, periodo, ano }}
-          onUpdateEstado={handleUpdateFormularioEstado}
-        />
-      )}
+        {!showErrorsView && currentView === "dataTable" && selectedFormulario && (
+          <DataTable
+            title={selectedFormulario.nombre}
+            onBack={handleBackToList}
+            filtrosPrevios={{ categoria, periodo, ano }}
+            onUpdateEstado={handleUpdateFormularioEstado}
+          />
+        )}
 
-      <AlertDialog open={showSimpleAlert} onOpenChange={setShowSimpleAlert}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Validaciones generales</AlertDialogTitle>
-            <AlertDialogDescription className="whitespace-pre-line">{simpleAlertMessage}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setShowSimpleAlert(false)}>Aceptar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <AlertDialog open={showSimpleAlert} onOpenChange={setShowSimpleAlert}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Validaciones generales</AlertDialogTitle>
+              <AlertDialogDescription className="whitespace-pre-line">{simpleAlertMessage}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setShowSimpleAlert(false)}>Aceptar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-      <AlertDialog open={showErrorAlert} onOpenChange={setShowErrorAlert}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Errores en el envío a validar</AlertDialogTitle>
-            <AlertDialogDescription>
-              Hubo errores en el envío a validar. ¿Desea ver el listado de errores?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowErrorAlert(false)}>No</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setShowErrorAlert(false)
-                handleViewErrors()
-              }}
-            >
-              Sí, ver errores
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {isSubmitting && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-6 max-w-md">
-            <Loader2 className="w-16 h-16 animate-spin text-primary" />
-            <div className="text-center space-y-4 w-full">
-              <h3 className="text-lg font-semibold text-gray-900">Validando formularios</h3>
-              <div className="space-y-3 text-left">
-                <div className={`flex items-center gap-3 ${validationPhase >= 1 ? "text-gray-900" : "text-gray-400"}`}>
-                  {validationPhase > 1 ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : validationPhase === 1 ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                  )}
-                  <span className="text-sm">1. Validaciones generales</span>
-                </div>
-                <div className={`flex items-center gap-3 ${validationPhase >= 2 ? "text-gray-900" : "text-gray-400"}`}>
-                  {validationPhase > 2 ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : validationPhase === 2 ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                  )}
-                  <span className="text-sm">2. Contenido de variables</span>
-                </div>
-                <div className={`flex items-center gap-3 ${validationPhase >= 3 ? "text-gray-900" : "text-gray-400"}`}>
-                  {validationPhase > 3 ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : validationPhase === 3 ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                  )}
-                  <span className="text-sm">3. Completitud</span>
-                </div>
-                <div className={`flex items-center gap-3 ${validationPhase >= 4 ? "text-gray-900" : "text-gray-400"}`}>
-                  {validationPhase > 4 ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : validationPhase === 4 ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                  )}
-                  <span className="text-sm">4. Expresiones de validación locales</span>
-                </div>
-                <div className={`flex items-center gap-3 ${validationPhase >= 5 ? "text-gray-900" : "text-gray-400"}`}>
-                  {validationPhase > 5 ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : validationPhase === 5 ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                  )}
-                  <span className="text-sm">5. Expresiones de validación centrales</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <Dialog open={showCertificationDialog} onOpenChange={setShowCertificationDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Info className="w-6 h-6 text-blue-600" />
-              </div>
-              <DialogTitle className="text-lg">CHIP - Mensaje del Sistema</DialogTitle>
-            </div>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="font-semibold text-gray-900">CAPTURA047</p>
-            <p className="text-sm text-gray-700">Con el envío de la información, usted certifica que:</p>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
-              <li>Los datos básicos y los responsables de la entidad están actualizados.</li>
-              <li>La información remitida está acorde con la normatividad expedida para cada categoría.</li>
-            </ol>
-            <div className="bg-amber-50 border border-amber-200 rounded p-3 mt-4">
-              <p className="text-sm text-gray-700">
-                <strong>Nota:</strong> La información Contable Pública debe reportarse en pesos.
-              </p>
-            </div>
-
-            <div className="space-y-3 border-t pt-4 mt-4">
-              <Label htmlFor="pdf-adjunto" className="text-sm font-medium">
-                Adjuntar archivo PDF (Opcional)
-              </Label>
-              <Input
-                id="pdf-adjunto"
-                type="file"
-                accept=".pdf"
-                onChange={handleFileChange}
-                className="cursor-pointer"
-              />
-              {errorAdjunto && (
-                <p className="text-sm text-red-600">{errorAdjunto}</p>
-              )}
-              {adjuntoPDF && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{adjuntoPDF.name} ({(adjuntoPDF.size / 1024 / 1024).toFixed(2)} MB)</span>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="nombre-adjunto" className="text-xs text-gray-600">
-                      Nombre del archivo en el sistema
-                    </Label>
-                    <Input
-                      id="nombre-adjunto"
-                      value={nombreAdjunto}
-                      onChange={(e) => setNombreAdjunto(e.target.value)}
-                      placeholder="Nombre del archivo"
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-              )}
-              <p className="text-xs text-gray-500">Tamaño máximo: 10MB. Solo archivos PDF.</p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() => {
-                if (adjuntoPDF && nombreAdjunto) {
-                  console.log("[v0] PDF adjunto:", nombreAdjunto, adjuntoPDF.name)
-                }
-
-                setShowCertificationDialog(false)
-                setIsSubmitting(true)
-                setValidationPhase(5)
-
-                setTimeout(() => {
-                  setIsSubmitting(false)
-                  setValidationPhase(0)
-
-                  if (categoria === "INFORMACIÓN PRESUPUESTAL") {
-                    setShowCentralSuccessDialog(true)
-                    setFormulariosState((prev) =>
-                      prev.map((f) => ({
-                        ...f,
-                        tipo: "Categoría",
-                        estado: "Aceptado",
-                        estadoColor: "green",
-                        fecha: new Date().toLocaleDateString("es-ES"),
-                      }))
-                    )
-                  } else {
-                    setShowCentralErrorDialog(true)
-                    setFormulariosState((prev) =>
-                      prev.map((f) => ({
-                        ...f,
-                        tipo: "Categoría",
-                        estado: "Rechazado por Deficiencia",
-                        estadoColor: "red",
-                        fecha: new Date().toLocaleDateString("es-ES"),
-                      }))
-                    )
-                  }
-                }, 2000)
-              }}
-            >
-              Aceptar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showBalanceSuccessDialog} onOpenChange={setShowBalanceSuccessDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-6 w-6 text-green-500" />
-              Validación Exitosa
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <div className="space-y-3">
-                  <p className="font-semibold text-green-900">El formulario Balance General fue aceptado exitosamente.</p>
-                  <p className="text-sm text-green-800">
-                    Se han generado automáticamente los siguientes formularios calculados:
-                  </p>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-green-800 ml-2">
-                    <li>Estado de Resultados Calculado</li>
-                    <li>Flujo de Efectivo Calculado</li>
-                  </ul>
-                  <div className="bg-white border border-green-300 rounded p-3 mt-3">
-                    <p className="text-sm text-gray-700">
-                      <strong className="text-green-900">Estado:</strong> Los formularios calculados han sido agregados al
-                      detalle de formularios con estado <span className="font-semibold">'Pendiente en validar'</span> y
-                      tipo <span className="font-semibold">'Formulario'</span>.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowBalanceSuccessDialog(false)}>Aceptar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showCentralSuccessDialog} onOpenChange={setShowCentralSuccessDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-6 w-6 text-green-500" />
-              Validación Central Exitosa
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <div className="space-y-3">
-                  <p className="font-semibold text-green-900">La categoría {categoria} ha sido procesada exitosamente.</p>
-                  <p className="text-sm text-green-800">
-                    Todos los formularios han pasado las validaciones centrales (Fase 5) correctamente.
-                  </p>
-                  <p className="text-sm text-gray-700 mt-3">
-                    Se ha enviado un correo electrónico automático confirmando la aceptación del envío a la dirección
-                    registrada de la entidad.
-                  </p>
-                  <div className="bg-white border border-green-300 rounded p-3 mt-3">
-                    <p className="text-sm text-gray-700">
-                      <strong className="text-green-900">Estado:</strong> Todos los formularios han sido actualizados a
-                      tipo <span className="font-semibold">'Categoría'</span> con estado{" "}
-                      <span className="font-semibold text-green-700">'Aceptado'</span>.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowCentralSuccessDialog(false)
-                setShowSuccessEmailFormatDialog(true)
-              }}
-            >
-              Ver formato del correo
-            </Button>
-            <Button onClick={() => setShowCentralSuccessDialog(false)}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showCentralErrorDialog} onOpenChange={setShowCentralErrorDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              Error en Validación Central
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-gray-700">
-                El envío de información fue rechazado debido a errores detectados en las{" "}
-                <span className="font-semibold">expresiones de validación centrales (Fase 5)</span>.
-              </p>
-              <p className="text-sm text-gray-700 mt-3">
-                Se ha enviado un correo electrónico automático con el detalle de todas las inconsistencias encontradas a
-                la dirección registrada de la entidad.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Mail className="h-4 w-4" />
-              <span>Correo enviado desde: chip@contaduria.gov.co</span>
-            </div>
-          </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowCentralErrorDialog(false)
-                setShowEmailFormatDialog(true)
-              }}
-            >
-              Ver formato del correo
-            </Button>
-            <Button onClick={() => setShowCentralErrorDialog(false)}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showEmailFormatDialog} onOpenChange={setShowEmailFormatDialog}>
-        <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-blue-500" />
-              Formato del Correo - Envío Rechazado por Inconsistencias
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="border-b pb-3 space-y-1 text-sm">
-              <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 w-20">De:</span>
-                <span className="text-gray-600">chip@contaduria.gov.co</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 w-20">Date:</span>
-                <span className="text-gray-600">mar, 12 ago 2025 a las 8:45</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 w-20">Subject:</span>
-                <span className="text-gray-600">
-                  Envío Rechazado por Inconsistencias categoría: INFORMACIÓN CONTABLE PUBLICA - CONVERGENCIA
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 w-20">To:</span>
-                <span className="text-gray-600"></span>
-              </div>
-            </div>
-
-            <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-white rounded-lg p-2">
-                  <span className="text-2xl">🏛️</span>
-                </div>
-                <h2 className="text-3xl font-bold">Sistema CHIP</h2>
-              </div>
-              <div className="text-right">
-                <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
-              </div>
-            </div>
-
-            <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
-              <p className="font-semibold">Doctor(a)</p>
-              <p className="font-semibold">MARILUZ MUÑOZ MOLINA</p>
-              <p>Contador</p>
-              <p>E.S.P. Empresa de Acueducto y Alcantarillado del Río Palo S.A.S.</p>
-              <p>PUERTO TEJADA - DEPARTAMENTO DE CAUCA</p>
-
-              <p className="mt-4 italic text-gray-600">Este es un correo automático que genera el sistema CHIP.</p>
-
-              <p className="mt-4">Cordial saludo,</p>
-              <p>Respetado(a) Doctor(a):</p>
-
-              <p className="mt-4">
-                La Contaduría General de la Nación se permite informarle que su envío fue rechazado dado que se
-                encontraron inconsistencias con la información que se reportó, así:
-              </p>
-
-              <div className="mt-4 space-y-1">
-                <p>
-                  <span className="font-semibold">Categoría:</span> INFORMACIÓN CONTABLE PUBLICA - CONVERGENCIA
-                </p>
-                <p>
-                  <span className="font-semibold">Formularios:</span> Todos
-                </p>
-                <p>
-                  <span className="font-semibold">Periodo:</span> Abr-Jun
-                </p>
-                <p>
-                  <span className="font-semibold">Año:</span> 2024
-                </p>
-                <p>
-                  <span className="font-semibold">Recepción:</span> 2024-07-31
-                </p>
-                <p>
-                  <span className="font-semibold">Radicado (Id) de Envío:</span> 4512447
-                </p>
-              </div>
-
-              <p className="mt-4 font-semibold">Los mensajes generados fueron:</p>
-
-              <div className="mt-3 space-y-2 max-h-[300px] overflow-y-auto border-l-2 border-red-300 pl-3">
-                <p className="text-xs">
-                  Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                  inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                  saldo inicial debe ser cero para el concepto 1.1.05.01 ya que no fué reportado en el corte anterior
-                </p>
-                <p className="text-xs">
-                  Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                  inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                  saldo inicial debe ser cero para el concepto 1.1.05.02 ya que no fué reportado en el corte anterior
-                </p>
-                <p className="text-xs">
-                  Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                  inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                  saldo inicial debe ser igual al saldo final del corte anterior revisar concepto:5.8.90.90
-                </p>
-                <p className="text-xs">
-                  Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                  inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                  saldo inicial debe ser igual al saldo final del corte anterior revisar concepto:7.5.02.01
-                </p>
-                <p className="text-xs text-gray-500 italic">... y 56 errores adicionales</p>
-              </div>
-
-              <p className="mt-4">
-                Por favor revise y corrija las inconsistencias reportadas antes de realizar un nuevo envío.
-              </p>
-
-              <p className="mt-4">Atentamente,</p>
-              <p className="font-semibold">Sistema CHIP</p>
-              <p>Contaduría General de la Nación</p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowEmailFormatDialog(false)}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showSuccessEmailFormatDialog} onOpenChange={setShowSuccessEmailFormatDialog}>
-        <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-green-500" />
-              Formato del Correo - Envío Aceptado
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {/* Header del correo */}
-            <div className="border-b pb-3 space-y-1 text-sm">
-              <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 w-20">De:</span>
-                <span className="text-gray-600">chip@contaduria.gov.co</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 w-20">Date:</span>
-                <span className="text-gray-600">mar, 12 ago 2025 a las 8:45</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 w-20">Subject:</span>
-                <span className="text-gray-600">
-                  Envío en Estado Aceptado categoría INFORMACIÓN CONTABLE PÚBLICA - CONVERGENCIA
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 w-20">To:</span>
-                <span className="text-gray-600"></span>
-              </div>
-            </div>
-
-            {/* Banner CHIP */}
-            <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-white rounded-lg p-2">
-                  <span className="text-2xl">🏛️</span>
-                </div>
-                <h2 className="text-3xl font-bold">Sistema CHIP</h2>
-              </div>
-              <div className="text-right">
-                <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
-              </div>
-            </div>
-
-            {/* Contenido del correo */}
-            <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
-              <p className="font-semibold">Doctor(a)</p>
-              <p className="font-semibold">GABRIELA MORENO ALBA</p>
-              <p>Contador</p>
-              <p>Jenesano</p>
-              <p className="mb-4">JENESANO - DEPARTAMENTO DE BOYACA</p>
-
-              <p className="italic text-gray-600">Este es un correo automático que genera el sistema CHIP</p>
-
-              <p className="mt-4">Cordial saludo,</p>
-
-              <p className="mt-4">Respetado(a) Doctor(a):</p>
-
-              <p className="mt-4 font-semibold">
-                La Contaduría General de la Nación se permite informarle que su
-                envío fue Aceptado.
-              </p>
-
-              <div className="mt-4 space-y-1">
-                <p>
-                  <strong>Categoría:</strong> INFORMACIÓN CONTABLE PÚBLICA - CONVERGENCIA
-                </p>
-                <p>
-                  <strong>Formularios y</strong> REPORTE DE ESTADOS FINANCIEROS
-                </p>
-                <p>
-                  <strong>Periodo:</strong> Oct-Dic
-                </p>
-                <p>
-                  <strong>Año:</strong> 2024
-                </p>
-                <p>
-                  <strong>Recepción:</strong> 2025-08-12
-                </p>
-                <p>
-                  <strong>Radicado (Id) de Envío:</strong> 4589500
-                </p>
-              </div>
-
-              <p className="mt-6">Atentamente,</p>
-
-              <div className="mt-4 pt-4 border-t space-y-1 text-xs text-gray-600">
-                <p className="font-semibold">Contaduría General de la Nación</p>
-                <p className="text-blue-600 underline">chip@contaduria.gov.co</p>
-                <p>Calle 26 No 69 - 76, Edificio Elemento</p>
-                <p>Torre 1 (Aire) - Piso 15, Bogotá D.C. Colombia</p>
-                <p>Código Postal: 111071</p>
-                <p>PBX: +57 (601) 492 6400</p>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowSuccessEmailFormatDialog(false)}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showReenvioDialog} onOpenChange={setShowReenvioDialog}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-blue-600" />
-              Justificación del reenvío
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <HelpCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-900">
-                Está realizando una modification a la información reportada, debe justificar el motivo de su reenvío.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Motivo</label>
-              <select
-                value={reenvioMotivo}
-                onChange={(e) => setReenvioMotivo(e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+        <AlertDialog open={showErrorAlert} onOpenChange={setShowErrorAlert}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Errores en el envío a validar</AlertDialogTitle>
+              <AlertDialogDescription>
+                Hubo errores en el envío a validar. ¿Desea ver el listado de errores?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setShowErrorAlert(false)}>No</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setShowErrorAlert(false)
+                  handleViewErrors()
+                }}
               >
-                <option value="">Seleccione un motivo</option>
-                <option value="Por error en el reporte de información">Por error en el reporte de información</option>
-                <option value="Solicitud de requerimiento por parte de la CGN">
-                  Solicitud de requerimiento por parte de la CGN
-                </option>
-                <option value="Conciliación de saldos pendientes">Conciliación de saldos pendientes</option>
-                <option value="Otra">Otra</option>
-              </select>
-            </div>
+                Sí, ver errores
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Justificación (max. 500 caracteres)</label>
-              <textarea
-                value={reenvioJustificacion}
-                onChange={(e) => setReenvioJustificacion(e.target.value.slice(0, 500))}
-                placeholder="Escriba aquí la justificación..."
-                className="w-full px-3 py-2 border border-input rounded-md bg-background min-h-[120px] resize-none"
-                maxLength={500}
-              />
-              <div className="text-xs text-gray-500 text-right">{reenvioJustificacion.length}/500 caracteres</div>
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={handleCancelarReenvio}>
-              Cancelar reenvío
-            </Button>
-            <Button
-              onClick={handleContinuarReenvio}
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={!reenvioMotivo || !reenvioJustificacion}
-            >
-              Continuar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showAllFormsSuccessDialog} onOpenChange={setShowAllFormsSuccessDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-6 w-6 text-green-500" />
-              Validaciones Locales Exitosas
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <div className="space-y-3">
-                  <p className="font-semibold text-green-900">
-                    Todos los formularios seleccionados han pasado las validaciones locales (Fases 1-4) exitosamente.
-                  </p>
-                  <p className="text-sm text-green-800">
-                    Los formularios han sido actualizados a estado <span className="font-semibold">'Validado'</span>.
-                  </p>
-                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
-                    <p className="text-sm text-gray-700">
-                      <strong className="text-blue-900">Siguiente paso:</strong> Puede seleccionar nuevamente todos los
-                      formularios y hacer clic en <span className="font-semibold">'Enviar'</span> para ejecutar las{" "}
-                      <span className="font-semibold">validaciones centrales (Fase 5)</span>.
-                    </p>
+        {isSubmitting && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-6 max-w-md">
+              <Loader2 className="w-16 h-16 animate-spin text-primary" />
+              <div className="text-center space-y-4 w-full">
+                <h3 className="text-lg font-semibold text-gray-900">Validando formularios</h3>
+                <div className="space-y-3 text-left">
+                  <div
+                    className={`flex items-center gap-3 ${validationPhase >= 1 ? "text-gray-900" : "text-gray-400"}`}
+                  >
+                    {validationPhase > 1 ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    ) : validationPhase === 1 ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                    )}
+                    <span className="text-sm">1. Validaciones generales</span>
+                  </div>
+                  <div
+                    className={`flex items-center gap-3 ${validationPhase >= 2 ? "text-gray-900" : "text-gray-400"}`}
+                  >
+                    {validationPhase > 2 ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    ) : validationPhase === 2 ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                    )}
+                    <span className="text-sm">2. Contenido de variables</span>
+                  </div>
+                  <div
+                    className={`flex items-center gap-3 ${validationPhase >= 3 ? "text-gray-900" : "text-gray-400"}`}
+                  >
+                    {validationPhase > 3 ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    ) : validationPhase === 3 ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                    )}
+                    <span className="text-sm">3. Completitud</span>
+                  </div>
+                  <div
+                    className={`flex items-center gap-3 ${validationPhase >= 4 ? "text-gray-900" : "text-gray-400"}`}
+                  >
+                    {validationPhase > 4 ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    ) : validationPhase === 4 ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                    )}
+                    <span className="text-sm">4. Expresiones de validación locales</span>
+                  </div>
+                  <div
+                    className={`flex items-center gap-3 ${validationPhase >= 5 ? "text-gray-900" : "text-gray-400"}`}
+                  >
+                    {validationPhase > 5 ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    ) : validationPhase === 5 ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                    )}
+                    <span className="text-sm">5. Expresiones de validación centrales</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={() => setShowAllFormsSuccessDialog(false)}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        )}
+
+        <Dialog open={showCertificationDialog} onOpenChange={setShowCertificationDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Info className="w-6 h-6 text-blue-600" />
+                </div>
+                <DialogTitle className="text-lg">CHIP - Mensaje del Sistema</DialogTitle>
+              </div>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <p className="font-semibold text-gray-900">CAPTURA047</p>
+              <p className="text-sm text-gray-700">Con el envío de la información, usted certifica que:</p>
+              <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
+                <li>Los datos básicos y los responsables de la entidad están actualizados.</li>
+                <li>La información remitida está acorde con la normatividad expedida para cada categoría.</li>
+              </ol>
+              <div className="bg-amber-50 border border-amber-200 rounded p-3 mt-4">
+                <p className="text-sm text-gray-700">
+                  <strong>Nota:</strong> La información Contable Pública debe reportarse en pesos.
+                </p>
+              </div>
+
+              <div className="space-y-3 border-t pt-4 mt-4">
+                <Label htmlFor="pdf-adjunto" className="text-sm font-medium">
+                  Adjuntar archivo PDF (Opcional)
+                </Label>
+                <Input
+                  id="pdf-adjunto"
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileChange}
+                  className="cursor-pointer"
+                />
+                {errorAdjunto && <p className="text-sm text-red-600">{errorAdjunto}</p>}
+                {adjuntoPDF && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>
+                        {adjuntoPDF.name} ({(adjuntoPDF.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="nombre-adjunto" className="text-xs text-gray-600">
+                        Nombre del archivo en el sistema
+                      </Label>
+                      <Input
+                        id="nombre-adjunto"
+                        value={nombreAdjunto}
+                        onChange={(e) => setNombreAdjunto(e.target.value)}
+                        placeholder="Nombre del archivo"
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-gray-500">Tamaño máximo: 10MB. Solo archivos PDF.</p>
+              </div>
+              {/* </CHANGE> */}
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  if (adjuntoPDF && nombreAdjunto) {
+                    console.log("[v0] PDF adjunto:", nombreAdjunto, adjuntoPDF.name)
+                    // Here you would typically save the file info to the form details
+                    // For now, we'll just log it
+                  }
+                  // </CHANGE>
+
+                  setShowCertificationDialog(false)
+                  setIsSubmitting(true)
+                  setValidationPhase(5)
+
+                  setTimeout(() => {
+                    setIsSubmitting(false)
+                    setValidationPhase(0)
+
+                    // Verificar categoría para determinar éxito o error
+                    if (categoria === "INFORMACIÓN PRESUPUESTAL") {
+                      setShowCentralSuccessDialog(true)
+                      // Actualizar todos los formularios a Categoría y Aceptado
+                      setFormulariosState((prev) =>
+                        prev.map((f) => ({
+                          ...f,
+                          tipo: "Categoría",
+                          estado: "Aceptado",
+                          estadoColor: "green",
+                          fecha: new Date().toLocaleDateString("es-ES"),
+                        })),
+                      )
+                    } else {
+                      setShowCentralErrorDialog(true)
+                      // Actualizar todos los formularios a Categoría y Rechazado por Deficiencia
+                      setFormulariosState((prev) =>
+                        prev.map((f) => ({
+                          ...f,
+                          tipo: "Categoría",
+                          estado: "Rechazado por Deficiencia",
+                          estadoColor: "red",
+                          fecha: new Date().toLocaleDateString("es-ES"),
+                        })),
+                      )
+                    }
+                  }, 2000)
+                }}
+              >
+                Aceptar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showBalanceSuccessDialog} onOpenChange={setShowBalanceSuccessDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-6 w-6 text-green-500" />
+                Validación Exitosa
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-3">
+                    <p className="font-semibold text-green-900">
+                      El formulario Balance General fue aceptado exitosamente.
+                    </p>
+                    <p className="text-sm text-green-800">
+                      Se han generado automáticamente los siguientes formularios calculados:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-green-800 ml-2">
+                      <li>Estado de Resultados Calculado</li>
+                      <li>Flujo de Efectivo Calculado</li>
+                    </ul>
+                    <div className="bg-white border border-green-300 rounded p-3 mt-3">
+                      <p className="text-sm text-gray-700">
+                        <strong className="text-green-900">Estado:</strong> Los formularios calculados han sido
+                        agregados al detalle de formularios con estado{" "}
+                        <span className="font-semibold">'Pendiente en validar'</span> y tipo{" "}
+                        <span className="font-semibold">'Formulario'</span>.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowBalanceSuccessDialog(false)}>Aceptar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showCentralSuccessDialog} onOpenChange={setShowCentralSuccessDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-6 w-6 text-green-500" />
+                Validación Central Exitosa
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-3">
+                    <p className="font-semibold text-green-900">
+                      La categoría {categoria} ha sido procesada exitosamente.
+                    </p>
+                    <p className="text-sm text-green-800">
+                      Todos los formularios han pasado las validaciones centrales (Fase 5) correctamente.
+                    </p>
+                    <p className="text-sm text-gray-700 mt-3">
+                      Se ha enviado un correo electrónico automático confirmando la aceptación del envío a la dirección
+                      registrada de la entidad.
+                    </p>
+                    <div className="bg-white border border-green-300 rounded p-3 mt-3">
+                      <p className="text-sm text-gray-700">
+                        <strong className="text-green-900">Estado:</strong> Todos los formularios han sido actualizados
+                        a tipo <span className="font-semibold">'Categoría'</span> con estado{" "}
+                        <span className="font-semibold text-green-700">'Aceptado'</span>.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCentralSuccessDialog(false)
+                  setShowSuccessEmailFormatDialog(true)
+                }}
+              >
+                Ver formato del correo
+              </Button>
+              <Button onClick={() => setShowCentralSuccessDialog(false)}>Cerrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showCentralErrorDialog} onOpenChange={setShowCentralErrorDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                Error en Validación Central
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-gray-700">
+                  El envío de información fue rechazado debido a errores detectados en las{" "}
+                  <span className="font-semibold">expresiones de validación centrales (Fase 5)</span>.
+                </p>
+                <p className="text-sm text-gray-700 mt-3">
+                  Se ha enviado un correo electrónico automático con el detalle de todas las inconsistencias encontradas
+                  a la dirección registrada de la entidad.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Mail className="h-4 w-4" />
+                <span>Correo enviado desde: chip@contaduria.gov.co</span>
+              </div>
+            </div>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCentralErrorDialog(false)
+                  setShowEmailFormatDialog(true)
+                }}
+              >
+                Ver formato del correo
+              </Button>
+              <Button onClick={() => setShowCentralErrorDialog(false)}>Cerrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showEmailFormatDialog} onOpenChange={setShowEmailFormatDialog}>
+          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-blue-500" />
+                Formato del Correo - Envío Rechazado por Inconsistencias
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="border-b pb-3 space-y-1 text-sm">
+                <div className="flex gap-2">
+                  <span className="font-semibold text-gray-700 w-20">De:</span>
+                  <span className="text-gray-600">chip@contaduria.gov.co</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-semibold text-gray-700 w-20">Date:</span>
+                  <span className="text-gray-600">mar, 12 ago 2025 a las 8:45</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-semibold text-gray-700 w-20">Subject:</span>
+                  <span className="text-gray-600">
+                    Envío Rechazado por Inconsistencias categoría: INFORMACIÓN CONTABLE PUBLICA - CONVERGENCIA
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-semibold text-gray-700 w-20">To:</span>
+                  <span className="text-gray-600"></span>
+                </div>
+              </div>
+
+              <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white rounded-lg p-2">
+                    <span className="text-2xl">🏛️</span>
+                  </div>
+                  <h2 className="text-3xl font-bold">Sistema CHIP</h2>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
+                </div>
+              </div>
+
+              <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
+                <p className="font-semibold">Doctor(a)</p>
+                <p className="font-semibold">MARILUZ MUÑOZ MOLINA</p>
+                <p>Contador</p>
+                <p>E.S.P. Empresa de Acueducto y Alcantarillado del Río Palo S.A.S.</p>
+                <p>PUERTO TEJADA - DEPARTAMENTO DE CAUCA</p>
+
+                <p className="mt-4 italic text-gray-600">Este es un correo automático que genera el sistema CHIP.</p>
+
+                <p className="mt-4">Cordial saludo,</p>
+                <p>Respetado(a) Doctor(a):</p>
+
+                <p className="mt-4">
+                  La Contaduría General de la Nación se permite informarle que su envío fue rechazado dado que se
+                  encontraron inconsistencias con la información que se reportó, así:
+                </p>
+
+                <div className="mt-4 space-y-1">
+                  <p>
+                    <span className="font-semibold">Categoría:</span> INFORMACIÓN CONTABLE PUBLICA - CONVERGENCIA
+                  </p>
+                  <p>
+                    <span className="font-semibold">Formularios:</span> Todos
+                  </p>
+                  <p>
+                    <span className="font-semibold">Periodo:</span> Abr-Jun
+                  </p>
+                  <p>
+                    <span className="font-semibold">Año:</span> 2024
+                  </p>
+                  <p>
+                    <span className="font-semibold">Recepción:</span> 2024-07-31
+                  </p>
+                  <p>
+                    <span className="font-semibold">Radicado (Id) de Envío:</span> 4512447
+                  </p>
+                </div>
+
+                <p className="mt-4 font-semibold">Los mensajes generados fueron:</p>
+
+                <div className="mt-3 space-y-2 max-h-[300px] overflow-y-auto border-l-2 border-red-300 pl-3">
+                  <p className="text-xs">
+                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
+                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
+                    saldo inicial debe ser cero para el concepto 1.1.05.01 ya que no fué reportado en el corte anterior
+                  </p>
+                  <p className="text-xs">
+                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
+                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
+                    saldo inicial debe ser cero para el concepto 1.1.05.02 ya que no fué reportado en el corte anterior
+                  </p>
+                  <p className="text-xs">
+                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
+                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
+                    saldo inicial debe ser igual al saldo final del corte anterior revisar concepto:5.8.90.90
+                  </p>
+                  <p className="text-xs">
+                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
+                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
+                    saldo inicial debe ser igual al saldo final del corte anterior revisar concepto:7.5.02.01
+                  </p>
+                  <p className="text-xs text-gray-500 italic">... y 56 errores adicionales</p>
+                </div>
+
+                <p className="mt-4">
+                  Por favor revise y corrija las inconsistencias reportadas antes de realizar un nuevo envío.
+                </p>
+
+                <p className="mt-4">Atentamente,</p>
+                <p className="font-semibold">Sistema CHIP</p>
+                <p>Contaduría General de la Nación</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowEmailFormatDialog(false)}>Cerrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showSuccessEmailFormatDialog} onOpenChange={setShowSuccessEmailFormatDialog}>
+          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-green-500" />
+                Formato del Correo - Envío Aceptado
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Header del correo */}
+              <div className="border-b pb-3 space-y-1 text-sm">
+                <div className="flex gap-2">
+                  <span className="font-semibold text-gray-700 w-20">De:</span>
+                  <span className="text-gray-600">chip@contaduria.gov.co</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-semibold text-gray-700 w-20">Date:</span>
+                  <span className="text-gray-600">mar, 12 ago 2025 a las 8:45</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-semibold text-gray-700 w-20">Subject:</span>
+                  <span className="text-gray-600">
+                    Envío en Estado Aceptado categoría INFORMACIÓN CONTABLE PÚBLICA - CONVERGENCIA
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-semibold text-gray-700 w-20">To:</span>
+                  <span className="text-gray-600"></span>
+                </div>
+              </div>
+
+              {/* Banner CHIP */}
+              <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white rounded-lg p-2">
+                    <span className="text-2xl">🏛️</span>
+                  </div>
+                  <h2 className="text-3xl font-bold">Sistema CHIP</h2>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
+                </div>
+              </div>
+
+              {/* Contenido del correo */}
+              <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
+                <p className="font-semibold">Doctor(a)</p>
+                <p className="font-semibold">GABRIELA MORENO ALBA</p>
+                <p>Contador</p>
+                <p>Jenesano</p>
+                <p className="mb-4">JENESANO - DEPARTAMENTO DE BOYACA</p>
+
+                <p className="italic text-gray-600">Este es un correo automático que genera el sistema CHIP</p>
+
+                <p className="mt-4">Cordial saludo,</p>
+
+                <p className="mt-4">Respetado(a) Doctor(a):</p>
+
+                <p className="mt-4 font-semibold">
+                  La Contaduría General de la Nación se permite informarle que su envío fue Aceptado.
+                </p>
+
+                <div className="mt-4 space-y-1">
+                  <p>
+                    <strong>Categoría:</strong> INFORMACIÓN CONTABLE PÚBLICA - CONVERGENCIA
+                  </p>
+                  <p>
+                    <strong>Formularios y</strong> REPORTE DE ESTADOS FINANCIEROS
+                  </p>
+                  <p>
+                    <strong>Periodo:</strong> Oct-Dic
+                  </p>
+                  <p>
+                    <strong>Año:</strong> 2024
+                  </p>
+                  <p>
+                    <strong>Recepción:</strong> 2025-08-12
+                  </p>
+                  <p>
+                    <strong>Radicado (Id) de Envío:</strong> 4589500
+                  </p>
+                </div>
+
+                <p className="mt-6">Atentamente,</p>
+
+                <div className="mt-4 pt-4 border-t space-y-1 text-xs text-gray-600">
+                  <p className="font-semibold">Contaduría General de la Nación</p>
+                  <p className="text-blue-600 underline">chip@contaduria.gov.co</p>
+                  <p>Calle 26 No 69 - 76, Edificio Elemento</p>
+                  <p>Torre 1 (Aire) - Piso 15, Bogotá D.C. Colombia</p>
+                  <p>Código Postal: 111071</p>
+                  <p>PBX: +57 (601) 492 6400</p>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowSuccessEmailFormatDialog(false)}>Cerrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showReenvioDialog} onOpenChange={setShowReenvioDialog}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-blue-600" />
+                Justificación del reenvío
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <HelpCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-900">
+                  Está realizando una modification a la información reportada, debe justificar el motivo de su reenvío.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Motivo</label>
+                <select
+                  value={reenvioMotivo}
+                  onChange={(e) => setReenvioMotivo(e.target.value)}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                >
+                  <option value="">Seleccione un motivo</option>
+                  <option value="Por error en el reporte de información">Por error en el reporte de información</option>
+                  <option value="Solicitud de requerimiento por parte de la CGN">
+                    Solicitud de requerimiento por parte de la CGN
+                  </option>
+                  <option value="Conciliación de saldos pendientes">Conciliación de saldos pendientes</option>
+                  <option value="Otra">Otra</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Justificación (max. 500 caracteres)</label>
+                <textarea
+                  value={reenvioJustificacion}
+                  onChange={(e) => setReenvioJustificacion(e.target.value.slice(0, 500))}
+                  placeholder="Escriba aquí la justificación..."
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background min-h-[120px] resize-none"
+                  maxLength={500}
+                />
+                <div className="text-xs text-gray-500 text-right">{reenvioJustificacion.length}/500 caracteres</div>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={handleCancelarReenvio}>
+                Cancelar reenvío
+              </Button>
+              <Button
+                onClick={handleContinuarReenvio}
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={!reenvioMotivo || !reenvioJustificacion}
+              >
+                Continuar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showAllFormsSuccessDialog} onOpenChange={setShowAllFormsSuccessDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-6 w-6 text-green-500" />
+                Validaciones Locales Exitosas
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-3">
+                    <p className="font-semibold text-green-900">
+                      Todos los formularios seleccionados han pasado las validaciones locales (Fases 1-4) exitosamente.
+                    </p>
+                    <p className="text-sm text-green-800">
+                      Los formularios han sido actualizados a estado <span className="font-semibold">'Validado'</span>.
+                    </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
+                      <p className="text-sm text-gray-700">
+                        <strong className="text-blue-900">Siguiente paso:</strong> Puede seleccionar nuevamente todos
+                        los formularios y hacer clic en <span className="font-semibold">'Enviar'</span> para ejecutar
+                        las <span className="font-semibold">validaciones centrales (Fase 5)</span>.
+                      </p>
+                    </div>
+                    {/* </CHANGE> */}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowAllFormsSuccessDialog(false)}>Cerrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
-  )\
+  )
 }
