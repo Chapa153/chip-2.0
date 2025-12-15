@@ -234,23 +234,28 @@ export default function GestionFormulariosSimple({
   const canSendSelectedFormularios = (): boolean => {
     if (selectedFormularios.length === 0) return false
 
-    // Obtener los formularios seleccionados
     const formularios = formulariosState.filter((f) => selectedFormularios.includes(f.id))
 
-    // Verificar que todos los formularios seleccionados tengan estados válidos
     const result = formularios.every((f) => {
       const estado = f.estado
-      const estadosPermitidos = getEstadosPermitidos()
+      const tipo = f.tipo
 
       // No permitir formularios en estado Aceptado
       if (estado === "Aceptado") {
         return false
       }
 
-      // Solo permitir estados de la lista `estadosPermitidos`
-      const isValid = estadosPermitidos.some((e) => estado.startsWith(e))
+      // Permitir si es tipo "Formulario" y estado "Validado"
+      if (tipo === "Formulario" && estado === "Validado") {
+        return true
+      }
 
-      return isValid
+      // Permitir si es tipo "Categoría" con cualquier estado
+      if (tipo === "Categoría") {
+        return true
+      }
+
+      return false
     })
 
     return result
@@ -1146,55 +1151,154 @@ export default function GestionFormulariosSimple({
   }
 
   // Function to handle 'Validar' button click
-  const handleValidarSeleccionados = () => {
-    // Logic for validation, likely similar to handleEnviar but perhaps a different phase
-    console.log("Validando formularios seleccionados...")
-    // For now, let's simulate a validation process leading to showing errors or success
-    // This is a placeholder and would need actual validation logic
+  const handleValidarSeleccionados = async () => {
     if (selectedFormularios.length === 0) {
       toast({ title: "Selección vacía", description: "Por favor, seleccione al menos un formulario para validar." })
       return
     }
-    toast({
-      title: "Validación iniciada",
-      description: "Se está procesando la validación de los formularios seleccionados.",
-    })
-    // Example: Trigger validation logic here. For now, we'll simulate showing errors for demonstration.
-    // In a real scenario, this would call a validation API or internal function.
-    // For demonstration, we'll reuse the error triggering logic from handleEnviar
+
     setErrorsSeen(false)
     setIsSubmitting(true)
-    setValidationPhase(1) // Start validation phase
 
-    setTimeout(() => {
-      // Simulate errors for demonstration
-      const hasSimulatedErrors = Math.random() > 0.5
-      if (hasSimulatedErrors) {
-        // Generate some dummy error data
-        setErrorData({
-          formularios: selectedFormularios.map((id) => id.replace("CGN-", "")), // Dummy names
-          contenido: [{ formulario: "Formulario X", concepto: "C1", mensaje: "Error de contenido" }],
-          completitud: [],
-          expresiones: [],
-        })
-        setShowErrorAlert(true)
-        setIsSubmitting(false)
-        setValidationPhase(0)
-      } else {
-        // Simulate success
-        toast({ title: "Validación Completa", description: "Los formularios seleccionados han pasado la validación." })
-        // Update states to reflect validation success if needed
-        setFormulariosState((prev) =>
-          prev.map((f) =>
-            selectedFormularios.includes(f.id) ? { ...f, estado: "Validado", estadoColor: "green" } : f,
-          ),
-        )
-        setIsSubmitting(false)
-        setValidationPhase(0)
-        setSelectedFormularios([]) // Clear selection after validation
-      }
-    }, 1500) // Simulate network latency
+    const allErrors: Array<{
+      formulario: string
+      concepto: string
+      mensaje: string
+      codigo?: string
+      permisible?: string
+      necesitaComentario?: string
+    }> = []
+
+    const errorsByType: {
+      contenido: typeof allErrors
+      completitud: typeof allErrors
+      expresiones: typeof allErrors
+    } = {
+      contenido: [],
+      completitud: [],
+      expresiones: [],
+    }
+
+    let hasInformativeAlert = false
+
+    // Fase 1: Contenido de variables
+    setValidationPhase(1)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    // Fase 2: Completitud
+    setValidationPhase(2)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    if (selectedFormularios.includes("CGN-2025-05")) {
+      errorsByType.contenido.push(
+        {
+          formulario: "Notas a los Estados Financieros",
+          concepto: "5110 - Inversiones en subsidiarias",
+          mensaje: "var-3: Tipo de dato incorrecto - esperado numérico",
+        },
+        {
+          formulario: "Notas a los Estados Financieros",
+          concepto: "5305 - Gestión de riesgos financieros",
+          mensaje: "var-5: Valor fuera del rango permitido",
+        },
+      )
+    }
+
+    // Fase 3: Validaciones generales
+    setValidationPhase(3)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    if (selectedFormularios.includes("CGN-2025-04")) {
+      errorsByType.completitud.push(
+        {
+          formulario: "Estado de Cambios en el Patrimonio",
+          concepto: "3105 - Capital suscrito y pagado",
+          mensaje: "var-1: Campo requerido sin completar",
+        },
+        {
+          formulario: "Estado de Cambios en el Patrimonio",
+          concepto: "3205 - Reservas",
+          mensaje: "var-4: Campo requerido sin completar",
+        },
+      )
+    }
+
+    if (selectedFormularios.includes("CGN-2025-03")) {
+      hasInformativeAlert = true
+      setSimpleAlertMessage(
+        "El formulario Flujo de Efectivo presenta las siguientes validaciones generales:\n\n" +
+          "• Las actividades de operación deben cuadrar con el estado de resultados\n" +
+          "• Las actividades de inversión deben estar correctamente clasificadas\n" +
+          "• Las actividades de financiación deben estar correctamente clasificadas",
+      )
+      setShowSimpleAlert(true)
+    }
+
+    // Fase 4: Expresiones de validación locales
+    setValidationPhase(4)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    if (selectedFormularios.includes("CGN-2025-02")) {
+      errorsByType.expresiones.push(
+        {
+          formulario: "Estado de Resultados",
+          concepto: "",
+          mensaje: "Mensaje",
+          codigo: "codigo_mensaje",
+          permisible: "SI",
+          necesitaComentario: "SI",
+        },
+        {
+          formulario: "Estado de Resultados",
+          concepto: "",
+          mensaje: "Mensaje",
+          codigo: "codigo_mensaje",
+          permisible: "NO",
+          necesitaComentario: "NO",
+        },
+      )
+    }
+
+    setIsSubmitting(false)
+    setValidationPhase(0)
+
+    // Mostrar errores si los hay, o éxito si no
+    const hasErrors = Object.values(errorsByType).some((errors) => errors.length > 0)
+
+    if (hasErrors || hasInformativeAlert) {
+      const formularios = formulariosState
+        .filter((f) => selectedFormularios.includes(f.id))
+        .map((f) => f.nombreFormulario)
+
+      setErrorData({
+        formularios,
+        contenido: errorsByType.contenido,
+        completitud: errorsByType.completitud,
+        expresiones: errorsByType.expresiones,
+      })
+      setShowErrorAlert(true)
+    } else {
+      // Actualizar formularios a estado Validado
+      setFormulariosState((prev) =>
+        prev.map((f) =>
+          selectedFormularios.includes(f.id)
+            ? {
+                ...f,
+                estado: "Validado",
+                estadoColor: "green",
+              }
+            : f,
+        ),
+      )
+
+      toast({
+        title: "Validación Exitosa",
+        description: "Los formularios han pasado las validaciones locales correctamente.",
+      })
+      setSelectedFormularios([])
+    }
   }
+  // </CHANGE>
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -2085,7 +2189,7 @@ export default function GestionFormulariosSimple({
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => setShowEmailFormatDialog(false)}>Cerrar</Button>
+              <Button onClick={() => setShowSuccessEmailFormatDialog(false)}>Cerrar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
