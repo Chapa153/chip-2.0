@@ -1279,7 +1279,6 @@ export default function GestionFormulariosSimple({
                             checked={selectedFormularios.includes(form.id)}
                             onCheckedChange={() => {
                               handleToggleSelectFormulario(form.id)
-                              // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
                             }}
                           />
                         </td>
@@ -1306,7 +1305,6 @@ export default function GestionFormulariosSimple({
                                 <Edit className="w-4 h-4 mr-2" />
                                 Registro manual
                               </DropdownMenuItem>
-                              {/* </CHANGE> */}
                               <DropdownMenuItem>
                                 <FileSpreadsheet className="w-4 h-4 mr-2" />
                                 Generar protocolo importación
