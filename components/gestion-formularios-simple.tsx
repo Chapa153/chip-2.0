@@ -22,9 +22,11 @@ import {
   Info,
   AlertCircle,
   Mail,
+  FileUp,
+  X,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -131,6 +133,7 @@ export default function GestionFormulariosSimple({
   const [reenvioAction, setReenvioAction] = useState<"importar" | "registro" | null>(null)
   const [reenvioFormId, setReenvioFormId] = useState<string | null>(null)
   // </CHANGE>
+  const [showEnviarAdjuntoDialog, setShowEnviarAdjuntoDialog] = useState(false)
 
   const [showAllFormsSuccessDialog, setShowAllFormsSuccessDialog] = useState(false)
   // </CHANGE>
@@ -580,7 +583,7 @@ export default function GestionFormulariosSimple({
       )
       alert("Importación realizada. Todos los formularios quedaron en estado Pendiente Validar.")
     } else if (reenvioAction === "registro" && reenvioFormId) {
-      // Solo el formulario seleccionado queda en "Pendiente Validar"
+      // Solo el formulario seleccionado queda en "Pendiente en Validar"
       // Los demás quedan sin estado de validación
       setFormulariosState((prev) =>
         prev.map((f) => {
@@ -1133,6 +1136,67 @@ export default function GestionFormulariosSimple({
     }
   }
 
+  const handleEnviarAdjunto = () => {
+    if (adjuntoPDF && nombreAdjunto) {
+      console.log("[v0] Enviando adjunto:", nombreAdjunto, adjuntoPDF.name)
+      // Add attachment to form details
+      setShowEnviarAdjuntoDialog(true)
+    } else {
+      alert("Por favor, adjunte un archivo PDF y asigne un nombre.")
+    }
+  }
+
+  // Function to handle 'Validar' button click
+  const handleValidarSeleccionados = () => {
+    // Logic for validation, likely similar to handleEnviar but perhaps a different phase
+    console.log("Validando formularios seleccionados...")
+    // For now, let's simulate a validation process leading to showing errors or success
+    // This is a placeholder and would need actual validation logic
+    if (selectedFormularios.length === 0) {
+      toast({ title: "Selección vacía", description: "Por favor, seleccione al menos un formulario para validar." })
+      return
+    }
+    toast({
+      title: "Validación iniciada",
+      description: "Se está procesando la validación de los formularios seleccionados.",
+    })
+    // Example: Trigger validation logic here. For now, we'll simulate showing errors for demonstration.
+    // In a real scenario, this would call a validation API or internal function.
+    // For demonstration, we'll reuse the error triggering logic from handleEnviar
+    setErrorsSeen(false)
+    setIsSubmitting(true)
+    setValidationPhase(1) // Start validation phase
+
+    setTimeout(() => {
+      // Simulate errors for demonstration
+      const hasSimulatedErrors = Math.random() > 0.5
+      if (hasSimulatedErrors) {
+        // Generate some dummy error data
+        setErrorData({
+          formularios: selectedFormularios.map((id) => id.replace("CGN-", "")), // Dummy names
+          contenido: [{ formulario: "Formulario X", concepto: "C1", mensaje: "Error de contenido" }],
+          completitud: [],
+          expresiones: [],
+        })
+        setShowErrorAlert(true)
+        setIsSubmitting(false)
+        setValidationPhase(0)
+      } else {
+        // Simulate success
+        toast({ title: "Validación Completa", description: "Los formularios seleccionados han pasado la validación." })
+        // Update states to reflect validation success if needed
+        setFormulariosState((prev) =>
+          prev.map((f) =>
+            selectedFormularios.includes(f.id) ? { ...f, estado: "Validado", estadoColor: "green" } : f,
+          ),
+        )
+        setIsSubmitting(false)
+        setValidationPhase(0)
+        setSelectedFormularios([]) // Clear selection after validation
+      }
+    }, 1500) // Simulate network latency
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Filtros de Búsqueda */}
@@ -1252,10 +1316,28 @@ export default function GestionFormulariosSimple({
                   <Upload className="w-4 h-4 mr-2" />
                   Importar
                 </Button>
-                {/* </CHANGE> */}
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={handleEnviarAdjunto}
+                  disabled={!adjuntoPDF || !nombreAdjunto}
+                >
+                  <FileUp className="w-4 h-4 mr-2" />
+                  Enviar Adjunto
+                </Button>
                 <Button variant="outline" size="sm">
                   <FileDown className="w-4 h-4 mr-2" />
-                  Envíos
+                  Consultar Envíos
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleValidarSeleccionados}
+                  disabled={!canSendSelectedFormularios() || isSubmitting}
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Validar
                 </Button>
                 <Button
                   variant="outline"
@@ -1278,28 +1360,95 @@ export default function GestionFormulariosSimple({
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Download className="w-4 h-4 mr-2" />
+                    <Button variant="outline" className="flex items-center gap-2 bg-transparent">
+                      <Download className="w-4 h-4" />
                       Exportar
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleExportErrors("csv")}>
-                      <FileSpreadsheet className="w-4 h-4 mr-2" />
-                      CSV
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExportErrors("excel")}>
-                      <FileSpreadsheet className="w-4 h-4 mr-2" />
-                      Excel
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExportErrors("pdf")}>
-                      <FileText className="w-4 h-4 mr-2" />
-                      PDF
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExportErrors("txt")}>
-                      <FileText className="w-4 h-4 mr-2" />
-                      TXT
-                    </DropdownMenuItem>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("csv")}>
+                            <FileSpreadsheet className="w-4 h-4 mr-2" />
+                            CSV - Valores separados por comas
+                          </DropdownMenuItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <div className="text-xs space-y-1">
+                            <p className="font-semibold">CSV - Sin límite de filas</p>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              <li>Encoding UTF-8</li>
+                              <li>Encabezados incluidos</li>
+                            </ul>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("excel")}>
+                            <FileSpreadsheet className="w-4 h-4 mr-2" />
+                            Excel (XLSX)
+                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                          </DropdownMenuItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <div className="text-xs space-y-1">
+                            <p className="font-semibold">Excel (XLSX)</p>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              <li>Máximo 50 MB por archivo</li>
+                              <li>Hasta 1.048.576 filas por hoja</li>
+                              <li>Múltiples hojas permitidas</li>
+                            </ul>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("pdf")}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            PDF
+                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                          </DropdownMenuItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <div className="text-xs space-y-1">
+                            <p className="font-semibold">PDF</p>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              <li>Máximo 10.000 líneas por archivo</li>
+                              <li>División automática si excede límite</li>
+                            </ul>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            TXT
+                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                          </DropdownMenuItem>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <div className="text-xs space-y-1">
+                            <p className="font-semibold">TXT - Sin límite de filas</p>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              <li>Encoding UTF-8</li>
+                              <li>Formato de texto plano</li>
+                            </ul>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -1547,75 +1696,138 @@ export default function GestionFormulariosSimple({
         )}
 
         <Dialog open={showCertificationDialog} onOpenChange={setShowCertificationDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Info className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Info className="w-7 h-7 text-blue-600" />
                 </div>
-                <DialogTitle className="text-lg">CHIP - Mensaje del Sistema</DialogTitle>
+                <DialogTitle className="text-xl font-semibold">CHIP - Mensaje del Sistema</DialogTitle>
               </div>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <p className="font-semibold text-gray-900">CAPTURA047</p>
-              <p className="text-sm text-gray-700">Con el envío de la información, usted certifica que:</p>
-              <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
-                <li>Los datos básicos y los responsables de la entidad están actualizados.</li>
-                <li>La información remitida está acorde con la normatividad expedida para cada categoría.</li>
+            <div className="space-y-5 py-4">
+              <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
+                <p className="font-semibold text-blue-900 text-lg mb-2">CAPTURA047</p>
+                <p className="text-sm text-blue-800">Con el envío de la información, usted certifica que:</p>
+              </div>
+
+              <ol className="list-decimal list-inside space-y-3 text-sm text-gray-700 ml-2">
+                <li className="pl-2">Los datos básicos y los responsables de la entidad están actualizados.</li>
+                <li className="pl-2">
+                  La información remitida está acorde con la normatividad expedida para cada categoría.
+                </li>
               </ol>
-              <div className="bg-amber-50 border border-amber-200 rounded p-3 mt-4">
-                <p className="text-sm text-gray-700">
-                  <strong>Nota:</strong> La información Contable Pública debe reportarse en pesos.
+
+              <div className="bg-amber-50 border-l-4 border-amber-400 rounded p-4">
+                <p className="text-sm text-gray-700 flex items-start gap-2">
+                  <span className="font-semibold text-amber-700">Nota:</span>
+                  <span>La información Contable Pública debe reportarse en pesos.</span>
                 </p>
               </div>
 
-              <div className="space-y-3 border-t pt-4 mt-4">
-                <Label htmlFor="pdf-adjunto" className="text-sm font-medium">
-                  Adjuntar archivo PDF (Opcional)
-                </Label>
-                <Input
-                  id="pdf-adjunto"
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileChange}
-                  className="cursor-pointer"
-                />
-                {errorAdjunto && <p className="text-sm text-red-600">{errorAdjunto}</p>}
-                {adjuntoPDF && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-green-600">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>
-                        {adjuntoPDF.name} ({(adjuntoPDF.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
+              <div className="space-y-4 border-t border-gray-200 pt-5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="pdf-adjunto" className="text-base font-semibold text-gray-900">
+                    Adjuntar Documento de Soporte (Opcional)
+                  </Label>
+                  {adjuntoPDF && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setAdjuntoPDF(null)
+                        setNombreAdjunto("")
+                        setErrorAdjunto("")
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Remover
+                    </Button>
+                  )}
+                </div>
+
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                      <FileUp className="w-8 h-8 text-gray-400" />
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="nombre-adjunto" className="text-xs text-gray-600">
-                        Nombre del archivo en el sistema
+                    <div className="text-center">
+                      <Label
+                        htmlFor="pdf-adjunto"
+                        className="text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer"
+                      >
+                        Seleccionar archivo PDF
+                      </Label>
+                      <p className="text-xs text-gray-500 mt-1">o arrastra y suelta aquí</p>
+                    </div>
+                    <Input id="pdf-adjunto" type="file" accept=".pdf" onChange={handleFileChange} className="hidden" />
+                  </div>
+                </div>
+
+                {errorAdjunto && (
+                  <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700">{errorAdjunto}</p>
+                  </div>
+                )}
+
+                {adjuntoPDF && !errorAdjunto && (
+                  <div className="space-y-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-5 h-5 text-green-700" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-green-900 truncate">{adjuntoPDF.name}</p>
+                        <p className="text-xs text-green-700">{(adjuntoPDF.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-green-200">
+                      <Label htmlFor="nombre-adjunto" className="text-sm font-medium text-gray-700">
+                        Nombre del documento en el sistema
                       </Label>
                       <Input
                         id="nombre-adjunto"
                         value={nombreAdjunto}
                         onChange={(e) => setNombreAdjunto(e.target.value)}
-                        placeholder="Nombre del archivo"
-                        className="text-sm"
+                        placeholder="Ej: Certificación_Contable_2024"
+                        className="bg-white border-green-300 focus:border-green-500 focus:ring-green-500"
                       />
+                      <p className="text-xs text-gray-500">
+                        Este nombre se usará para identificar el documento en el detalle de formularios
+                      </p>
                     </div>
                   </div>
                 )}
-                <p className="text-xs text-gray-500">Tamaño máximo: 10MB. Solo archivos PDF.</p>
+
+                <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5" />
+                  Tamaño máximo: 10MB. Solo archivos en formato PDF.
+                </p>
               </div>
-              {/* </CHANGE> */}
             </div>
-            <DialogFooter>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCertificationDialog(false)
+                  setAdjuntoPDF(null)
+                  setNombreAdjunto("")
+                  setErrorAdjunto("")
+                }}
+              >
+                Cancelar
+              </Button>
               <Button
                 onClick={() => {
                   if (adjuntoPDF && nombreAdjunto) {
-                    console.log("[v0] PDF adjunto:", nombreAdjunto, adjuntoPDF.name)
-                    // Here you would typically save the file info to the form details
-                    // For now, we'll just log it
+                    console.log("[v0] PDF adjunto:", nombreAdjunto, adjuntoPDF.name, "Tamaño:", adjuntoPDF.size)
+                    // Save attachment info to form details
+                    // This would typically be saved to the database with the form submission
                   }
-                  // </CHANGE>
 
                   setShowCertificationDialog(false)
                   setIsSubmitting(true)
@@ -1793,127 +2005,6 @@ export default function GestionFormulariosSimple({
           <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-blue-500" />
-                Formato del Correo - Envío Rechazado por Inconsistencias
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="border-b pb-3 space-y-1 text-sm">
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">De:</span>
-                  <span className="text-gray-600">chip@contaduria.gov.co</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">Date:</span>
-                  <span className="text-gray-600">mar, 12 ago 2025 a las 8:45</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">Subject:</span>
-                  <span className="text-gray-600">
-                    Envío Rechazado por Inconsistencias categoría: INFORMACIÓN CONTABLE PUBLICA - CONVERGENCIA
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">To:</span>
-                  <span className="text-gray-600"></span>
-                </div>
-              </div>
-
-              <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white rounded-lg p-2">
-                    <span className="text-2xl">🏛️</span>
-                  </div>
-                  <h2 className="text-3xl font-bold">Sistema CHIP</h2>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
-                </div>
-              </div>
-
-              <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
-                <p className="font-semibold">Doctor(a)</p>
-                <p className="font-semibold">MARILUZ MUÑOZ MOLINA</p>
-                <p>Contador</p>
-                <p>E.S.P. Empresa de Acueducto y Alcantarillado del Río Palo S.A.S.</p>
-                <p>PUERTO TEJADA - DEPARTAMENTO DE CAUCA</p>
-
-                <p className="mt-4 italic text-gray-600">Este es un correo automático que genera el sistema CHIP.</p>
-
-                <p className="mt-4">Cordial saludo,</p>
-                <p>Respetado(a) Doctor(a):</p>
-
-                <p className="mt-4">
-                  La Contaduría General de la Nación se permite informarle que su envío fue rechazado dado que se
-                  encontraron inconsistencias con la información que se reportó, así:
-                </p>
-
-                <div className="mt-4 space-y-1">
-                  <p>
-                    <span className="font-semibold">Categoría:</span> INFORMACIÓN CONTABLE PUBLICA - CONVERGENCIA
-                  </p>
-                  <p>
-                    <span className="font-semibold">Formularios:</span> Todos
-                  </p>
-                  <p>
-                    <span className="font-semibold">Periodo:</span> Abr-Jun
-                  </p>
-                  <p>
-                    <span className="font-semibold">Año:</span> 2024
-                  </p>
-                  <p>
-                    <span className="font-semibold">Recepción:</span> 2024-07-31
-                  </p>
-                  <p>
-                    <span className="font-semibold">Radicado (Id) de Envío:</span> 4512447
-                  </p>
-                </div>
-
-                <p className="mt-4 font-semibold">Los mensajes generados fueron:</p>
-
-                <div className="mt-3 space-y-2 max-h-[300px] overflow-y-auto border-l-2 border-red-300 pl-3">
-                  <p className="text-xs">
-                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                    saldo inicial debe ser cero para el concepto 1.1.05.01 ya que no fué reportado en el corte anterior
-                  </p>
-                  <p className="text-xs">
-                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                    saldo inicial debe ser cero para el concepto 1.1.05.02 ya que no fué reportado en el corte anterior
-                  </p>
-                  <p className="text-xs">
-                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                    saldo inicial debe ser igual al saldo final del corte anterior revisar concepto:5.8.90.90
-                  </p>
-                  <p className="text-xs">
-                    Presenta diferencias entre el saldo final reportado por la entidad en el corte anterior y el saldo
-                    inicial del trimestre reportado en el formulario CGN2015_001_SALDOS_Y_MOVIMIENTOS_CONVERGENCIA - El
-                    saldo inicial debe ser igual al saldo final del corte anterior revisar concepto:7.5.02.01
-                  </p>
-                  <p className="text-xs text-gray-500 italic">... y 56 errores adicionales</p>
-                </div>
-
-                <p className="mt-4">
-                  Por favor revise y corrija las inconsistencias reportadas antes de realizar un nuevo envío.
-                </p>
-
-                <p className="mt-4">Atentamente,</p>
-                <p className="font-semibold">Sistema CHIP</p>
-                <p>Contaduría General de la Nación</p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setShowEmailFormatDialog(false)}>Cerrar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showSuccessEmailFormatDialog} onOpenChange={setShowSuccessEmailFormatDialog}>
-          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5 text-green-500" />
                 Formato del Correo - Envío Aceptado
               </DialogTitle>
@@ -2011,99 +2102,24 @@ export default function GestionFormulariosSimple({
           </DialogContent>
         </Dialog>
 
-        <Dialog open={showReenvioDialog} onOpenChange={setShowReenvioDialog}>
-          <DialogContent className="max-w-3xl">
+        <Dialog open={showEnviarAdjuntoDialog} onOpenChange={setShowEnviarAdjuntoDialog}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-blue-600" />
-                Justificación del reenvío
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <HelpCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-900">
-                  Está realizando una modification a la información reportada, debe justificar el motivo de su reenvío.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Motivo</label>
-                <select
-                  value={reenvioMotivo}
-                  onChange={(e) => setReenvioMotivo(e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                >
-                  <option value="">Seleccione un motivo</option>
-                  <option value="Por error en el reporte de información">Por error en el reporte de información</option>
-                  <option value="Solicitud de requerimiento por parte de la CGN">
-                    Solicitud de requerimiento por parte de la CGN
-                  </option>
-                  <option value="Conciliación de saldos pendientes">Conciliación de saldos pendientes</option>
-                  <option value="Otra">Otra</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Justificación (max. 500 caracteres)</label>
-                <textarea
-                  value={reenvioJustificacion}
-                  onChange={(e) => setReenvioJustificacion(e.target.value.slice(0, 500))}
-                  placeholder="Escriba aquí la justificación..."
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background min-h-[120px] resize-none"
-                  maxLength={500}
-                />
-                <div className="text-xs text-gray-500 text-right">{reenvioJustificacion.length}/500 caracteres</div>
-              </div>
-            </div>
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={handleCancelarReenvio}>
-                Cancelar reenvío
-              </Button>
-              <Button
-                onClick={handleContinuarReenvio}
-                className="bg-blue-600 hover:bg-blue-700"
-                disabled={!reenvioMotivo || !reenvioJustificacion}
-              >
-                Continuar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showAllFormsSuccessDialog} onOpenChange={setShowAllFormsSuccessDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
-                Validaciones Locales Exitosas
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <div className="space-y-3">
-                    <p className="font-semibold text-green-900">
-                      Todos los formularios seleccionados han pasado las validaciones locales (Fases 1-4) exitosamente.
-                    </p>
-                    <p className="text-sm text-green-800">
-                      Los formularios han sido actualizados a estado <span className="font-semibold">'Validado'</span>.
-                    </p>
-                    <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
-                      <p className="text-sm text-gray-700">
-                        <strong className="text-blue-900">Siguiente paso:</strong> Puede seleccionar nuevamente todos
-                        los formularios y hacer clic en <span className="font-semibold">'Enviar'</span> para ejecutar
-                        las <span className="font-semibold">validaciones centrales (Fase 5)</span>.
-                      </p>
-                    </div>
-                    {/* </CHANGE> */}
-                  </div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
                 </div>
+                <DialogTitle className="text-lg">Adjunto Enviado</DialogTitle>
               </div>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-gray-700">
+                El archivo <span className="font-semibold">{nombreAdjunto}</span> ha sido enviado exitosamente y se ha
+                agregado al detalle de los formularios.
+              </p>
             </div>
             <DialogFooter>
-              <Button onClick={() => setShowAllFormsSuccessDialog(false)}>Cerrar</Button>
+              <Button onClick={() => setShowEnviarAdjuntoDialog(false)}>Aceptar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
