@@ -286,7 +286,6 @@ export default function GestionFormulariosSimple({
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  // Reemplazo de `selectedForms` con `selectedFormularios` y ajuste en `handleEnviar` para usar `id` en lugar de `codigo`
   const handleEnviar = async () => {
     console.log("[v0] handleEnviar - Iniciando validaciones centrales")
 
