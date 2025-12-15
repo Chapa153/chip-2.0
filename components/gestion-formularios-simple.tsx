@@ -1,7 +1,5 @@
 "use client"
 import { useState } from "react"
-import { DialogDescription } from "@/components/ui/dialog"
-
 import type React from "react"
 
 import { Button } from "@/components/ui/button"
@@ -236,22 +234,20 @@ export default function GestionFormulariosSimple({
   const canSendSelectedFormularios = (): boolean => {
     if (selectedFormularios.length === 0) return false
 
-    // Obtener los formularios seleccionados
     const formularios = formulariosState.filter((f) => selectedFormularios.includes(f.id))
 
-    // Verificar que todos los formularios seleccionados cumplan las condiciones
     const result = formularios.every((f) => {
       // No permitir formularios en estado Aceptado
       if (f.estado === "Aceptado") {
         return false
       }
 
-      // Permitir si es tipo Formulario y estado Validado
-      if (f.tipo === "Formulario" && f.estado === "Validado") {
-        return true
+      // Tipo Formulario: solo permitir estado Validado
+      if (f.tipo === "Formulario") {
+        return f.estado === "Validado"
       }
 
-      // Permitir si es tipo Categoría con cualquier estado de validación
+      // Tipo Categoría: permitir cualquier estado (excepto Aceptado ya verificado arriba)
       if (f.tipo === "Categoría") {
         return true
       }
@@ -261,7 +257,6 @@ export default function GestionFormulariosSimple({
 
     return result
   }
-  // </CHANGE>
 
   const getEstadoBadgeClass = (color: string) => {
     switch (color) {
@@ -286,14 +281,11 @@ export default function GestionFormulariosSimple({
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
+  // Reemplazo de `selectedForms` con `selectedFormularios` y ajuste en `handleEnviar` para usar `id` en lugar de `codigo`
   const handleEnviar = async () => {
-    console.log("[v0] handleEnviar - Iniciando validaciones centrales")
-
     const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
-    console.log("[v0] Formularios seleccionados:", formulariosSeleccionados)
 
-    // Validación central directa - mostrar diálogo de certificación
-    console.log("[v0] Iniciando validación central (Fase 5)")
+    // Mostrar diálogo de certificación para validaciones centrales
     setShowCertificationDialog(true)
   }
   // </CHANGE>
@@ -1238,7 +1230,7 @@ export default function GestionFormulariosSimple({
                 </DropdownMenu>
               </div>
 
-              {/*Tabla */}
+              {/* Tabla */}
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-border">
@@ -1279,6 +1271,7 @@ export default function GestionFormulariosSimple({
                             checked={selectedFormularios.includes(form.id)}
                             onCheckedChange={() => {
                               handleToggleSelectFormulario(form.id)
+                              // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
                             }}
                           />
                         </td>
@@ -1305,6 +1298,7 @@ export default function GestionFormulariosSimple({
                                 <Edit className="w-4 h-4 mr-2" />
                                 Registro manual
                               </DropdownMenuItem>
+                              {/* </CHANGE> */}
                               <DropdownMenuItem>
                                 <FileSpreadsheet className="w-4 h-4 mr-2" />
                                 Generar protocolo importación
@@ -1856,110 +1850,16 @@ export default function GestionFormulariosSimple({
                   </p>
                 </div>
 
-                <p className="mt-6">
-                  En caso de requerir información adicional, por favor consulte el módulo de{" "}
-                  <strong className="font-semibold">Notificaciones</strong> en el portal de la CHIP, o comuníquese con{" "}
-                  <strong className="font-semibold">nuestro centro de atención</strong>.
-                </p>
+                <p className="mt-6">Atentamente,</p>
 
-                <p className="mt-4">Atentamente,</p>
-                <p className="font-semibold">Equipo CHIP</p>
-                <p>Contaduría General de la Nación</p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setShowEmailFormatDialog(false)}>Cerrar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showSuccessEmailFormatDialog} onOpenChange={setShowSuccessEmailFormatDialog}>
-          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-green-500" />
-                Formato del Correo - Envío Aceptado
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              {/* Header del correo */}
-              <div className="border-b pb-3 space-y-1 text-sm">
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">De:</span>
-                  <span className="text-gray-600">chip@contaduria.gov.co</span>
+                <div className="mt-4 pt-4 border-t space-y-1 text-xs text-gray-600">
+                  <p className="font-semibold">Contaduría General de la Nación</p>
+                  <p className="text-blue-600 underline">chip@contaduria.gov.co</p>
+                  <p>Calle 26 No 69 - 76, Edificio Elemento</p>
+                  <p>Torre 1 (Aire) - Piso 15, Bogotá D.C. Colombia</p>
+                  <p>Código Postal: 111071</p>
+                  <p>PBX: +57 (601) 492 6400</p>
                 </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">Date:</span>
-                  <span className="text-gray-600">mar, 12 ago 2025 a las 8:45</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">Subject:</span>
-                  <span className="text-gray-600">Envío en Estado Aceptado categoría INFORMACIÓN PRESUPUESTAL</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">To:</span>
-                  <span className="text-gray-600"></span>
-                </div>
-              </div>
-
-              {/* Banner CHIP */}
-              <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white rounded-lg p-2">
-                    <span className="text-2xl">🏛️</span>
-                  </div>
-                  <h2 className="text-3xl font-bold">Sistema CHIP</h2>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
-                </div>
-              </div>
-
-              {/* Contenido del correo */}
-              <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
-                <p className="font-semibold">Doctor(a)</p>
-                <p className="font-semibold">GABRIELA MORENO ALBA</p>
-                <p>Contador</p>
-                <p>Jenesano</p>
-                <p className="mb-4">JENESANO - DEPARTAMENTO DE BOYACA</p>
-
-                <p className="italic text-gray-600">Este es un correo automático que genera el sistema CHIP</p>
-
-                <p className="mt-4">Cordial saludo,</p>
-
-                <p className="mt-4">Respetado(a) Doctor(a):</p>
-
-                <p className="mt-4 font-semibold">
-                  La Contaduría General de la Nación se permite informarle que su envío fue Aceptado.
-                </p>
-
-                <div className="mt-4 space-y-1">
-                  <p>
-                    <strong>Categoría:</strong> INFORMACIÓN PRESUPUESTAL
-                  </p>
-                  <p>
-                    <strong>Periodo:</strong> Enero - Diciembre
-                  </p>
-                  <p>
-                    <strong>Año:</strong> 2024
-                  </p>
-                  <p>
-                    <strong>Recepción:</strong> 2025-08-12
-                  </p>
-                  <p>
-                    <strong>Radicado (Id) de Envío:</strong> 4589500
-                  </p>
-                </div>
-
-                <p className="mt-6">
-                  En caso de requerir información adicional, por favor consulte el módulo de{" "}
-                  <strong className="font-semibold">Notificaciones</strong> en el portal de la CHIP, o comuníquese con{" "}
-                  <strong className="font-semibold">nuestro centro de atención</strong>.
-                </p>
-
-                <p className="mt-4">Atentamente,</p>
-                <p className="font-semibold">Equipo CHIP</p>
-                <p>Contaduría General de la Nación</p>
               </div>
             </div>
             <DialogFooter>
@@ -1968,45 +1868,24 @@ export default function GestionFormulariosSimple({
           </DialogContent>
         </Dialog>
 
-        <Dialog open={showReenvioDialog} onOpenChange={setShowReenvioDialog}>
-          <DialogContent className="sm:max-w-[425px]">
+        <Dialog open={showEnviarAdjuntoDialog} onOpenChange={setShowEnviarAdjuntoDialog}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Confirmar Reenvío</DialogTitle>
-              <DialogDescription>
-                Se encontró información previa de la categoría que requiere ser reenviada. Por favor, especifique el
-                motivo y la justificación para continuar.
-              </DialogDescription>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                </div>
+                <DialogTitle className="text-lg">Adjunto Enviado</DialogTitle>
+              </div>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="reenvio-motivo" className="text-right">
-                  Motivo del Reenvío
-                </Label>
-                <Input
-                  id="reenvio-motivo"
-                  value={reenvioMotivo}
-                  onChange={(e) => setReenvioMotivo(e.target.value)}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reenvio-justificacion" className="text-right">
-                  Justificación
-                </Label>
-                <textarea
-                  id="reenvio-justificacion"
-                  value={reenvioJustificacion}
-                  onChange={(e) => setReenvioJustificacion(e.target.value)}
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  placeholder="Detalle la razón del reenvío"
-                />
-              </div>
+            <div className="py-4">
+              <p className="text-sm text-gray-700">
+                El archivo <span className="font-semibold">{nombreAdjunto}</span> ha sido enviado exitosamente y se ha
+                agregado al detalle de los formularios.
+              </p>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={handleCancelarReenvio}>
-                Cancelar
-              </Button>
-              <Button onClick={handleContinuarReenvio}>Continuar</Button>
+              <Button onClick={() => setShowEnviarAdjuntoDialog(false)}>Aceptar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
