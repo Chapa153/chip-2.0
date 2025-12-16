@@ -19,6 +19,7 @@ export default function SaldosCuentasReciprocas({ onBack }: SaldosCuentasRecipro
   const entidadActual = {
     nombre: "Contaduría General de la Nación",
     codigo: "811000423",
+    estado: "Activo", // Agregando campo estado
   }
 
   const handleGenerarReporte = () => {
@@ -112,7 +113,7 @@ export default function SaldosCuentasReciprocas({ onBack }: SaldosCuentasRecipro
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Información de la entidad */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
             <div className="space-y-1">
               <Label className="text-sm text-muted-foreground">Nombre de la Entidad</Label>
               <p className="text-base font-medium">{entidadActual.nombre}</p>
@@ -120,6 +121,10 @@ export default function SaldosCuentasReciprocas({ onBack }: SaldosCuentasRecipro
             <div className="space-y-1">
               <Label className="text-sm text-muted-foreground">Código de la Entidad</Label>
               <p className="text-base font-medium">{entidadActual.codigo}</p>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-sm text-muted-foreground">Estado</Label>
+              <p className="text-base font-medium">{entidadActual.estado}</p>
             </div>
           </div>
 
