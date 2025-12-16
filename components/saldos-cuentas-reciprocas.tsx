@@ -15,58 +15,51 @@ export default function SaldosCuentasReciprocas({ onBack }: SaldosCuentasRecipro
   const [periodo, setPeriodo] = useState<string>("")
   const { toast } = useToast()
 
-  // Datos de ejemplo para la entidad (estos vendrían del sistema)
-  const entidadActual = {
+  // Datos simulados de la entidad
+  const entidadData = {
     nombre: "Contaduría General de la Nación",
     codigo: "811000423",
-    estado: "Activo", // Agregando campo estado
+    estado: "Activo",
   }
 
   const handleGenerarReporte = () => {
-    console.log("[v0] Generando reporte de Saldos Cuentas Recíprocas", { periodo, entidad: entidadActual })
+    console.log("[v0] Generando reporte de Saldos Cuentas Recíprocas", { periodo, entidad: entidadData })
 
     // Simular datos para el reporte
     const datosReporte = [
-      ["NIT", "Entidad", "Código Entidad", "Período", "Cuenta", "Concepto", "Saldo Débito", "Saldo Crédito"],
+      ["Reporte", "NIT", "Entidad", "Estado", "Período", "Cuenta", "Concepto", "Saldo Débito", "Saldo Crédito"],
       [
-        "811000423",
-        entidadActual.nombre,
-        entidadActual.codigo,
+        "Saldos Cuentas Recíprocas",
+        entidadData.codigo,
+        entidadData.nombre,
+        entidadData.estado,
         periodo,
         "1305",
-        "Cuentas por cobrar recíprocas",
+        "Cuentas por cobrar operaciones recíprocas",
         "1500000",
         "0",
       ],
       [
-        "811000423",
-        entidadActual.nombre,
-        entidadActual.codigo,
+        "Saldos Cuentas Recíprocas",
+        entidadData.codigo,
+        entidadData.nombre,
+        entidadData.estado,
         periodo,
         "2335",
-        "Costos y gastos por pagar recíprocos",
+        "Cuentas por pagar operaciones recíprocas",
         "0",
         "850000",
       ],
       [
-        "811000423",
-        entidadActual.nombre,
-        entidadActual.codigo,
+        "Saldos Cuentas Recíprocas",
+        entidadData.codigo,
+        entidadData.nombre,
+        entidadData.estado,
         periodo,
         "1355",
-        "Anticipos recíprocos",
+        "Anticipos operaciones recíprocas",
         "2300000",
         "0",
-      ],
-      [
-        "811000423",
-        entidadActual.nombre,
-        entidadActual.codigo,
-        periodo,
-        "2805",
-        "Ingresos diferidos recíprocos",
-        "0",
-        "1200000",
       ],
     ]
 
@@ -80,7 +73,7 @@ export default function SaldosCuentasReciprocas({ onBack }: SaldosCuentasRecipro
     link.setAttribute("href", url)
     link.setAttribute(
       "download",
-      `saldos_cuentas_reciprocas_${entidadActual.codigo}_${periodo}_${new Date().getTime()}.csv`,
+      `saldos_cuentas_reciprocas_${entidadData.codigo}_${periodo}_${new Date().getTime()}.csv`,
     )
     link.style.visibility = "hidden"
     document.body.appendChild(link)
@@ -109,28 +102,28 @@ export default function SaldosCuentasReciprocas({ onBack }: SaldosCuentasRecipro
       <Card>
         <CardHeader>
           <CardTitle>Información del Reporte</CardTitle>
-          <CardDescription>Datos de la entidad y parámetros para generar el reporte</CardDescription>
+          <CardDescription>Datos de la entidad y parámetros de generación</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Información de la entidad */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
+        <CardContent className="space-y-6">
+          {/* Datos de la entidad */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
             <div className="space-y-1">
-              <Label className="text-sm text-muted-foreground">Nombre de la Entidad</Label>
-              <p className="text-base font-medium">{entidadActual.nombre}</p>
+              <Label className="text-xs text-muted-foreground">Nombre de la Entidad</Label>
+              <p className="text-sm font-medium">{entidadData.nombre}</p>
             </div>
             <div className="space-y-1">
-              <Label className="text-sm text-muted-foreground">Código de la Entidad</Label>
-              <p className="text-base font-medium">{entidadActual.codigo}</p>
+              <Label className="text-xs text-muted-foreground">Código de la Entidad</Label>
+              <p className="text-sm font-medium">{entidadData.codigo}</p>
             </div>
             <div className="space-y-1">
-              <Label className="text-sm text-muted-foreground">Estado</Label>
-              <p className="text-base font-medium">{entidadActual.estado}</p>
+              <Label className="text-xs text-muted-foreground">Estado</Label>
+              <p className="text-sm font-medium">{entidadData.estado}</p>
             </div>
           </div>
 
           {/* Selector de período */}
           <div className="space-y-2">
-            <Label htmlFor="periodo">Período</Label>
+            <Label htmlFor="periodo">Período *</Label>
             <Select value={periodo} onValueChange={setPeriodo}>
               <SelectTrigger id="periodo">
                 <SelectValue placeholder="Seleccionar período" />
@@ -144,7 +137,7 @@ export default function SaldosCuentasReciprocas({ onBack }: SaldosCuentasRecipro
             </Select>
           </div>
 
-          {/* Botón generar reporte */}
+          {/* Botón generar */}
           <div className="flex gap-2 pt-4">
             <Button onClick={handleGenerarReporte} disabled={!periodo}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
