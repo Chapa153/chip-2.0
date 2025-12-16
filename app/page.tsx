@@ -16,6 +16,7 @@ import GestionRolesView from "@/components/gestion-roles-view"
 import GestionAnalistas from "@/components/gestion-analistas"
 import ReportesSubmodulos from "@/components/reportes-submodulos"
 import SaldosConciliar from "@/components/saldos-conciliar"
+import SaldosCuentasReciprocas from "@/components/saldos-cuentas-reciprocas"
 
 interface NavigationState {
   view: string | null
@@ -59,6 +60,8 @@ export default function Page() {
       setNavigationStack({ view: "formularios", subview: "historico-envios" })
     } else if (moduleId === "saldos-conciliar") {
       setNavigationStack({ view: "reportes", subview: "saldos-conciliar" })
+    } else if (moduleId === "saldos-cuentas-reciprocas") {
+      setNavigationStack({ view: "reportes", subview: "saldos-cuentas-reciprocas" })
     } else {
       setNavigationStack({ view: moduleId })
     }
@@ -145,6 +148,8 @@ export default function Page() {
     breadcrumbItems.push({ label: "Reportes", onClick: goToReportesModules })
     if (navigationStack.subview === "saldos-conciliar") {
       breadcrumbItems.push({ label: "Saldos por Conciliar", isActive: true })
+    } else if (navigationStack.subview === "saldos-cuentas-reciprocas") {
+      breadcrumbItems.push({ label: "Saldos Cuentas Recíprocas", isActive: true })
     } else {
       breadcrumbItems[breadcrumbItems.length - 1].isActive = true
     }
@@ -310,6 +315,12 @@ export default function Page() {
         {navigationStack.view === "reportes" && navigationStack.subview === "saldos-conciliar" && (
           <div className="max-w-7xl mx-auto px-4 py-12">
             <SaldosConciliar onBack={handleBack} />
+          </div>
+        )}
+
+        {navigationStack.view === "reportes" && navigationStack.subview === "saldos-cuentas-reciprocas" && (
+          <div className="max-w-7xl mx-auto px-4 py-12">
+            <SaldosCuentasReciprocas onBack={handleBack} />
           </div>
         )}
       </main>

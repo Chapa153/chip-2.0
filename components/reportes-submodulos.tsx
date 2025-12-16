@@ -18,6 +18,10 @@ export default function ReportesSubmodulos({ onModuleSelect }: ReportesSubmodulo
           id: "saldos-conciliar",
           nombre: "Saldos por Conciliar",
         },
+        {
+          id: "saldos-cuentas-reciprocas",
+          nombre: "Saldos Cuentas Recíprocas",
+        },
       ],
     },
   ]
