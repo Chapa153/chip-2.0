@@ -1826,7 +1826,7 @@ export default function GestionFormulariosSimple({
                 <p className="mt-4">Respetado(a) Doctor(a):</p>
 
                 <p className="mt-4 font-semibold">
-                  La Contaduría General de la Nación se permite informarle que su envío fue Aceptado.
+                  La Contaduría General de la Nación se permite informarle que su envío fue ACEPTADO.
                 </p>
 
                 <div className="mt-4 space-y-1">
