@@ -29,6 +29,7 @@ interface Entidad {
   deptoGobierno: string
   ciudadGobierno: string
   analistaActual: string
+  codigo: string
 }
 
 const entidadesIniciales = [
@@ -44,6 +45,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
     ciudadGobierno: "MEDELLIN",
     analistaActual: "HVALENCIA",
+    codigo: "ACI001",
   },
   {
     nit: "890981195:5",
@@ -57,6 +59,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
     ciudadGobierno: "ABEJORRAL",
     analistaActual: "ERODELO",
+    codigo: "HSD002",
   },
   {
     nit: "890504612:0",
@@ -70,6 +73,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE NORTE DE SANTANDER",
     ciudadGobierno: "ABREGO",
     analistaActual: "MCUELLAR",
+    codigo: "HSS003",
   },
   {
     nit: "890981251:1",
@@ -83,6 +87,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
     ciudadGobierno: "ABRIAQUI",
     analistaActual: "ERODELO",
+    codigo: "ETI004",
   },
   {
     nit: "892001457:3",
@@ -96,6 +101,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DEL META",
     ciudadGobierno: "ACACIAS",
     analistaActual: "JARANGO",
+    codigo: "IFP005",
   },
   {
     nit: "891680050:8",
@@ -109,6 +115,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE CHOCO",
     ciudadGobierno: "ACANDI",
     analistaActual: "NOSORIO",
+    codigo: "HLP006",
   },
   {
     nit: "891180069:1",
@@ -122,6 +129,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE HUILA",
     ciudadGobierno: "ACEVEDO",
     analistaActual: "ERODELO",
+    codigo: "EPS007",
   },
   {
     nit: "800037371:1",
@@ -135,6 +143,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE BOLIVAR",
     ciudadGobierno: "ACHI",
     analistaActual: "SGALVIS",
+    codigo: "ESC008",
   },
   {
     nit: "900266932:6",
@@ -148,6 +157,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
     ciudadGobierno: "MEDELLIN",
     analistaActual: "HVALENCIA",
+    codigo: "PMA009",
   },
   {
     nit: "900336004:7",
@@ -161,6 +171,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
     ciudadGobierno: "MEDELLIN",
     analistaActual: "MCASTAÑO",
+    codigo: "EPC010",
   },
   {
     nit: "901037916:1",
@@ -174,6 +185,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
     ciudadGobierno: "MEDELLIN",
     analistaActual: "BCRISTIANO",
+    codigo: "EAO011",
   },
   {
     nit: "900505060:5",
@@ -187,6 +199,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
     ciudadGobierno: "MEDELLIN",
     analistaActual: "ERODELO",
+    codigo: "ESA012",
   },
   {
     nit: "800157073:4",
@@ -200,6 +213,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
     ciudadGobierno: "MEDELLIN",
     analistaActual: "HVALENCIA",
+    codigo: "HYM013",
   },
   {
     nit: "901486723:0",
@@ -213,6 +227,7 @@ const entidadesIniciales = [
     deptoGobierno: "DISTRITO CAPITAL",
     ciudadGobierno: "BOGOTA - DISTRITO CAPITAL",
     analistaActual: "LBLANCO",
+    codigo: "HYC014",
   },
   {
     nit: "901024331:5",
@@ -226,6 +241,7 @@ const entidadesIniciales = [
     deptoGobierno: "DISTRITO CAPITAL",
     ciudadGobierno: "BOGOTA - DISTRITO CAPITAL",
     analistaActual: "LBLANCO",
+    codigo: "ACP015",
   },
   {
     nit: "814004674:5",
@@ -239,6 +255,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE NARIÑO",
     ciudadGobierno: "SAN JUAN DE PASTO",
     analistaActual: "MCARMONA",
+    codigo: "ADL016",
   },
   {
     nit: "900948958:4",
@@ -252,6 +269,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE NARIÑO",
     ciudadGobierno: "SAN JUAN DE PASTO",
     analistaActual: "MMARTINEZ",
+    codigo: "ADR017",
   },
   {
     nit: "901006886:4",
@@ -265,6 +283,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE ANTIOQUIA",
     ciudadGobierno: "MEDELLIN",
     analistaActual: "LALDANA",
+    codigo: "ART018",
   },
   {
     nit: "802024407:7",
@@ -278,6 +297,7 @@ const entidadesIniciales = [
     deptoGobierno: "DEPARTAMENTO DE ATLANTICO",
     ciudadGobierno: "BARRANQUILLA - DISTRITO ESPECIAL, INDUSTRIAL Y PORTUARIO",
     analistaActual: "JARANGO",
+    codigo: "ADB019",
   },
   {
     nit: "901508361:4",
@@ -291,6 +311,7 @@ const entidadesIniciales = [
     deptoGobierno: "DISTRITO CAPITAL",
     ciudadGobierno: "BOGOTA - DISTRITO CAPITAL",
     analistaActual: "YORTIZ",
+    codigo: "ADE020",
   },
 ]
 
@@ -298,14 +319,14 @@ export default function GestionAnalistas() {
   const [showResults, setShowResults] = useState(false)
   const [filtros, setFiltros] = useState({
     entidad: "",
-    departamento: [] as string[],
-    ciudad: [] as string[],
+    codigoEntidad: "",
+    nitEntidad: "",
     sector: [] as string[],
     marcoNormativo: [] as string[],
     naturaleza: [] as string[],
     deptoGobierno: [] as string[],
     ciudadGobierno: [] as string[],
-    analistaActual: [] as string[],
+    analistaActual: [],
   })
 
   const [entidades, setEntidades] = useState<Entidad[]>(entidadesIniciales)
@@ -437,8 +458,9 @@ export default function GestionAnalistas() {
 
     return entidades.filter((entidad) => {
       if (filtros.entidad && !entidad.nombre.toLowerCase().includes(filtros.entidad.toLowerCase())) return false
-      if (filtros.departamento.length > 0 && !filtros.departamento.includes(entidad.departamento)) return false
-      if (filtros.ciudad.length > 0 && !filtros.ciudad.includes(entidad.ciudad)) return false
+      if (filtros.codigoEntidad && !entidad.codigo.toLowerCase().includes(filtros.codigoEntidad.toLowerCase()))
+        return false
+      if (filtros.nitEntidad && !entidad.nit.toLowerCase().includes(filtros.nitEntidad.toLowerCase())) return false
       if (filtros.sector.length > 0 && !filtros.sector.includes(entidad.sector)) return false
       if (filtros.marcoNormativo.length > 0 && !filtros.marcoNormativo.includes(entidad.marcoNormativo)) return false
       if (filtros.naturaleza.length > 0 && !filtros.naturaleza.includes(entidad.naturaleza)) return false
@@ -496,8 +518,8 @@ export default function GestionAnalistas() {
   const limpiarFiltros = () => {
     setFiltros({
       entidad: "",
-      departamento: [],
-      ciudad: [],
+      codigoEntidad: "",
+      nitEntidad: "",
       sector: [],
       marcoNormativo: [],
       naturaleza: [],
@@ -591,23 +613,29 @@ export default function GestionAnalistas() {
               />
             </div>
 
-            {/* Departamento - Select múltiple con búsqueda */}
-            <SelectMultipleConBusqueda
-              label="Departamento"
-              values={filtros.departamento}
-              onChange={(values) => setFiltros({ ...filtros, departamento: values })}
-              options={Array.from(new Set(entidades.map((e) => e.departamento))).sort()}
-              placeholder="Buscar departamento..."
-            />
+            {/* Código Entidad - Input de texto */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Código Entidad</label>
+              <Input
+                type="text"
+                value={filtros.codigoEntidad}
+                onChange={(e) => setFiltros({ ...filtros, codigoEntidad: e.target.value })}
+                placeholder="Buscar por código de entidad"
+                className="w-full"
+              />
+            </div>
 
-            {/* Ciudad - Select múltiple con búsqueda */}
-            <SelectMultipleConBusqueda
-              label="Ciudad"
-              values={filtros.ciudad}
-              onChange={(values) => setFiltros({ ...filtros, ciudad: values })}
-              options={Array.from(new Set(entidades.map((e) => e.ciudad))).sort()}
-              placeholder="Buscar ciudad..."
-            />
+            {/* NIT de Entidad - Input de texto */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">NIT de Entidad</label>
+              <Input
+                type="text"
+                value={filtros.nitEntidad}
+                onChange={(e) => setFiltros({ ...filtros, nitEntidad: e.target.value })}
+                placeholder="Buscar por NIT de entidad"
+                className="w-full"
+              />
+            </div>
 
             {/* Sector - Select múltiple con búsqueda */}
             <SelectMultipleConBusqueda
@@ -741,6 +769,7 @@ export default function GestionAnalistas() {
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Marco Normativo</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Naturaleza</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Analista Actual</th>
+                    <th className="text-left py-4 px-4 font-semibold text-foreground">Código Entidad</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -768,11 +797,12 @@ export default function GestionAnalistas() {
                         <td className="py-4 px-4 text-foreground text-sm">{entidad.marcoNormativo}</td>
                         <td className="py-4 px-4 text-foreground text-sm">{entidad.naturaleza}</td>
                         <td className="py-4 px-4 text-foreground font-semibold">{entidad.analistaActual}</td>
+                        <td className="py-4 px-4 text-foreground font-mono text-sm">{entidad.codigo}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={11} className="py-8 px-4 text-center text-muted-foreground">
+                      <td colSpan={12} className="py-8 px-4 text-center text-muted-foreground">
                         No se encontraron entidades con los criterios de búsqueda.
                       </td>
                     </tr>
