@@ -764,7 +764,7 @@ export default function GestionAnalistas() {
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Entidad</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Estado</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Depto. Gobierno</th>
-                    <th className="text-left py-4 px-4 font-semibold text-foreground">Ciudad</th>
+                    <th className="text-left py-4 px-4 font-semibold text-foreground">Ciudad Gobierno</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Sector</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Marco Normativo</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Naturaleza</th>
@@ -792,7 +792,7 @@ export default function GestionAnalistas() {
                           </span>
                         </td>
                         <td className="py-4 px-4 text-foreground text-sm">{entidad.deptoGobierno}</td>
-                        <td className="py-4 px-4 text-foreground text-sm">{entidad.ciudad}</td>
+                        <td className="py-4 px-4 text-foreground text-sm">{entidad.ciudadGobierno}</td>
                         <td className="py-4 px-4 text-foreground text-sm">{entidad.sector}</td>
                         <td className="py-4 px-4 text-foreground text-sm">{entidad.marcoNormativo}</td>
                         <td className="py-4 px-4 text-foreground text-sm">{entidad.naturaleza}</td>
