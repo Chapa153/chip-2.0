@@ -10,7 +10,6 @@ import {
   Send,
   FileDown,
   MoreVertical,
-  Search,
   Edit,
   FileSpreadsheet,
   HelpCircle,
@@ -280,31 +279,17 @@ export default function GestionFormulariosSimple({
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  // Reemplazo de `selectedForms` con `selectedFormularios` y ajuste en `handleEnviar` para usar `id` en lugar de `codigo`
-  const handleEnviar = async () => {
-    console.log("[v0] handleEnviar - Iniciando envío")
-    const allowedStates = getEstadosPermitidos()
-    console.log("[v0] Estados permitidos:", allowedStates)
+  const handleValidarSeleccionados = async () => {
+    if (selectedFormularios.length === 0) {
+      toast({ title: "Selección vacía", description: "Por favor, seleccione al menos un formulario para validar." })
+      return
+    }
 
     const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
-    console.log("[v0] Formularios seleccionados:", formulariosSeleccionados)
-
     const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
-    console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
 
-    const todosValidados = formulariosSeleccionados.every((f) => f.estado === "Validado")
-    console.log("[v0] ¿Todos los formularios validados?:", todosValidados)
-    // </CHANGE>
-
+    // Si todos los formularios están seleccionados, ejecutar validación completa
     if (todosSeleccionados) {
-      if (todosValidados) {
-        console.log("[v0] Todos los formularios están validados - iniciando validación central (Fase 5)")
-        setShowCertificationDialog(true)
-        return
-      }
-      // </CHANGE>
-
-      console.log("[v0] Todos los formularios seleccionados - iniciando validación completa con fases 1-4")
       setIsSubmitting(true)
 
       // Fase 1: Contenido de variables
@@ -339,10 +324,9 @@ export default function GestionFormulariosSimple({
       setShowAllFormsSuccessDialog(true)
       setSelectedFormularios([])
       return
-      // </CHANGE>
     }
 
-    // Implementación de la lógica de validación con separación de errores por tipo
+    // Validación individual de formularios seleccionados
     setErrorsSeen(false)
     setIsSubmitting(true)
     setValidationPhase(1)
@@ -369,7 +353,7 @@ export default function GestionFormulariosSimple({
     let hasInformativeAlert = false
 
     // Fase 1: Contenido de variables
-    setValidationPhase(1) // Manteniendo la fase 1 para el flujo normal
+    setValidationPhase(1)
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     // Fase 2: Completitud
@@ -377,7 +361,6 @@ export default function GestionFormulariosSimple({
     await new Promise((resolve) => setTimeout(resolve, 800))
 
     if (selectedFormularios.includes("CGN-2025-05")) {
-      // Notas a los Estados Financieros
       errorsByType.contenido.push(
         {
           formulario: "Notas a los Estados Financieros",
@@ -397,7 +380,6 @@ export default function GestionFormulariosSimple({
     await new Promise((resolve) => setTimeout(resolve, 800))
 
     if (selectedFormularios.includes("CGN-2025-04")) {
-      // Estado de Cambios en el Patrimonio
       errorsByType.completitud.push(
         {
           formulario: "Estado de Cambios en el Patrimonio",
@@ -413,7 +395,6 @@ export default function GestionFormulariosSimple({
     }
 
     if (selectedFormularios.includes("CGN-2025-03")) {
-      // Flujo de Efectivo
       hasInformativeAlert = true
       setSimpleAlertMessage(
         "El formulario Flujo de Efectivo presenta las siguientes validaciones generales:\n\n" +
@@ -429,7 +410,6 @@ export default function GestionFormulariosSimple({
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     if (selectedFormularios.includes("CGN-2025-02")) {
-      // Estado de Resultados
       errorsByType.expresiones.push(
         {
           formulario: "Estado de Resultados",
@@ -479,7 +459,7 @@ export default function GestionFormulariosSimple({
       return
     }
 
-    // Si no todos están seleccionados y no hay errores, marcar como enviado
+    // Si no todos están seleccionados y no hay errores, marcar como validado
     formulariosSeleccionados.forEach((form) => {
       if (form.id === "CGN-2025-01") {
         // Balance General genera formularios calculados
@@ -507,11 +487,36 @@ export default function GestionFormulariosSimple({
       }
     })
 
+    // Actualizar formularios seleccionados a estado Validado
+    setFormulariosState((prev) =>
+      prev.map((f) =>
+        selectedFormularios.includes(f.id)
+          ? {
+              ...f,
+              estado: "Validado",
+              estadoColor: "green",
+            }
+          : f,
+      ),
+    )
+
     setIsSubmitting(false)
     setValidationPhase(0)
     setSelectedFormularios([])
+
+    toast({
+      title: "Validación Completa",
+      description: "Los formularios seleccionados han pasado las validaciones locales correctamente.",
+    })
   }
   // </CHANGE>
+
+  const handleEnviar = async () => {
+    const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+
+    // Mostrar directamente el diálogo de certificación para Fase 5
+    setShowCertificationDialog(true)
+  }
 
   const getColorForEstado = (estado: string): string => {
     // Exitosos en validación
@@ -1147,55 +1152,6 @@ export default function GestionFormulariosSimple({
   }
 
   // Function to handle 'Validar' button click
-  const handleValidarSeleccionados = () => {
-    // Logic for validation, likely similar to handleEnviar but perhaps a different phase
-    console.log("Validando formularios seleccionados...")
-    // For now, let's simulate a validation process leading to showing errors or success
-    // This is a placeholder and would need actual validation logic
-    if (selectedFormularios.length === 0) {
-      toast({ title: "Selección vacía", description: "Por favor, seleccione al menos un formulario para validar." })
-      return
-    }
-    toast({
-      title: "Validación iniciada",
-      description: "Se está procesando la validación de los formularios seleccionados.",
-    })
-    // Example: Trigger validation logic here. For now, we'll simulate showing errors for demonstration.
-    // In a real scenario, this would call a validation API or internal function.
-    // For demonstration, we'll reuse the error triggering logic from handleEnviar
-    setErrorsSeen(false)
-    setIsSubmitting(true)
-    setValidationPhase(1) // Start validation phase
-
-    setTimeout(() => {
-      // Simulate errors for demonstration
-      const hasSimulatedErrors = Math.random() > 0.5
-      if (hasSimulatedErrors) {
-        // Generate some dummy error data
-        setErrorData({
-          formularios: selectedFormularios.map((id) => id.replace("CGN-", "")), // Dummy names
-          contenido: [{ formulario: "Formulario X", concepto: "C1", mensaje: "Error de contenido" }],
-          completitud: [],
-          expresiones: [],
-        })
-        setShowErrorAlert(true)
-        setIsSubmitting(false)
-        setValidationPhase(0)
-      } else {
-        // Simulate success
-        toast({ title: "Validación Completa", description: "Los formularios seleccionados han pasado la validación." })
-        // Update states to reflect validation success if needed
-        setFormulariosState((prev) =>
-          prev.map((f) =>
-            selectedFormularios.includes(f.id) ? { ...f, estado: "Validado", estadoColor: "green" } : f,
-          ),
-        )
-        setIsSubmitting(false)
-        setValidationPhase(0)
-        setSelectedFormularios([]) // Clear selection after validation
-      }
-    }, 1500) // Simulate network latency
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -1453,127 +1409,116 @@ export default function GestionFormulariosSimple({
                 </DropdownMenu>
               </div>
 
-              {/* Barra de Búsqueda */}
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por código o nombre..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            {/* Tabla */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-border">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                      <input
-                        type="checkbox"
-                        className="rounded"
-                        checked={selectedFormularios.length === formulariosState.length}
-                        onChange={toggleSelectAll}
-                      />
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      CÓDIGO ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      NOMBRE DEL FORMULARIO ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      TIPO ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ESTADO DE VALIDACIÓN ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ÚLTIMA MODIFICACIÓN ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ACCIONES
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-border">
-                  {filteredFormularios.map((form) => (
-                    <tr key={form.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <Checkbox
-                          checked={selectedFormularios.includes(form.id)}
-                          onCheckedChange={() => {
-                            handleToggleSelectFormulario(form.id)
-                            // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
-                          }}
+              {/* Tabla */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-border">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                        <input
+                          type="checkbox"
+                          className="rounded"
+                          checked={selectedFormularios.length === formulariosState.length}
+                          onChange={toggleSelectAll}
                         />
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
-                        >
-                          {form.estado}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
-                      <td className="px-4 py-3">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleRegistroManualClick(form.id, form.nombre)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Registro manual
-                            </DropdownMenuItem>
-                            {/* </CHANGE> */}
-                            <DropdownMenuItem>
-                              <FileSpreadsheet className="w-4 h-4 mr-2" />
-                              Generar protocolo importación
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        CÓDIGO ↕
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        NOMBRE DEL FORMULARIO ↕
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        TIPO ↕
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ESTADO DE VALIDACIÓN ↕
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ÚLTIMA MODIFICACIÓN ↕
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ACCIONES
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Paginación */}
-            <div className="p-4 border-t border-border flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Registros por página:</span>
-                <select className="px-2 py-1 border border-input rounded-md text-sm">
-                  <option>10</option>
-                  <option>25</option>
-                  <option>50</option>
-                </select>
-                <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-border">
+                    {filteredFormularios.map((form) => (
+                      <tr key={form.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <Checkbox
+                            checked={selectedFormularios.includes(form.id)}
+                            onCheckedChange={() => {
+                              handleToggleSelectFormulario(form.id)
+                              // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
+                            }}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
+                          >
+                            {form.estado}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
+                        <td className="px-4 py-3">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleRegistroManualClick(form.id, form.nombre)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Registro manual
+                              </DropdownMenuItem>
+                              {/* </CHANGE> */}
+                              <DropdownMenuItem>
+                                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                Generar protocolo importación
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  Primera
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Anterior
-                </Button>
-                <Button variant="default" size="sm">
-                  Página 1 de 1
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Siguiente
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Última
-                </Button>
+
+              {/* Paginación */}
+              <div className="p-4 border-t border-border flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Registros por página:</span>
+                  <select className="px-2 py-1 border border-input rounded-md text-sm">
+                    <option>10</option>
+                    <option>25</option>
+                    <option>50</option>
+                  </select>
+                  <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled>
+                    Primera
+                  </Button>
+                  <Button variant="outline" size="sm" disabled>
+                    Anterior
+                  </Button>
+                  <Button variant="default" size="sm">
+                    Página 1 de 1
+                  </Button>
+                  <Button variant="outline" size="sm" disabled>
+                    Siguiente
+                  </Button>
+                  <Button variant="outline" size="sm" disabled>
+                    Última
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -2097,7 +2042,7 @@ export default function GestionFormulariosSimple({
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => setShowSuccessEmailFormatDialog(false)}>Cerrar</Button>
+              <Button onClick={() => setShowEmailFormatDialog(false)}>Cerrar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
