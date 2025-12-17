@@ -760,6 +760,7 @@ export default function GestionAnalistas() {
                         className="rounded border-gray-300"
                       />
                     </th>
+                    <th className="text-left py-4 px-4 font-semibold text-foreground">Código Entidad</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">NIT</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Entidad</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Estado</th>
@@ -769,7 +770,6 @@ export default function GestionAnalistas() {
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Marco Normativo</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Naturaleza</th>
                     <th className="text-left py-4 px-4 font-semibold text-foreground">Analista Actual</th>
-                    <th className="text-left py-4 px-4 font-semibold text-foreground">Código Entidad</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -784,6 +784,9 @@ export default function GestionAnalistas() {
                             className="rounded border-gray-300"
                           />
                         </td>
+                        <td className="py-4 px-4 text-foreground font-mono text-sm">
+                          {entidad.codigo.toString().padStart(5, "0")}
+                        </td>
                         <td className="py-4 px-4 text-foreground font-mono text-sm">{entidad.nit}</td>
                         <td className="py-4 px-4 text-foreground font-medium">{entidad.nombre}</td>
                         <td className="py-4 px-4">
@@ -797,12 +800,11 @@ export default function GestionAnalistas() {
                         <td className="py-4 px-4 text-foreground text-sm">{entidad.marcoNormativo}</td>
                         <td className="py-4 px-4 text-foreground text-sm">{entidad.naturaleza}</td>
                         <td className="py-4 px-4 text-foreground font-semibold">{entidad.analistaActual}</td>
-                        <td className="py-4 px-4 text-foreground font-mono text-sm">{entidad.codigo}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={12} className="py-8 px-4 text-center text-muted-foreground">
+                      <td colSpan={11} className="py-8 px-4 text-center text-muted-foreground">
                         No se encontraron entidades con los criterios de búsqueda.
                       </td>
                     </tr>
