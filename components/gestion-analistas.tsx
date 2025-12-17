@@ -565,7 +565,7 @@ export default function GestionAnalistas() {
               <UserCog className="w-6 h-6 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Gestión de Analistas</h1>
+              <h1 className="text-2xl font-bold text-foreground">Asignar Analistas</h1>
               <p className="text-sm text-muted-foreground">Administrar asignación de analistas</p>
             </div>
           </div>
