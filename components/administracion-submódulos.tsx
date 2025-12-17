@@ -34,7 +34,7 @@ export default function AdministracionSubmodulos({ username, onBack, onModuleSel
     {
       id: "analistas",
       title: "Asignar Analistas",
-      description: "Administrar asignación de analistas",
+      description: "Asignación de entidades a analistas",
       icon: UserCog,
       color: "from-teal-50 to-teal-100 dark:from-teal-950 dark:to-teal-900",
     },
