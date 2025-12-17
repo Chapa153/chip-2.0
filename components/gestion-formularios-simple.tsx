@@ -237,23 +237,14 @@ export default function GestionFormulariosSimple({
     // Obtener los formularios seleccionados
     const formularios = formulariosState.filter((f) => selectedFormularios.includes(f.id))
 
-    // Verificar que todos los formularios seleccionados tengan estados válidos
-    const result = formularios.every((f) => {
-      const estado = f.estado
-      const estadosPermitidos = getEstadosPermitidos()
+    // Verificar si todos los formularios están en estado "Validado"
+    const todosValidados = formularios.every((f) => f.estado === "Validado")
 
-      // No permitir formularios en estado Aceptado
-      if (estado === "Aceptado") {
-        return false
-      }
+    // Verificar si todos son tipo "Categoría" y ninguno está "Aceptado"
+    const todosCategoriaNoAceptados = formularios.every((f) => f.tipo === "Categoría" && f.estado !== "Aceptado")
 
-      // Solo permitir estados de la lista `estadosPermitidos`
-      const isValid = estadosPermitidos.some((e) => estado.startsWith(e))
-
-      return isValid
-    })
-
-    return result
+    // Habilitar si se cumple al menos una de las dos condiciones
+    return todosValidados || todosCategoriaNoAceptados
   }
 
   const getEstadoBadgeClass = (color: string) => {
@@ -279,23 +270,72 @@ export default function GestionFormulariosSimple({
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
+  // Reemplazo de `selectedForms` con `selectedFormularios` y ajuste en `handleEnviar` para usar `id` en lugar de `codigo`
   const handleEnviar = async () => {
-    if (selectedFormularios.length === 0) return
+    console.log("[v0] handleEnviar - Iniciando envío")
+    const allowedStates = getEstadosPermitidos()
+    console.log("[v0] Estados permitidos:", allowedStates)
 
     const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+    console.log("[v0] Formularios seleccionados:", formulariosSeleccionados)
 
-    // Mostrar directamente el diálogo de certificación para validaciones centrales (Fase 5)
-    setShowCertificationDialog(true)
-  }
+    const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
+    console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
 
-  const handleValidarSeleccionados = async () => {
-    if (selectedFormularios.length === 0) {
-      toast({ title: "Selección vacía", description: "Por favor, seleccione al menos un formulario para validar." })
+    const todosValidados = formulariosSeleccionados.every((f) => f.estado === "Validado")
+    console.log("[v0] ¿Todos los formularios validados?:", todosValidados)
+    // </CHANGE>
+
+    if (todosSeleccionados) {
+      if (todosValidados) {
+        console.log("[v0] Todos los formularios están validados - iniciando validación central (Fase 5)")
+        setShowCertificationDialog(true)
+        return
+      }
+      // </CHANGE>
+
+      console.log("[v0] Todos los formularios seleccionados - iniciando validación completa con fases 1-4")
+      setIsSubmitting(true)
+
+      // Fase 1: Contenido de variables
+      setValidationPhase(1)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Fase 2: Completitud
+      setValidationPhase(2)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Fase 3: Validaciones generales
+      setValidationPhase(3)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Fase 4: Expresiones de validación locales
+      setValidationPhase(4)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      setIsSubmitting(false)
+      setValidationPhase(0)
+
+      // Actualizar todos los formularios a estado Validado
+      setFormulariosState((prev) =>
+        prev.map((f) => ({
+          ...f,
+          estado: "Validado",
+          estadoColor: "green",
+        })),
+      )
+
+      // Mostrar diálogo de validación exitosa
+      setShowAllFormsSuccessDialog(true)
+      setSelectedFormularios([])
       return
+      // </CHANGE>
     }
 
+    // Implementación de la lógica de validación con separación de errores por tipo
     setErrorsSeen(false)
     setIsSubmitting(true)
+    setValidationPhase(1)
 
     const allErrors: Array<{
       formulario: string
@@ -317,10 +357,9 @@ export default function GestionFormulariosSimple({
     }
 
     let hasInformativeAlert = false
-    const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
 
     // Fase 1: Contenido de variables
-    setValidationPhase(1)
+    setValidationPhase(1) // Manteniendo la fase 1 para el flujo normal
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     // Fase 2: Completitud
@@ -328,6 +367,7 @@ export default function GestionFormulariosSimple({
     await new Promise((resolve) => setTimeout(resolve, 800))
 
     if (selectedFormularios.includes("CGN-2025-05")) {
+      // Notas a los Estados Financieros
       errorsByType.contenido.push(
         {
           formulario: "Notas a los Estados Financieros",
@@ -347,6 +387,7 @@ export default function GestionFormulariosSimple({
     await new Promise((resolve) => setTimeout(resolve, 800))
 
     if (selectedFormularios.includes("CGN-2025-04")) {
+      // Estado de Cambios en el Patrimonio
       errorsByType.completitud.push(
         {
           formulario: "Estado de Cambios en el Patrimonio",
@@ -362,6 +403,7 @@ export default function GestionFormulariosSimple({
     }
 
     if (selectedFormularios.includes("CGN-2025-03")) {
+      // Flujo de Efectivo
       hasInformativeAlert = true
       setSimpleAlertMessage(
         "El formulario Flujo de Efectivo presenta las siguientes validaciones generales:\n\n" +
@@ -377,6 +419,7 @@ export default function GestionFormulariosSimple({
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     if (selectedFormularios.includes("CGN-2025-02")) {
+      // Estado de Resultados
       errorsByType.expresiones.push(
         {
           formulario: "Estado de Resultados",
@@ -400,10 +443,7 @@ export default function GestionFormulariosSimple({
     const totalErrors =
       errorsByType.contenido.length + errorsByType.completitud.length + errorsByType.expresiones.length
 
-    setIsSubmitting(false)
-    setValidationPhase(0)
-
-    // Si hay errores, mostrar errores y detener
+    // Si hay errores en fases 1-4, mostrar errores y detener
     if (totalErrors > 0) {
       setErrorData({
         formularios: selectedFormularios
@@ -417,34 +457,51 @@ export default function GestionFormulariosSimple({
         expresiones: errorsByType.expresiones,
       })
       setShowErrorAlert(true)
+      setIsSubmitting(false)
+      setValidationPhase(0)
       return
     }
 
-    // Si hay alertas informativas
+    // Si hay alertas informativas y no hay errores críticos
     if (hasInformativeAlert) {
+      setIsSubmitting(false)
+      setValidationPhase(0)
       return
     }
 
-    // Si no hay errores, marcar como Validado
-    setFormulariosState((prev) =>
-      prev.map((f) =>
-        selectedFormularios.includes(f.id)
-          ? {
-              ...f,
-              estado: "Validado",
-              estadoColor: "green" as const,
-            }
-          : f,
-      ),
-    )
+    // Si no todos están seleccionados y no hay errores, marcar como enviado
+    formulariosSeleccionados.forEach((form) => {
+      if (form.id === "CGN-2025-01") {
+        // Balance General genera formularios calculados
+        const formulasCalculadas = [
+          {
+            id: `CALC-${Date.now()}-1`,
+            nombre: "Estado de Resultados Calculado",
+            tipo: "Formulario",
+            estado: "Pendiente en validar",
+            fecha: new Date().toLocaleDateString("es-ES"),
+            estadoColor: "yellow" as const,
+          },
+          {
+            id: `CALC-${Date.now()}-2`,
+            nombre: "Flujo de Efectivo Calculado",
+            tipo: "Formulario",
+            estado: "Pendiente en validar",
+            fecha: new Date().toLocaleDateString("es-ES"),
+            estadoColor: "yellow" as const,
+          },
+        ]
 
-    toast({
-      title: "Validación Completa",
-      description: "Los formularios seleccionados han pasado todas las validaciones locales.",
+        setFormulariosState((prev) => [...prev, ...formulasCalculadas])
+        setShowBalanceSuccessDialog(true)
+      }
     })
 
+    setIsSubmitting(false)
+    setValidationPhase(0)
     setSelectedFormularios([])
   }
+  // </CHANGE>
 
   const getColorForEstado = (estado: string): string => {
     // Exitosos en validación
@@ -563,6 +620,7 @@ export default function GestionFormulariosSimple({
     setReenvioFormId(null)
   }
   // </CHANGE>
+
   const handleViewErrorDetails = () => {
     // Renombrado de handleViewErrors a handleViewErrorDetails
     setShowErrorAlert(false)
@@ -1079,10 +1137,6 @@ export default function GestionFormulariosSimple({
   }
 
   // Function to handle 'Validar' button click
-  // This function was duplicated. The first one at the top (lines 160-276) should be kept.
-  // The second one here (lines 795-837) should be removed or merged.
-  // Keeping the first one and removing this duplicate.
-  /*
   const handleValidarSeleccionados = () => {
     // Logic for validation, likely similar to handleEnviar but perhaps a different phase
     console.log("Validando formularios seleccionados...")
@@ -1132,7 +1186,6 @@ export default function GestionFormulariosSimple({
       }
     }, 1500) // Simulate network latency
   }
-  */
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
