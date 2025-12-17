@@ -998,16 +998,9 @@ export default function GestionAnalistas() {
           <DialogHeader>
             <DialogTitle>Carga de Trabajo de Analistas</DialogTitle>
             <DialogDescription>
-              {filtrosAplicados ? (
-                <>
-                  Cantidad de entidades asignadas a cada analista según los filtros aplicados.
-                  <span className="block mt-1 text-yellow-600">
-                    Nota: Se muestran datos filtrados ({entidadesFiltradas.length} de {entidades.length} entidades)
-                  </span>
-                </>
-              ) : (
-                "Cantidad de entidades asignadas a cada analista en todo el sistema."
-              )}
+              {filtrosAplicados
+                ? "Cantidad de entidades asignadas a cada analista según los filtros aplicados."
+                : "Cantidad de entidades asignadas a cada analista en todo el sistema."}
             </DialogDescription>
           </DialogHeader>
 
