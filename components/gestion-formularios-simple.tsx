@@ -235,26 +235,15 @@ export default function GestionFormulariosSimple({
   const canSendSelectedFormularios = (): boolean => {
     if (selectedFormularios.length === 0) return false
 
-    // Obtener los formularios seleccionados
     const formularios = formulariosState.filter((f) => selectedFormularios.includes(f.id))
 
-    // Verificar que todos los formularios seleccionados tengan estados válidos
-    const result = formularios.every((f) => {
-      const estado = f.estado
-      const estadosPermitidos = getEstadosPermitidos()
+    // Regla 1: Todos los formularios están en estado Validado
+    const todosValidados = formularios.every((f) => f.estado === "Validado")
 
-      // No permitir formularios en estado Aceptado
-      if (estado === "Aceptado") {
-        return false
-      }
+    // Regla 2: Todos son de tipo Categoría y ninguno está Aceptado
+    const todosCategorias = formularios.every((f) => f.tipo === "Categoría" && f.estado !== "Aceptado")
 
-      // Solo permitir estados de la lista `estadosPermitidos`
-      const isValid = estadosPermitidos.some((e) => estado.startsWith(e))
-
-      return isValid
-    })
-
-    return result
+    return todosValidados || todosCategorias
   }
 
   const getEstadoBadgeClass = (color: string) => {
@@ -2120,7 +2109,7 @@ export default function GestionFormulariosSimple({
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => setShowSuccessEmailFormatDialog(false)}>Cerrar</Button>
+              <Button onClick={() => setShowEmailFormatDialog(false)}>Cerrar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
