@@ -292,7 +292,19 @@ export default function GestionFormulariosSimple({
 
     const todosValidados = formulariosSeleccionados.every((f) => f.estado === "Validado")
     console.log("[v0] ¿Todos los formularios validados?:", todosValidados)
-    // </CHANGE>
+
+    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA" && filteredFormularios.every((f) => f.estado === "Validado")) {
+      console.log("[v0] Categoría INFORMACIÓN CONTABLE - Ejecutando validaciones centrales con errores")
+      setIsValidatingCentral(true)
+      setValidationPhase(5)
+
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      setIsValidatingCentral(false)
+      setValidationPhase(0)
+      setShowCentralErrorDialog(true)
+      return
+    }
 
     if (todosSeleccionados) {
       if (todosValidados) {
