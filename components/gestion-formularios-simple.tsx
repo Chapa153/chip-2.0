@@ -249,10 +249,12 @@ export default function GestionFormulariosSimple({
     // Regla 1: Todos los formularios están en estado Validado
     const todosValidados = formularios.every((f) => f.estado === "Validado")
 
-    // Regla 2: Todos son de tipo Categoría y ninguno está Aceptado
-    const todosCategorias = formularios.every((f) => f.tipo === "Categoría" && f.estado !== "Aceptado")
+    // Regla 2: Los registros de tipo Categoría están en cualquier estado excepto Aceptado
+    const categorias = formularios.filter((f) => f.tipo === "Categoría")
+    const categoriasValidas = categorias.length > 0 && categorias.every((f) => f.estado !== "Aceptado")
 
-    return todosValidados || todosCategorias
+    // Se habilita si se cumple al menos una de las dos reglas
+    return todosValidados || categoriasValidas
   }
 
   const getEstadoBadgeClass = (color: string) => {
