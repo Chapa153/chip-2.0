@@ -242,15 +242,13 @@ export default function GestionFormulariosSimple({
   }
 
   const canSendSelectedFormularios = (): boolean => {
-    if (selectedFormularios.length === 0) return false
+    if (filteredFormularios.length === 0) return false
 
-    const formularios = formulariosState.filter((f) => selectedFormularios.includes(f.id))
-
-    // Regla 1: Todos los formularios están en estado Validado
-    const todosValidados = formularios.every((f) => f.estado === "Validado")
+    // Regla 1: Todos los formularios filtrados están en estado Validado
+    const todosValidados = filteredFormularios.every((f) => f.estado === "Validado")
 
     // Regla 2: Los registros de tipo Categoría están en cualquier estado excepto Aceptado
-    const categorias = formularios.filter((f) => f.tipo === "Categoría")
+    const categorias = filteredFormularios.filter((f) => f.tipo === "Categoría")
     const categoriasValidas = categorias.length > 0 && categorias.every((f) => f.estado !== "Aceptado")
 
     // Se habilita si se cumple al menos una de las dos reglas
@@ -1377,6 +1375,7 @@ export default function GestionFormulariosSimple({
                 <Button
                   variant="outline"
                   size="sm"
+                  // </CHANGE> Botón Enviar se habilita según condiciones en formularios filtrados, no seleccionados
                   disabled={!canSendSelectedFormularios() || isSubmitting}
                   onClick={handleEnviar}
                   className={!canSendSelectedFormularios() && !isSubmitting ? "opacity-50 cursor-not-allowed" : ""}
