@@ -232,6 +232,15 @@ export default function GestionFormulariosSimple({
     return ["Pendiente en validar", "Rechazado por Deficiencia", "Excepción de validación", "En validación", "Validado"]
   }
 
+  const canValidateSelectedFormularios = () => {
+    if (selectedFormularios.length === 0) return false
+
+    const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+
+    // Habilitar si hay al menos un formulario con estado diferente a Validado o Aceptado
+    return formulariosSeleccionados.some((f) => f.estado !== "Validado" && f.estado !== "Aceptado")
+  }
+
   const canSendSelectedFormularios = (): boolean => {
     if (selectedFormularios.length === 0) return false
 
@@ -1142,6 +1151,16 @@ export default function GestionFormulariosSimple({
       return
     }
 
+    // Deshabilitar el botón si no hay formularios válidos para validar
+    if (!canValidateSelectedFormularios()) {
+      toast({
+        title: "Ningún formulario válido para validar",
+        description: "Todos los formularios seleccionados ya están validados o aceptados.",
+      })
+      return
+    }
+    // </CHANGE>
+
     setIsSubmitting(true)
     setValidationPhase(1)
 
@@ -1346,7 +1365,9 @@ export default function GestionFormulariosSimple({
                   variant="outline"
                   size="sm"
                   onClick={handleValidarSeleccionados}
-                  disabled={!canSendSelectedFormularios() || isSubmitting}
+                  // Usar la nueva función canValidateSelectedFormularios para habilitar el botón
+                  disabled={!canValidateSelectedFormularios() || isSubmitting}
+                  // </CHANGE>
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   Validar
