@@ -10,6 +10,7 @@ import {
   Send,
   FileDown,
   MoreVertical,
+  Search,
   Edit,
   FileSpreadsheet,
   HelpCircle,
@@ -237,14 +238,23 @@ export default function GestionFormulariosSimple({
     // Obtener los formularios seleccionados
     const formularios = formulariosState.filter((f) => selectedFormularios.includes(f.id))
 
-    // Verificar si todos los formularios están en estado "Validado"
-    const todosValidados = formularios.every((f) => f.estado === "Validado")
+    // Verificar que todos los formularios seleccionados tengan estados válidos
+    const result = formularios.every((f) => {
+      const estado = f.estado
+      const estadosPermitidos = getEstadosPermitidos()
 
-    // Verificar si todos son tipo "Categoría" y ninguno está "Aceptado"
-    const todosCategoriaNoAceptados = formularios.every((f) => f.tipo === "Categoría" && f.estado !== "Aceptado")
+      // No permitir formularios en estado Aceptado
+      if (estado === "Aceptado") {
+        return false
+      }
 
-    // Habilitar si se cumple al menos una de las dos condiciones
-    return todosValidados || todosCategoriaNoAceptados
+      // Solo permitir estados de la lista `estadosPermitidos`
+      const isValid = estadosPermitidos.some((e) => estado.startsWith(e))
+
+      return isValid
+    })
+
+    return result
   }
 
   const getEstadoBadgeClass = (color: string) => {
@@ -1138,53 +1148,76 @@ export default function GestionFormulariosSimple({
 
   // Function to handle 'Validar' button click
   const handleValidarSeleccionados = () => {
-    // Logic for validation, likely similar to handleEnviar but perhaps a different phase
-    console.log("Validando formularios seleccionados...")
-    // For now, let's simulate a validation process leading to showing errors or success
-    // This is a placeholder and would need actual validation logic
     if (selectedFormularios.length === 0) {
       toast({ title: "Selección vacía", description: "Por favor, seleccione al menos un formulario para validar." })
       return
     }
-    toast({
-      title: "Validación iniciada",
-      description: "Se está procesando la validación de los formularios seleccionados.",
-    })
-    // Example: Trigger validation logic here. For now, we'll simulate showing errors for demonstration.
-    // In a real scenario, this would call a validation API or internal function.
-    // For demonstration, we'll reuse the error triggering logic from handleEnviar
-    setErrorsSeen(false)
-    setIsSubmitting(true)
-    setValidationPhase(1) // Start validation phase
 
+    setIsSubmitting(true)
+    setValidationPhase(1)
+
+    // Simulate validation process
     setTimeout(() => {
-      // Simulate errors for demonstration
-      const hasSimulatedErrors = Math.random() > 0.5
-      if (hasSimulatedErrors) {
-        // Generate some dummy error data
-        setErrorData({
-          formularios: selectedFormularios.map((id) => id.replace("CGN-", "")), // Dummy names
-          contenido: [{ formulario: "Formulario X", concepto: "C1", mensaje: "Error de contenido" }],
-          completitud: [],
-          expresiones: [],
+      const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+
+      // Check if Balance General is selected
+      const balanceGeneralSelected = formulariosSeleccionados.some((f) => f.id === "CGN-2025-01")
+
+      if (balanceGeneralSelected) {
+        // Execute Balance General scenario: generate calculated forms
+        const formulasCalculadas = [
+          {
+            id: `CALC-${Date.now()}-1`,
+            nombre: "Estado de Resultados Calculado",
+            tipo: "Formulario",
+            estado: "Validado",
+            fecha: new Date().toLocaleDateString("es-ES"),
+            estadoColor: "green" as const,
+          },
+          {
+            id: `CALC-${Date.now()}-2`,
+            nombre: "Flujo de Efectivo Calculado",
+            tipo: "Formulario",
+            estado: "Validado",
+            fecha: new Date().toLocaleDateString("es-ES"),
+            estadoColor: "green" as const,
+          },
+        ]
+
+        // Update selected forms to Validado and Formulario, and add calculated forms
+        setFormulariosState((prev) => [
+          ...prev.map((f) =>
+            selectedFormularios.includes(f.id)
+              ? { ...f, estado: "Validado", tipo: "Formulario", estadoColor: "green" as const }
+              : f,
+          ),
+          ...formulasCalculadas,
+        ])
+
+        toast({
+          title: "Validación Completa - Balance General",
+          description: "Se generaron los formularios calculados y todos los formularios fueron validados exitosamente.",
         })
-        setShowErrorAlert(true)
-        setIsSubmitting(false)
-        setValidationPhase(0)
       } else {
-        // Simulate success
-        toast({ title: "Validación Completa", description: "Los formularios seleccionados han pasado la validación." })
-        // Update states to reflect validation success if needed
+        // Regular validation: update all selected forms to Validado and Formulario
         setFormulariosState((prev) =>
           prev.map((f) =>
-            selectedFormularios.includes(f.id) ? { ...f, estado: "Validado", estadoColor: "green" } : f,
+            selectedFormularios.includes(f.id)
+              ? { ...f, estado: "Validado", tipo: "Formulario", estadoColor: "green" as const }
+              : f,
           ),
         )
-        setIsSubmitting(false)
-        setValidationPhase(0)
-        setSelectedFormularios([]) // Clear selection after validation
+
+        toast({
+          title: "Validación Completa",
+          description: "Los formularios seleccionados han sido validados exitosamente.",
+        })
       }
-    }, 1500) // Simulate network latency
+
+      setIsSubmitting(false)
+      setValidationPhase(0)
+      setSelectedFormularios([])
+    }, 1500)
   }
 
   return (
@@ -1443,116 +1476,127 @@ export default function GestionFormulariosSimple({
                 </DropdownMenu>
               </div>
 
-              {/* Tabla */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-border">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                        <input
-                          type="checkbox"
-                          className="rounded"
-                          checked={selectedFormularios.length === formulariosState.length}
-                          onChange={toggleSelectAll}
-                        />
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        CÓDIGO ↕
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        NOMBRE DEL FORMULARIO ↕
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        TIPO ↕
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ESTADO DE VALIDACIÓN ↕
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ÚLTIMA MODIFICACIÓN ↕
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ACCIONES
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-border">
-                    {filteredFormularios.map((form) => (
-                      <tr key={form.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <Checkbox
-                            checked={selectedFormularios.includes(form.id)}
-                            onCheckedChange={() => {
-                              handleToggleSelectFormulario(form.id)
-                              // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
-                            }}
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
-                          >
-                            {form.estado}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
-                        <td className="px-4 py-3">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleRegistroManualClick(form.id, form.nombre)}>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Registro manual
-                              </DropdownMenuItem>
-                              {/* </CHANGE> */}
-                              <DropdownMenuItem>
-                                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                                Generar protocolo importación
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* Barra de Búsqueda */}
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar por código o nombre..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
+            </div>
 
-              {/* Paginación */}
-              <div className="p-4 border-t border-border flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Registros por página:</span>
-                  <select className="px-2 py-1 border border-input rounded-md text-sm">
-                    <option>10</option>
-                    <option>25</option>
-                    <option>50</option>
-                  </select>
-                  <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled>
-                    Primera
-                  </Button>
-                  <Button variant="outline" size="sm" disabled>
-                    Anterior
-                  </Button>
-                  <Button variant="default" size="sm">
-                    Página 1 de 1
-                  </Button>
-                  <Button variant="outline" size="sm" disabled>
-                    Siguiente
-                  </Button>
-                  <Button variant="outline" size="sm" disabled>
-                    Última
-                  </Button>
-                </div>
+            {/* Tabla */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-border">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                      <input
+                        type="checkbox"
+                        className="rounded"
+                        checked={selectedFormularios.length === formulariosState.length}
+                        onChange={toggleSelectAll}
+                      />
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      CÓDIGO ↕
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      NOMBRE DEL FORMULARIO ↕
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      TIPO ↕
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ESTADO DE VALIDACIÓN ↕
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ÚLTIMA MODIFICACIÓN ↕
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ACCIONES
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-border">
+                  {filteredFormularios.map((form) => (
+                    <tr key={form.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <Checkbox
+                          checked={selectedFormularios.includes(form.id)}
+                          onCheckedChange={() => {
+                            handleToggleSelectFormulario(form.id)
+                            // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
+                          }}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
+                        >
+                          {form.estado}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
+                      <td className="px-4 py-3">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleRegistroManualClick(form.id, form.nombre)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Registro manual
+                            </DropdownMenuItem>
+                            {/* </CHANGE> */}
+                            <DropdownMenuItem>
+                              <FileSpreadsheet className="w-4 h-4 mr-2" />
+                              Generar protocolo importación
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Paginación */}
+            <div className="p-4 border-t border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Registros por página:</span>
+                <select className="px-2 py-1 border border-input rounded-md text-sm">
+                  <option>10</option>
+                  <option>25</option>
+                  <option>50</option>
+                </select>
+                <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled>
+                  Primera
+                </Button>
+                <Button variant="outline" size="sm" disabled>
+                  Anterior
+                </Button>
+                <Button variant="default" size="sm">
+                  Página 1 de 1
+                </Button>
+                <Button variant="outline" size="sm" disabled>
+                  Siguiente
+                </Button>
+                <Button variant="outline" size="sm" disabled>
+                  Última
+                </Button>
               </div>
             </div>
           </div>
