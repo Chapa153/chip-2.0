@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Edit2, Trash2, X, Check, Search } from "lucide-react"
+import { Plus, Edit2, Trash2, Check, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface Usuario {
@@ -104,17 +104,14 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-card rounded-lg shadow-2xl border border-border w-full max-w-4xl my-8">
+    <div className="w-full">
+      <div className="bg-card rounded-lg shadow-lg border border-border">
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground p-6 flex items-center justify-between rounded-t-lg">
+        <div className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground p-6 rounded-t-lg">
           <div>
             <h2 className="text-2xl font-bold">Gestión de Usuarios</h2>
             <p className="text-sm text-primary-foreground/80">Administra los usuarios del sistema</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-primary/80 rounded-md transition">
-            <X size={24} />
-          </button>
         </div>
 
         {/* Contenido */}
