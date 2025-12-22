@@ -949,7 +949,7 @@ export default function GestionFormulariosSimple({
       console.log("[v0] Todos los formularios seleccionados - Evento Balance General")
       setValidationPhase(0)
 
-      // Actualizar estado de todos los formularios validados
+      // Actualizar estado de TODOS los formularios a validar
       const updatedFormularios = formulariosState.map((form) => {
         if (formulariosAValidar.some((f) => f.id === form.id)) {
           return {
@@ -966,16 +966,16 @@ export default function GestionFormulariosSimple({
       // Generar formularios calculados
       const formulariosCalculados: Formulario[] = [
         {
-          id: "CGN-2025-07",
-          nombre: "Indicador de Liquidez",
+          id: "CALC-17653753363416-1",
+          nombre: "Estado de Resultados Calculado",
           tipo: "Formulario",
           estado: "Validado",
           fecha: new Date().toLocaleDateString("es-CO"),
           estadoColor: "green" as const,
         },
         {
-          id: "CGN-2025-08",
-          nombre: "Razón de Endeudamiento",
+          id: "CALC-17653753363430-2",
+          nombre: "Flujo de Efectivo Calculado",
           tipo: "Formulario",
           estado: "Validado",
           fecha: new Date().toLocaleDateString("es-CO"),
@@ -984,21 +984,20 @@ export default function GestionFormulariosSimple({
       ]
 
       setFormulariosState([...updatedFormularios, ...formulariosCalculados])
-      setSimpleAlertMessage(
-        `Validación exitosa. Se validaron ${formulariosAValidar.length} formulario(s) y se generaron ${formulariosCalculados.length} formulario(s) calculado(s).`,
-      )
-      setShowSimpleAlert(true)
       setIsSubmitting(false)
+      setShowBalanceSuccessDialog(true)
       return
     }
+    // </CHANGE>
 
     // 2. Balance General: validación exitosa y generación de formularios calculados
     if (nombresFormularios.includes("Balance General")) {
       console.log("[v0] Evento Balance General: Validación exitosa")
       setValidationPhase(0)
 
+      // Actualizar solo el formulario Balance General
       const updatedFormularios = formulariosState.map((form) => {
-        if (formulariosAValidar.some((f) => f.id === form.id)) {
+        if (form.nombre === "Balance General") {
           return {
             ...form,
             estado: "Validado",
@@ -1010,18 +1009,19 @@ export default function GestionFormulariosSimple({
         return form
       })
 
+      // Generar formularios calculados
       const formulariosCalculados: Formulario[] = [
         {
-          id: "CGN-2025-07",
-          nombre: "Indicador de Liquidez",
+          id: "CALC-17653753363416-1",
+          nombre: "Estado de Resultados Calculado",
           tipo: "Formulario",
           estado: "Validado",
           fecha: new Date().toLocaleDateString("es-CO"),
           estadoColor: "green" as const,
         },
         {
-          id: "CGN-2025-08",
-          nombre: "Razón de Endeudamiento",
+          id: "CALC-17653753363430-2",
+          nombre: "Flujo de Efectivo Calculado",
           tipo: "Formulario",
           estado: "Validado",
           fecha: new Date().toLocaleDateString("es-CO"),
@@ -1030,13 +1030,11 @@ export default function GestionFormulariosSimple({
       ]
 
       setFormulariosState([...updatedFormularios, ...formulariosCalculados])
-      setSimpleAlertMessage(
-        `Validación exitosa. Se validaron ${formulariosAValidar.length} formulario(s) y se generaron ${formulariosCalculados.length} formulario(s) calculado(s).`,
-      )
-      setShowSimpleAlert(true)
       setIsSubmitting(false)
+      setShowBalanceSuccessDialog(true)
       return
     }
+    // </CHANGE>
 
     // 3. Estado de Resultados: validaciones generales
     if (nombresFormularios.includes("Estado de Resultados")) {
