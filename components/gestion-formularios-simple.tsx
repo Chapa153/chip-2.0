@@ -925,86 +925,96 @@ export default function GestionFormulariosSimple({
 
   // Function to handle 'Validar' button click
   const handleValidarSeleccionados = () => {
-    if (selectedFormularios.length === 0) {
-      toast({ title: "Selección vacía", description: "Por favor, seleccione al menos un formulario para validar." })
-      return
-    }
+    // Obtener formularios filtrados que están en estado diferente a "Validado" o "Aceptado"
+    const formulariosParaValidar = filteredFormularios.filter((f) => f.estado !== "Validado" && f.estado !== "Aceptado")
 
-    // Deshabilitar el botón si no hay formularios válidos para validar
-    if (!canValidateSelectedFormularios()) {
+    if (formulariosParaValidar.length === 0) {
       toast({
-        title: "Ningún formulario válido para validar",
-        description: "Todos los formularios seleccionados ya están validados o aceptados.",
+        title: "No hay formularios para validar",
+        description: "Todos los formularios ya están validados o aceptados.",
       })
       return
     }
-    // </CHANGE>
 
     setIsSubmitting(true)
     setValidationPhase(1)
 
-    // Simulate validation process
+    // Simular proceso de validación
     setTimeout(() => {
-      const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+      // Verificar si Balance General está incluido en los formularios a validar
+      const balanceGeneralIncluido = formulariosParaValidar.some((f) => f.id === "CGN-2025-01")
 
-      // Check if Balance General is selected
-      const balanceGeneralSelected = formulariosSeleccionados.some((f) => f.id === "CGN-2025-01")
-
-      if (balanceGeneralSelected) {
-        // Execute Balance General scenario: generate calculated forms
+      if (balanceGeneralIncluido) {
+        // Escenario Balance General: generar formularios calculados
         const formulasCalculadas = [
           {
             id: `CALC-${Date.now()}-1`,
             nombre: "Estado de Resultados Calculado",
-            tipo: "Formulario",
-            estado: "Validado",
+            tipo: "Formulario" as const,
+            estado: "Validado" as const,
             fecha: new Date().toLocaleDateString("es-ES"),
             estadoColor: "green" as const,
           },
           {
             id: `CALC-${Date.now()}-2`,
             nombre: "Flujo de Efectivo Calculado",
-            tipo: "Formulario",
-            estado: "Validado",
+            tipo: "Formulario" as const,
+            estado: "Validado" as const,
             fecha: new Date().toLocaleDateString("es-ES"),
             estadoColor: "green" as const,
           },
         ]
 
-        // Update selected forms to Validado and Formulario, and add calculated forms
+        // Actualizar formularios validados a estado "Validado" y tipo "Formulario", y agregar calculados
+        const idsParaValidar = formulariosParaValidar.map((f) => f.id)
         setFormulariosState((prev) => [
           ...prev.map((f) =>
-            selectedFormularios.includes(f.id)
-              ? { ...f, estado: "Validado", tipo: "Formulario", estadoColor: "green" as const }
+            idsParaValidar.includes(f.id)
+              ? {
+                  ...f,
+                  estado: "Validado" as const,
+                  tipo: "Formulario" as const,
+                  estadoColor: "green" as const,
+                  fecha: new Date().toLocaleDateString("es-ES"),
+                }
               : f,
           ),
           ...formulasCalculadas,
         ])
 
         toast({
-          title: "Validación Completa - Balance General",
-          description: "Se generaron los formularios calculados y todos los formularios fueron validados exitosamente.",
+          title: "✓ Validación Completa - Balance General",
+          description: `Se generaron ${formulasCalculadas.length} formularios calculados y ${formulariosParaValidar.length} formularios fueron validados exitosamente.`,
+          duration: 5000,
         })
       } else {
-        // Regular validation: update all selected forms to Validado and Formulario
+        // Validación regular: actualizar todos los formularios a "Validado" y tipo "Formulario"
+        const idsParaValidar = formulariosParaValidar.map((f) => f.id)
         setFormulariosState((prev) =>
           prev.map((f) =>
-            selectedFormularios.includes(f.id)
-              ? { ...f, estado: "Validado", tipo: "Formulario", estadoColor: "green" as const }
+            idsParaValidar.includes(f.id)
+              ? {
+                  ...f,
+                  estado: "Validado" as const,
+                  tipo: "Formulario" as const,
+                  estadoColor: "green" as const,
+                  fecha: new Date().toLocaleDateString("es-ES"),
+                }
               : f,
           ),
         )
 
         toast({
-          title: "Validación Completa",
-          description: "Los formularios seleccionados han sido validados exitosamente.",
+          title: "✓ Validación Completa",
+          description: `${formulariosParaValidar.length} formularios han sido validados exitosamente.`,
+          duration: 5000,
         })
       }
 
       setIsSubmitting(false)
       setValidationPhase(0)
-      setSelectedFormularios([])
     }, 1500)
+    // </CHANGE>
   }
 
   return (
@@ -1287,7 +1297,11 @@ export default function GestionFormulariosSimple({
                       <input
                         type="checkbox"
                         className="rounded"
-                        checked={selectedFormularios.length === formulariosState.length}
+                        checked={
+                          selectedFormularios.length === 0
+                            ? false
+                            : selectedFormularios.length === filteredFormularios.length
+                        }
                         onChange={toggleSelectAll}
                       />
                     </th>
