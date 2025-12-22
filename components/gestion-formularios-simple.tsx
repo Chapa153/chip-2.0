@@ -924,7 +924,190 @@ export default function GestionFormulariosSimple({
   }
 
   // Function to handle 'Validar' button click
-  const handleValidarSeleccionados = () => {
+  const handleValidarSeleccionados = async () => {
+    // Obtener formularios a validar (filtrados con estado diferente a Validado o Aceptado)
+    const formulariosAValidar = filteredFormularios.filter((f) => f.estado !== "Validado" && f.estado !== "Aceptado")
+
+    if (formulariosAValidar.length === 0) {
+      setSimpleAlertMessage("No hay formularios disponibles para validar.")
+      setShowSimpleAlert(true)
+      return
+    }
+
+    setIsSubmitting(true)
+    setValidationPhase(1)
+
+    // Simular tiempo de validación para Fase 1
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    // FASE 1: Validación de contenido de variables
+    console.log("[v0] Iniciando Fase 1: Validación de contenido de variables")
+    const contenidoErrors: ErrorDetails[] = [
+      {
+        formulario: "CGN-2025-01",
+        concepto: "1101-Efectivo",
+        mensaje: "Variable 1101: El valor debe ser numérico positivo",
+      },
+      {
+        formulario: "CGN-2025-02",
+        concepto: "2101-Cuentas por pagar",
+        mensaje: "Variable 2101: Formato incorrecto, se esperaba formato numérico",
+      },
+    ]
+
+    if (contenidoErrors.length > 0) {
+      setErrorData({
+        formularios: formulariosAValidar.map((f) => f.id),
+        contenido: contenidoErrors,
+        completitud: [],
+        expresiones: [],
+      })
+      setShowErrorsView(true)
+      setShowErrorAlert(true)
+      setIsSubmitting(false)
+      setValidationPhase(0)
+      return
+    }
+
+    setValidationPhase(2)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    // FASE 2: Validación de completitud
+    console.log("[v0] Iniciando Fase 2: Validación de completitud")
+    const completitudErrors: ErrorDetails[] = [
+      {
+        formulario: "CGN-2025-03",
+        concepto: "3101-Ingresos operacionales",
+        mensaje: "Variable 3101: Campo obligatorio sin completar",
+      },
+      {
+        formulario: "CGN-2025-04",
+        concepto: "4201-Gastos administrativos",
+        mensaje: "Variable 4201: Se requiere información para este campo",
+      },
+    ]
+
+    if (completitudErrors.length > 0) {
+      setErrorData({
+        formularios: formulariosAValidar.map((f) => f.id),
+        contenido: [],
+        completitud: completitudErrors,
+        expresiones: [],
+      })
+      setShowErrorsView(true)
+      setShowErrorAlert(true)
+      setIsSubmitting(false)
+      setValidationPhase(0)
+      return
+    }
+
+    setValidationPhase(3)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    // FASE 3: Validaciones generales
+    console.log("[v0] Iniciando Fase 3: Validaciones generales")
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    setValidationPhase(4)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    // FASE 4: Expresiones de validación locales
+    console.log("[v0] Iniciando Fase 4: Expresiones de validación locales")
+    const expresionesErrors: ErrorDetails[] = [
+      {
+        formulario: "CGN-2025-01",
+        codigo: "EVL001",
+        concepto: "Balance General",
+        mensaje: "ACTIVO TOTAL - PASIVO TOTAL - PATRIMONIO <> 0. Diferencia encontrada: $5,000",
+        permisible: "SI",
+        necesitaComentario: "SI",
+      },
+      {
+        formulario: "CGN-2025-02",
+        codigo: "EVL002",
+        concepto: "Estado de Resultados",
+        mensaje: "INGRESOS - GASTOS <> UTILIDAD/PÉRDIDA. Diferencia: $2,500",
+        permisible: "NO",
+        necesitaComentario: "NO",
+      },
+    ]
+
+    if (expresionesErrors.length > 0) {
+      setErrorData({
+        formularios: formulariosAValidar.map((f) => f.id),
+        contenido: [],
+        completitud: [],
+        expresiones: expresionesErrors,
+      })
+      setShowErrorsView(true)
+      setShowErrorAlert(true)
+      setIsSubmitting(false)
+      setValidationPhase(0)
+      return
+    }
+
+    // Si no hay errores, validación exitosa
+    console.log("[v0] Todas las validaciones locales pasadas exitosamente")
+    setValidationPhase(0)
+
+    // Actualizar estado de los formularios validados
+    const updatedFormularios = formulariosState.map((form) => {
+      if (formulariosAValidar.some((f) => f.id === form.id)) {
+        return {
+          ...form,
+          estado: "Validado",
+          tipo: "Formulario",
+          fecha: new Date().toLocaleDateString("es-CO"),
+          estadoColor: "green" as const,
+        }
+      }
+      return form
+    })
+
+    // Generar formularios calculados si se validó Balance General
+    const balanceGeneralValidado = formulariosAValidar.some((f) => f.nombre === "Balance General")
+    let formulariosCalculados: Formulario[] = []
+
+    if (balanceGeneralValidado) {
+      console.log("[v0] Generando formularios calculados para Balance General")
+      formulariosCalculados = [
+        {
+          id: "CGN-2025-07",
+          nombre: "Indicador de Liquidez",
+          tipo: "Formulario",
+          estado: "Validado",
+          fecha: new Date().toLocaleDateString("es-CO"),
+          estadoColor: "green" as const,
+        },
+        {
+          id: "CGN-2025-08",
+          nombre: "Razón de Endeudamiento",
+          tipo: "Formulario",
+          estado: "Validado",
+          fecha: new Date().toLocaleDateString("es-CO"),
+          estadoColor: "green" as const,
+        },
+      ]
+
+      setFormulariosState([...updatedFormularios, ...formulariosCalculados])
+
+      // Mostrar mensaje de éxito con formularios calculados generados
+      setSimpleAlertMessage(
+        `Validación exitosa. Se validaron ${formulariosAValidar.length} formulario(s) y se generaron ${formulariosCalculados.length} formulario(s) calculado(s).`,
+      )
+    } else {
+      setFormulariosState(updatedFormularios)
+
+      // Mostrar mensaje de éxito simple
+      setSimpleAlertMessage(`Validación exitosa. Se validaron ${formulariosAValidar.length} formulario(s).`)
+    }
+
+    setShowSimpleAlert(true)
+    setIsSubmitting(false)
+  }
+  // </CHANGE>
+
+  const handleValidarSeleccionados_OLD = () => {
     // Obtener formularios filtrados que están en estado diferente a "Validado" o "Aceptado"
     const formulariosParaValidar = filteredFormularios.filter((f) => f.estado !== "Validado" && f.estado !== "Aceptado")
 
@@ -1448,79 +1631,6 @@ export default function GestionFormulariosSimple({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {isSubmitting && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-6 max-w-md">
-              <Loader2 className="w-16 h-16 animate-spin text-primary" />
-              <div className="text-center space-y-4 w-full">
-                <h3 className="text-lg font-semibold text-gray-900">Validando formularios</h3>
-                <div className="space-y-3 text-left">
-                  <div
-                    className={`flex items-center gap-3 ${validationPhase >= 1 ? "text-gray-900" : "text-gray-400"}`}
-                  >
-                    {validationPhase > 1 ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    ) : validationPhase === 1 ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                    )}
-                    <span className="text-sm">1. Validaciones generales</span>
-                  </div>
-                  <div
-                    className={`flex items-center gap-3 ${validationPhase >= 2 ? "text-gray-900" : "text-gray-400"}`}
-                  >
-                    {validationPhase > 2 ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    ) : validationPhase === 2 ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                    )}
-                    <span className="text-sm">2. Contenido de variables</span>
-                  </div>
-                  <div
-                    className={`flex items-center gap-3 ${validationPhase >= 3 ? "text-gray-900" : "text-gray-400"}`}
-                  >
-                    {validationPhase > 3 ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    ) : validationPhase === 3 ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                    )}
-                    <span className="text-sm">3. Completitud</span>
-                  </div>
-                  <div
-                    className={`flex items-center gap-3 ${validationPhase >= 4 ? "text-gray-900" : "text-gray-400"}`}
-                  >
-                    {validationPhase > 4 ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    ) : validationPhase === 4 ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                    )}
-                    <span className="text-sm">4. Expresiones de validación locales</span>
-                  </div>
-                  <div
-                    className={`flex items-center gap-3 ${validationPhase >= 5 ? "text-gray-900" : "text-gray-400"}`}
-                  >
-                    {validationPhase > 5 ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    ) : validationPhase === 5 ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
-                    )}
-                    <span className="text-sm">5. Expresiones de validación centrales</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         <Dialog open={showCertificationDialog} onOpenChange={setShowCertificationDialog}>
           <DialogContent className="max-w-2xl">
