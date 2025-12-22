@@ -936,9 +936,8 @@ export default function GestionFormulariosSimple({
       return
     }
 
+    // Iniciar loading y mostrar capas de carga con fases
     setIsSubmitting(true)
-    setValidationPhase(1)
-    await new Promise((resolve) => setTimeout(resolve, 800))
 
     // Determinar qué tipo de evento ejecutar según los formularios seleccionados
     const nombresFormularios = formulariosAValidar.map((f) => f.nombre)
@@ -947,6 +946,16 @@ export default function GestionFormulariosSimple({
     // 7. Si se seleccionan TODOS los formularios: validación exitosa (Balance General)
     if (todosLosFormularios) {
       console.log("[v0] Todos los formularios seleccionados - Evento Balance General")
+
+      // Mostrar fases de validación
+      setValidationPhase(1) // Contenido
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setValidationPhase(2) // Completitud
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setValidationPhase(3) // Validaciones generales
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setValidationPhase(4) // Expresiones de validación
+      await new Promise((resolve) => setTimeout(resolve, 800))
       setValidationPhase(0)
 
       // Actualizar estado de TODOS los formularios seleccionados
@@ -963,23 +972,23 @@ export default function GestionFormulariosSimple({
         return form
       })
 
-      // Generar formularios calculados
+      // Generar formularios calculados con estado "Pendiente en validar"
       const formulariosCalculados: Formulario[] = [
         {
           id: "CALC-17653753363416-1",
           nombre: "Estado de Resultados Calculado",
           tipo: "Formulario",
-          estado: "Validado",
+          estado: "Pendiente en validar",
           fecha: new Date().toLocaleDateString("es-CO"),
-          estadoColor: "green" as const,
+          estadoColor: "yellow" as const,
         },
         {
           id: "CALC-17653753363430-2",
           nombre: "Flujo de Efectivo Calculado",
           tipo: "Formulario",
-          estado: "Validado",
+          estado: "Pendiente en validar",
           fecha: new Date().toLocaleDateString("es-CO"),
-          estadoColor: "green" as const,
+          estadoColor: "yellow" as const,
         },
       ]
 
@@ -992,6 +1001,16 @@ export default function GestionFormulariosSimple({
     // 2. Balance General: validación exitosa y generación de formularios calculados (un solo formulario)
     if (nombresFormularios.includes("Balance General") && formulariosAValidar.length === 1) {
       console.log("[v0] Evento Balance General: Validación exitosa (un formulario)")
+
+      // Mostrar fases de validación
+      setValidationPhase(1)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setValidationPhase(2)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setValidationPhase(3)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setValidationPhase(4)
+      await new Promise((resolve) => setTimeout(resolve, 800))
       setValidationPhase(0)
 
       // Actualizar solo el formulario Balance General seleccionado
@@ -1008,23 +1027,23 @@ export default function GestionFormulariosSimple({
         return form
       })
 
-      // Generar formularios calculados
+      // Generar formularios calculados con estado "Pendiente en validar"
       const formulariosCalculados: Formulario[] = [
         {
           id: "CALC-17653753363416-1",
           nombre: "Estado de Resultados Calculado",
           tipo: "Formulario",
-          estado: "Validado",
+          estado: "Pendiente en validar",
           fecha: new Date().toLocaleDateString("es-CO"),
-          estadoColor: "green" as const,
+          estadoColor: "yellow" as const,
         },
         {
           id: "CALC-17653753363430-2",
           nombre: "Flujo de Efectivo Calculado",
           tipo: "Formulario",
-          estado: "Validado",
+          estado: "Pendiente en validar",
           fecha: new Date().toLocaleDateString("es-CO"),
-          estadoColor: "green" as const,
+          estadoColor: "yellow" as const,
         },
       ]
 
@@ -1034,10 +1053,11 @@ export default function GestionFormulariosSimple({
       return
     }
 
+    // 3. Estado de Resultados: validaciones generales (NO cambia estado)
     if (nombresFormularios.includes("Estado de Resultados")) {
       console.log("[v0] Evento Estado de Resultados: Validaciones generales")
-      setValidationPhase(3)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setValidationPhase(3) // Solo fase 3: Validaciones generales
+      await new Promise((resolve) => setTimeout(resolve, 1500))
       setValidationPhase(0)
       setIsSubmitting(false)
 
@@ -1049,10 +1069,11 @@ export default function GestionFormulariosSimple({
       return
     }
 
+    // 4. Flujo de Efectivo: errores de datos
     if (nombresFormularios.includes("Flujo de Efectivo")) {
       console.log("[v0] Evento Flujo de Efectivo: Errores de datos")
-      setValidationPhase(1)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setValidationPhase(1) // Fase 1: Validación de contenido/datos
+      await new Promise((resolve) => setTimeout(resolve, 1500))
       setValidationPhase(0)
 
       const contenidoErrors: ErrorDetails[] = [
@@ -1075,16 +1096,17 @@ export default function GestionFormulariosSimple({
         expresiones: [],
       })
 
-      // Mostrar primero la alerta, luego la interfaz de errores
-      setShowErrorAlert(true)
       setIsSubmitting(false)
+      // Mostrar primero la alerta, luego la interfaz de errores al hacer clic en "Ver Errores"
+      setShowErrorAlert(true)
       return
     }
 
+    // 5. Estado de Cambios en el Patrimonio: errores de completitud
     if (nombresFormularios.includes("Estado de Cambios en el Patrimonio")) {
       console.log("[v0] Evento Estado de Cambios: Errores de completitud")
-      setValidationPhase(2)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setValidationPhase(2) // Fase 2: Validación de completitud
+      await new Promise((resolve) => setTimeout(resolve, 1500))
       setValidationPhase(0)
 
       const completitudErrors: ErrorDetails[] = [
@@ -1107,16 +1129,17 @@ export default function GestionFormulariosSimple({
         expresiones: [],
       })
 
-      // Mostrar primero la alerta, luego la interfaz de errores
-      setShowErrorAlert(true)
       setIsSubmitting(false)
+      // Mostrar primero la alerta, luego la interfaz de errores al hacer clic en "Ver Errores"
+      setShowErrorAlert(true)
       return
     }
 
+    // 6. Notas a los Estados Financieros: errores de validación local
     if (nombresFormularios.includes("Notas a los Estados Financieros")) {
       console.log("[v0] Evento Notas: Errores de validación local")
-      setValidationPhase(4)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setValidationPhase(4) // Fase 4: Expresiones de validación local
+      await new Promise((resolve) => setTimeout(resolve, 1500))
       setValidationPhase(0)
 
       const expresionesErrors: ErrorDetails[] = [
@@ -1139,9 +1162,9 @@ export default function GestionFormulariosSimple({
         expresiones: expresionesErrors,
       })
 
-      // Mostrar primero la alerta, luego la interfaz de errores
-      setShowErrorAlert(true)
       setIsSubmitting(false)
+      // Mostrar primero la alerta, luego la interfaz de errores al hacer clic en "Ver Errores"
+      setShowErrorAlert(true)
       return
     }
 
@@ -1161,9 +1184,9 @@ export default function GestionFormulariosSimple({
     })
 
     setFormulariosState(updatedFormularios)
-    setSimpleAlertMessage(`Se validaron ${formulariosAValidar.length} formulario(s) exitosamente.`)
-    setShowSimpleAlert(true)
     setIsSubmitting(false)
+    setSimpleAlertMessage(`${formulariosAValidar.length} formulario(s) validado(s) exitosamente.`)
+    setShowSimpleAlert(true)
   }
 
   return (
@@ -1307,8 +1330,18 @@ export default function GestionFormulariosSimple({
                   disabled={!canValidateSelectedFormularios() || isSubmitting}
                   // </CHANGE>
                 >
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Validar
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Validando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Validar
+                    </>
+                  )}
+                  {/* </CHANGE> */}
                 </Button>
                 <Button
                   variant="outline"
@@ -1318,17 +1351,9 @@ export default function GestionFormulariosSimple({
                   onClick={handleEnviar}
                   className={!canSendSelectedFormularios() && !isSubmitting ? "opacity-50 cursor-not-allowed" : ""}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Enviar
-                    </>
-                  )}
+                  <Send className="w-4 h-4 mr-2" />
+                  Enviar
+                  {/* </CHANGE> */}
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1801,7 +1826,8 @@ export default function GestionFormulariosSimple({
                   <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                   <div className="space-y-3">
                     <p className="font-semibold text-green-900">
-                      El formulario Balance General fue validado exitosamente.
+                      El formulario Balance General fue <strong>validado</strong> exitosamente.
+                      {/* </CHANGE> */}
                     </p>
                     <p className="text-sm text-green-800">
                       Se han generado automáticamente los siguientes formularios calculados:
@@ -2038,6 +2064,32 @@ export default function GestionFormulariosSimple({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {isSubmitting && validationPhase > 0 && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4">
+              <div className="flex flex-col items-center gap-6">
+                <Loader2 className="w-16 h-16 text-blue-600 animate-spin" />
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-semibold text-gray-900">Procesando validaciones</h3>
+                  <p className="text-sm text-gray-600">
+                    {validationPhase === 1 && "Validando contenido de variables..."}
+                    {validationPhase === 2 && "Verificando completitud de datos..."}
+                    {validationPhase === 3 && "Ejecutando validaciones generales..."}
+                    {validationPhase === 4 && "Aplicando expresiones de validación local..."}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <div className={`w-3 h-3 rounded-full ${validationPhase >= 1 ? "bg-blue-600" : "bg-gray-300"}`} />
+                  <div className={`w-3 h-3 rounded-full ${validationPhase >= 2 ? "bg-blue-600" : "bg-gray-300"}`} />
+                  <div className={`w-3 h-3 rounded-full ${validationPhase >= 3 ? "bg-blue-600" : "bg-gray-300"}`} />
+                  <div className={`w-3 h-3 rounded-full ${validationPhase >= 4 ? "bg-blue-600" : "bg-gray-300"}`} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* </CHANGE> */}
       </div>
     </div>
   )
