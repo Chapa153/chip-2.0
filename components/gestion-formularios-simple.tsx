@@ -1096,6 +1096,20 @@ export default function GestionFormulariosSimple({
         expresiones: [],
       })
 
+      const updatedFormulariosConErrores = formulariosState.map((form) => {
+        if (formulariosAValidar.some((f) => f.id === form.id)) {
+          return {
+            ...form,
+            estado: "Rechazado por Deficiencia",
+            tipo: "Categoría",
+            fecha: new Date().toLocaleDateString("es-CO"),
+            estadoColor: "red" as const,
+          }
+        }
+        return form
+      })
+      setFormulariosState(updatedFormulariosConErrores)
+
       setIsSubmitting(false)
       // Mostrar primero la alerta, luego la interfaz de errores al hacer clic en "Ver Errores"
       setShowErrorAlert(true)
@@ -1128,6 +1142,20 @@ export default function GestionFormulariosSimple({
         completitud: completitudErrors,
         expresiones: [],
       })
+
+      const updatedFormulariosConErrores = formulariosState.map((form) => {
+        if (formulariosAValidar.some((f) => f.id === form.id)) {
+          return {
+            ...form,
+            estado: "Rechazado por Deficiencia",
+            tipo: "Categoría",
+            fecha: new Date().toLocaleDateString("es-CO"),
+            estadoColor: "red" as const,
+          }
+        }
+        return form
+      })
+      setFormulariosState(updatedFormulariosConErrores)
 
       setIsSubmitting(false)
       // Mostrar primero la alerta, luego la interfaz de errores al hacer clic en "Ver Errores"
@@ -1166,6 +1194,20 @@ export default function GestionFormulariosSimple({
         completitud: [],
         expresiones: expresionesErrors,
       })
+
+      const updatedFormulariosConErrores = formulariosState.map((form) => {
+        if (formulariosAValidar.some((f) => f.id === form.id)) {
+          return {
+            ...form,
+            estado: "Rechazado por Deficiencia",
+            tipo: "Categoría",
+            fecha: new Date().toLocaleDateString("es-CO"),
+            estadoColor: "red" as const,
+          }
+        }
+        return form
+      })
+      setFormulariosState(updatedFormulariosConErrores)
 
       setIsSubmitting(false)
       // Mostrar primero la alerta, luego la interfaz de errores al hacer clic en "Ver Errores"
