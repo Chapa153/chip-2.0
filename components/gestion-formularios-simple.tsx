@@ -278,248 +278,19 @@ export default function GestionFormulariosSimple({
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  // Reemplazo de `selectedForms` con `selectedFormularios` y ajuste en `handleEnviar` para usar `id` en lugar de `codigo`
   const handleEnviar = async () => {
-    console.log("[v0] handleEnviar - Iniciando envío")
-    const allowedStates = getEstadosPermitidos()
-    console.log("[v0] Estados permitidos:", allowedStates)
+    console.log("[v0] Iniciando envío con formularios filtrados")
 
-    const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
-    console.log("[v0] Formularios seleccionados:", formulariosSeleccionados)
-
-    const todosSeleccionados = formulariosSeleccionados.length === formulariosState.length
-    console.log("[v0] ¿Todos los formularios seleccionados?:", todosSeleccionados)
-
-    const todosValidados = formulariosSeleccionados.every((f) => f.estado === "Validado")
-    console.log("[v0] ¿Todos los formularios validados?:", todosValidados)
-
+    // Verificar si la categoría es INFORMACIÓN CONTABLE PÚBLICA y todos los filtrados están en estado Validado
     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA" && filteredFormularios.every((f) => f.estado === "Validado")) {
-      console.log("[v0] Categoría INFORMACIÓN CONTABLE - Ejecutando validaciones centrales con errores")
-      setIsValidatingCentral(true)
-      setValidationPhase(5)
-
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      setIsValidatingCentral(false)
-      setValidationPhase(0)
-      setShowCentralErrorDialog(true)
+      console.log("[v0] Categoría INFORMACIÓN CONTABLE PÚBLICA - Mostrando diálogo de certificación")
+      // Mostrar diálogo de certificación inicial
+      setShowCertificationDialog(true)
       return
     }
 
-    if (todosSeleccionados) {
-      if (todosValidados) {
-        console.log("[v0] Todos los formularios están validados - iniciando validación central (Fase 5)")
-        setShowCertificationDialog(true)
-        return
-      }
-      // </CHANGE>
-
-      console.log("[v0] Todos los formularios seleccionados - iniciando validación completa con fases 1-4")
-      setIsSubmitting(true)
-
-      // Fase 1: Contenido de variables
-      setValidationPhase(1)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Fase 2: Completitud
-      setValidationPhase(2)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Fase 3: Validaciones generales
-      setValidationPhase(3)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Fase 4: Expresiones de validación locales
-      setValidationPhase(4)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      setIsSubmitting(false)
-      setValidationPhase(0)
-
-      // Actualizar todos los formularios a estado Validado
-      setFormulariosState((prev) =>
-        prev.map((f) => ({
-          ...f,
-          estado: "Validado",
-          estadoColor: "green",
-        })),
-      )
-
-      // Mostrar diálogo de validación exitosa
-      setShowAllFormsSuccessDialog(true)
-      setSelectedFormularios([])
-      return
-      // </CHANGE>
-    }
-
-    // Implementación de la lógica de validación con separación de errores por tipo
-    setErrorsSeen(false)
-    setIsSubmitting(true)
-    setValidationPhase(1)
-
-    const allErrors: Array<{
-      formulario: string
-      concepto: string
-      mensaje: string
-      codigo?: string
-      permisible?: string
-      necesitaComentario?: string
-    }> = []
-
-    const errorsByType: {
-      contenido: typeof allErrors
-      completitud: typeof allErrors
-      expresiones: typeof allErrors
-    } = {
-      contenido: [],
-      completitud: [],
-      expresiones: [],
-    }
-
-    let hasInformativeAlert = false
-
-    // Fase 1: Contenido de variables
-    setValidationPhase(1) // Manteniendo la fase 1 para el flujo normal
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Fase 2: Completitud
-    setValidationPhase(2)
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    if (selectedFormularios.includes("CGN-2025-05")) {
-      // Notas a los Estados Financieros
-      errorsByType.contenido.push(
-        {
-          formulario: "Notas a los Estados Financieros",
-          concepto: "5110 - Inversiones en subsidiarias",
-          mensaje: "var-3: Tipo de dato incorrecto - esperado numérico",
-        },
-        {
-          formulario: "Notas a los Estados Financieros",
-          concepto: "5305 - Gestión de riesgos financieros",
-          mensaje: "var-5: Valor fuera del rango permitido",
-        },
-      )
-    }
-
-    // Fase 3: Validaciones generales
-    setValidationPhase(3)
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    if (selectedFormularios.includes("CGN-2025-04")) {
-      // Estado de Cambios en el Patrimonio
-      errorsByType.completitud.push(
-        {
-          formulario: "Estado de Cambios en el Patrimonio",
-          concepto: "3105 - Capital suscrito y pagado",
-          mensaje: "var-1: Campo requerido sin completar",
-        },
-        {
-          formulario: "Estado de Cambios en el Patrimonio",
-          concepto: "3205 - Reservas",
-          mensaje: "var-4: Campo requerido sin completar",
-        },
-      )
-    }
-
-    if (selectedFormularios.includes("CGN-2025-03")) {
-      // Flujo de Efectivo
-      hasInformativeAlert = true
-      setSimpleAlertMessage(
-        "El formulario Flujo de Efectivo presenta las siguientes validaciones generales:\n\n" +
-          "• Las actividades de operación deben cuadrar con el estado de resultados\n" +
-          "• Las actividades de inversión deben estar correctamente clasificadas\n" +
-          "• Las actividades de financiación deben estar correctamente clasificadas",
-      )
-      setShowSimpleAlert(true)
-    }
-
-    // Fase 4: Expresiones de validación locales
-    setValidationPhase(4)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    if (selectedFormularios.includes("CGN-2025-02")) {
-      // Estado de Resultados
-      errorsByType.expresiones.push(
-        {
-          formulario: "Estado de Resultados",
-          concepto: "",
-          mensaje: "Mensaje",
-          codigo: "codigo_mensaje",
-          permisible: "SI",
-          necesitaComentario: "SI",
-        },
-        {
-          formulario: "Estado de Resultados",
-          concepto: "",
-          mensaje: "Mensaje",
-          codigo: "codigo_mensaje",
-          permisible: "NO",
-          necesitaComentario: "NO",
-        },
-      )
-    }
-
-    const totalErrors =
-      errorsByType.contenido.length + errorsByType.completitud.length + errorsByType.expresiones.length
-
-    // Si hay errores en fases 1-4, mostrar errores y detener
-    if (totalErrors > 0) {
-      setErrorData({
-        formularios: selectedFormularios
-          .map((id) => {
-            const form = formulariosState.find((f) => f.id === id)
-            return form?.nombre || ""
-          })
-          .filter(Boolean),
-        contenido: errorsByType.contenido,
-        completitud: errorsByType.completitud,
-        expresiones: errorsByType.expresiones,
-      })
-      setShowErrorAlert(true)
-      setIsSubmitting(false)
-      setValidationPhase(0)
-      return
-    }
-
-    // Si hay alertas informativas y no hay errores críticos
-    if (hasInformativeAlert) {
-      setIsSubmitting(false)
-      setValidationPhase(0)
-      return
-    }
-
-    // Si no todos están seleccionados y no hay errores, marcar como enviado
-    formulariosSeleccionados.forEach((form) => {
-      if (form.id === "CGN-2025-01") {
-        // Balance General genera formularios calculados
-        const formulasCalculadas = [
-          {
-            id: `CALC-${Date.now()}-1`,
-            nombre: "Estado de Resultados Calculado",
-            tipo: "Formulario",
-            estado: "Pendiente en validar",
-            fecha: new Date().toLocaleDateString("es-ES"),
-            estadoColor: "yellow" as const,
-          },
-          {
-            id: `CALC-${Date.now()}-2`,
-            nombre: "Flujo de Efectivo Calculado",
-            tipo: "Formulario",
-            estado: "Pendiente en validar",
-            fecha: new Date().toLocaleDateString("es-ES"),
-            estadoColor: "yellow" as const,
-          },
-        ]
-
-        setFormulariosState((prev) => [...prev, ...formulasCalculadas])
-        setShowBalanceSuccessDialog(true)
-      }
-    })
-
-    setIsSubmitting(false)
-    setValidationPhase(0)
-    setSelectedFormularios([])
+    // Para otras categorías o estados, mostrar mensaje
+    alert("El botón Enviar solo está habilitado cuando se cumplen las condiciones especificadas.")
   }
   // </CHANGE>
 
@@ -1871,8 +1642,6 @@ export default function GestionFormulariosSimple({
                 onClick={() => {
                   if (adjuntoPDF && nombreAdjunto) {
                     console.log("[v0] PDF adjunto:", nombreAdjunto, adjuntoPDF.name, "Tamaño:", adjuntoPDF.size)
-                    // Save attachment info to form details
-                    // This would typically be saved to the database with the form submission
                   }
 
                   setShowCertificationDialog(false)
@@ -1883,33 +1652,47 @@ export default function GestionFormulariosSimple({
                     setIsSubmitting(false)
                     setValidationPhase(0)
 
-                    // Verificar categoría para determinar éxito o error
-                    if (categoria === "INFORMACIÓN PRESUPUESTAL") {
-                      setShowCentralSuccessDialog(true)
-                      // Actualizar todos los formularios a Categoría y Aceptado
-                      setFormulariosState((prev) =>
-                        prev.map((f) => ({
-                          ...f,
-                          tipo: "Categoría",
-                          estado: "Aceptado",
-                          estadoColor: "green",
-                          fecha: new Date().toLocaleDateString("es-ES"),
-                        })),
-                      )
-                    } else {
+                    // Para INFORMACIÓN CONTABLE PÚBLICA siempre mostrar error central
+                    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA") {
+                      console.log("[v0] Mostrando error de validación central para INFORMACIÓN CONTABLE PÚBLICA")
                       setShowCentralErrorDialog(true)
-                      // Actualizar todos los formularios a Categoría y Rechazado por Deficiencia
+                      // Actualizar todos los formularios filtrados a Categoría y Rechazado por Deficiencia
                       setFormulariosState((prev) =>
-                        prev.map((f) => ({
-                          ...f,
-                          tipo: "Categoría",
-                          estado: "Rechazado por Deficiencia",
-                          estadoColor: "red",
-                          fecha: new Date().toLocaleDateString("es-ES"),
-                        })),
+                        prev.map((f) => {
+                          const isFiltered = filteredFormularios.some((ff) => ff.id === f.id)
+                          if (isFiltered) {
+                            return {
+                              ...f,
+                              tipo: "Categoría",
+                              estado: "Rechazado por Deficiencia",
+                              estadoColor: "red",
+                              fecha: new Date().toLocaleDateString("es-ES"),
+                            }
+                          }
+                          return f
+                        }),
+                      )
+                    } else if (categoria === "INFORMACIÓN PRESUPUESTAL") {
+                      setShowCentralSuccessDialog(true)
+                      // Actualizar todos los formularios filtrados a Categoría y Aceptado
+                      setFormulariosState((prev) =>
+                        prev.map((f) => {
+                          const isFiltered = filteredFormularios.some((ff) => ff.id === f.id)
+                          if (isFiltered) {
+                            return {
+                              ...f,
+                              tipo: "Categoría",
+                              estado: "Aceptado",
+                              estadoColor: "green",
+                              fecha: new Date().toLocaleDateString("es-ES"),
+                            }
+                          }
+                          return f
+                        }),
                       )
                     }
                   }, 2000)
+                  // </CHANGE>
                 }}
               >
                 Aceptar
