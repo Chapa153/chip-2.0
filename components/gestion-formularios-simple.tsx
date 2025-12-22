@@ -925,11 +925,13 @@ export default function GestionFormulariosSimple({
 
   // Function to handle 'Validar' button click
   const handleValidarSeleccionados = async () => {
-    // Obtener formularios a validar (filtrados con estado diferente a Validado o Aceptado)
-    const formulariosAValidar = filteredFormularios.filter((f) => f.estado !== "Validado" && f.estado !== "Aceptado")
+    const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+    const formulariosAValidar = formulariosSeleccionados.filter(
+      (f) => f.estado !== "Validado" && f.estado !== "Aceptado",
+    )
 
     if (formulariosAValidar.length === 0) {
-      setSimpleAlertMessage("No hay formularios disponibles para validar.")
+      setSimpleAlertMessage("No hay formularios seleccionados disponibles para validar.")
       setShowSimpleAlert(true)
       return
     }
@@ -939,17 +941,17 @@ export default function GestionFormulariosSimple({
 
     // Determinar qué tipo de evento ejecutar según los formularios seleccionados
     const nombresFormularios = formulariosAValidar.map((f) => f.nombre)
-    const todosLosFormularios = nombresFormularios.length === filteredFormularios.length
+    const todosLosFormularios = formulariosSeleccionados.length === filteredFormularios.length
 
     // 1. Capa de errores general antes de mostrar errores específicos
     await new Promise((resolve) => setTimeout(resolve, 500))
 
-    // 7. Si se seleccionan todos los formularios: validación exitosa (Balance General)
+    // 7. Si se seleccionan TODOS los formularios: validación exitosa (Balance General)
     if (todosLosFormularios) {
       console.log("[v0] Todos los formularios seleccionados - Evento Balance General")
       setValidationPhase(0)
 
-      // Actualizar estado de TODOS los formularios a validar
+      // Actualizar estado de TODOS los formularios seleccionados
       const updatedFormularios = formulariosState.map((form) => {
         if (formulariosAValidar.some((f) => f.id === form.id)) {
           return {
@@ -988,16 +990,15 @@ export default function GestionFormulariosSimple({
       setShowBalanceSuccessDialog(true)
       return
     }
-    // </CHANGE>
 
-    // 2. Balance General: validación exitosa y generación de formularios calculados
-    if (nombresFormularios.includes("Balance General")) {
-      console.log("[v0] Evento Balance General: Validación exitosa")
+    // 2. Balance General: validación exitosa y generación de formularios calculados (un solo formulario)
+    if (nombresFormularios.includes("Balance General") && formulariosAValidar.length === 1) {
+      console.log("[v0] Evento Balance General: Validación exitosa (un formulario)")
       setValidationPhase(0)
 
-      // Actualizar solo el formulario Balance General
+      // Actualizar solo el formulario Balance General seleccionado
       const updatedFormularios = formulariosState.map((form) => {
-        if (form.nombre === "Balance General") {
+        if (formulariosAValidar.some((f) => f.id === form.id)) {
           return {
             ...form,
             estado: "Validado",
@@ -1752,7 +1753,7 @@ export default function GestionFormulariosSimple({
               <Button
                 onClick={() => {
                   if (adjuntoPDF && nombreAdjunto) {
-                    console.log("[v0] PDF adjunto:", nombreAdjunto, adjuntoPDF.name, "Tamaño:", adjuntoPDF.size)
+                    console.log("[v0] PDF adjunto:", nombreAdjunto, adjuntoPDF.name)
                   }
 
                   setShowCertificationDialog(false)
@@ -1826,7 +1827,7 @@ export default function GestionFormulariosSimple({
                   <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                   <div className="space-y-3">
                     <p className="font-semibold text-green-900">
-                      El formulario Balance General fue aceptado exitosamente.
+                      El formulario Balance General fue validado exitosamente.
                     </p>
                     <p className="text-sm text-green-800">
                       Se han generado automáticamente los siguientes formularios calculados:
