@@ -938,13 +938,11 @@ export default function GestionFormulariosSimple({
 
     setIsSubmitting(true)
     setValidationPhase(1)
+    await new Promise((resolve) => setTimeout(resolve, 800))
 
     // Determinar qué tipo de evento ejecutar según los formularios seleccionados
     const nombresFormularios = formulariosAValidar.map((f) => f.nombre)
     const todosLosFormularios = formulariosSeleccionados.length === filteredFormularios.length
-
-    // 1. Capa de errores general antes de mostrar errores específicos
-    await new Promise((resolve) => setTimeout(resolve, 500))
 
     // 7. Si se seleccionan TODOS los formularios: validación exitosa (Balance General)
     if (todosLosFormularios) {
@@ -1035,44 +1033,27 @@ export default function GestionFormulariosSimple({
       setShowBalanceSuccessDialog(true)
       return
     }
-    // </CHANGE>
 
-    // 3. Estado de Resultados: validaciones generales
     if (nombresFormularios.includes("Estado de Resultados")) {
       console.log("[v0] Evento Estado de Resultados: Validaciones generales")
       setValidationPhase(3)
       await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Simular validaciones generales exitosas
       setValidationPhase(0)
+      setIsSubmitting(false)
 
-      const updatedFormularios = formulariosState.map((form) => {
-        if (formulariosAValidar.some((f) => f.id === form.id)) {
-          return {
-            ...form,
-            estado: "Validado",
-            tipo: "Formulario",
-            fecha: new Date().toLocaleDateString("es-CO"),
-            estadoColor: "green" as const,
-          }
-        }
-        return form
-      })
-
-      setFormulariosState(updatedFormularios)
+      // NO cambiar estado del formulario, solo mostrar mensaje
       setSimpleAlertMessage(
-        `Validaciones generales completadas exitosamente. Se validaron ${formulariosAValidar.length} formulario(s).`,
+        `Validaciones generales completadas exitosamente para ${formulariosAValidar.length} formulario(s).`,
       )
       setShowSimpleAlert(true)
-      setIsSubmitting(false)
       return
     }
 
-    // 4. Flujo de Efectivo: errores de datos
     if (nombresFormularios.includes("Flujo de Efectivo")) {
       console.log("[v0] Evento Flujo de Efectivo: Errores de datos")
       setValidationPhase(1)
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setValidationPhase(0)
 
       const contenidoErrors: ErrorDetails[] = [
         {
@@ -1093,29 +1074,29 @@ export default function GestionFormulariosSimple({
         completitud: [],
         expresiones: [],
       })
-      setShowErrorsView(true)
+
+      // Mostrar primero la alerta, luego la interfaz de errores
       setShowErrorAlert(true)
       setIsSubmitting(false)
-      setValidationPhase(0)
       return
     }
 
-    // 5. Estado de Cambios en el Patrimonio: errores de completitud
     if (nombresFormularios.includes("Estado de Cambios en el Patrimonio")) {
-      console.log("[v0] Evento Estado de Cambios en el Patrimonio: Errores de completitud")
+      console.log("[v0] Evento Estado de Cambios: Errores de completitud")
       setValidationPhase(2)
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setValidationPhase(0)
 
       const completitudErrors: ErrorDetails[] = [
         {
           formulario: "CGN-2025-04",
           concepto: "Capital social",
-          mensaje: "Variable 4101: Campo obligatorio sin completar",
+          mensaje: "Falta diligenciar el campo 'Saldo Inicial'",
         },
         {
           formulario: "CGN-2025-04",
           concepto: "Reservas",
-          mensaje: "Variable 4102: Se requiere información para este campo",
+          mensaje: "El campo 'Movimientos del período' está incompleto",
         },
       ]
 
@@ -1125,35 +1106,29 @@ export default function GestionFormulariosSimple({
         completitud: completitudErrors,
         expresiones: [],
       })
-      setShowErrorsView(true)
+
+      // Mostrar primero la alerta, luego la interfaz de errores
       setShowErrorAlert(true)
       setIsSubmitting(false)
-      setValidationPhase(0)
       return
     }
 
-    // 6. Notas a los Estados Financieros: errores de validación local
     if (nombresFormularios.includes("Notas a los Estados Financieros")) {
-      console.log("[v0] Evento Notas a los Estados Financieros: Errores de validación local")
+      console.log("[v0] Evento Notas: Errores de validación local")
       setValidationPhase(4)
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setValidationPhase(0)
 
       const expresionesErrors: ErrorDetails[] = [
         {
           formulario: "CGN-2025-05",
-          codigo: "EVL001",
-          concepto: "Notas a los Estados Financieros",
-          mensaje: "La sumatoria de notas no coincide con el valor del balance. Diferencia: $3,000",
-          permisible: "SI",
-          necesitaComentario: "SI",
+          concepto: "Nota 1 - Políticas contables",
+          mensaje: "Expresión E001: Total activos debe ser mayor que cero",
         },
         {
           formulario: "CGN-2025-05",
-          codigo: "EVL002",
-          concepto: "Políticas contables",
-          mensaje: "Se requiere descripción de la política de reconocimiento de ingresos",
-          permisible: "NO",
-          necesitaComentario: "NO",
+          concepto: "Nota 3 - Inventarios",
+          mensaje: "Expresión E003: La suma de inventarios no coincide con el total declarado",
         },
       ]
 
@@ -1163,16 +1138,15 @@ export default function GestionFormulariosSimple({
         completitud: [],
         expresiones: expresionesErrors,
       })
-      setShowErrorsView(true)
+
+      // Mostrar primero la alerta, luego la interfaz de errores
       setShowErrorAlert(true)
       setIsSubmitting(false)
-      setValidationPhase(0)
       return
     }
 
-    // Si no coincide con ningún formulario específico, validación estándar exitosa
+    // Caso por defecto: validación exitosa simple
     setValidationPhase(0)
-
     const updatedFormularios = formulariosState.map((form) => {
       if (formulariosAValidar.some((f) => f.id === form.id)) {
         return {
@@ -1187,7 +1161,7 @@ export default function GestionFormulariosSimple({
     })
 
     setFormulariosState(updatedFormularios)
-    setSimpleAlertMessage(`Validación exitosa. Se validaron ${formulariosAValidar.length} formulario(s).`)
+    setSimpleAlertMessage(`Se validaron ${formulariosAValidar.length} formulario(s) exitosamente.`)
     setShowSimpleAlert(true)
     setIsSubmitting(false)
   }
