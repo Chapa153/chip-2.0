@@ -278,19 +278,15 @@ export default function GestionFormulariosSimple({
       f.id.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleEnviar = async () => {
-    console.log("[v0] Iniciando envío con formularios filtrados")
-
-    // Verificar si la categoría es INFORMACIÓN CONTABLE PÚBLICA y todos los filtrados están en estado Validado
+  const handleEnviar = () => {
+    // Validación para INFORMACIÓN CONTABLE PÚBLICA con todos en estado Validado
     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA" && filteredFormularios.every((f) => f.estado === "Validado")) {
       console.log("[v0] Categoría INFORMACIÓN CONTABLE PÚBLICA - Mostrando diálogo de certificación")
       // Mostrar diálogo de certificación inicial
       setShowCertificationDialog(true)
       return
     }
-
-    // Para otras categorías o estados, mostrar mensaje
-    alert("El botón Enviar solo está habilitado cuando se cumplen las condiciones especificadas.")
+    // </CHANGE>
   }
   // </CHANGE>
 
