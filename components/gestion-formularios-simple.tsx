@@ -943,7 +943,6 @@ export default function GestionFormulariosSimple({
     const nombresFormularios = formulariosAValidar.map((f) => f.nombre)
     const todosLosFormularios = formulariosSeleccionados.length === filteredFormularios.length
 
-    // 7. Si se seleccionan TODOS los formularios: validación exitosa (Balance General)
     if (todosLosFormularios) {
       console.log("[v0] Todos los formularios seleccionados - Evento Balance General")
 
@@ -958,9 +957,10 @@ export default function GestionFormulariosSimple({
       await new Promise((resolve) => setTimeout(resolve, 800))
       setValidationPhase(0)
 
-      // Actualizar estado de TODOS los formularios seleccionados
+      // Actualizar estado solo de los formularios NO calculados (excluir los que tienen "Calculado" en el nombre)
       const updatedFormularios = formulariosState.map((form) => {
-        if (formulariosAValidar.some((f) => f.id === form.id)) {
+        // Solo actualizar si está en formulariosAValidar y NO es un formulario calculado
+        if (formulariosAValidar.some((f) => f.id === form.id) && !form.nombre.includes("Calculado")) {
           return {
             ...form,
             estado: "Validado",
@@ -1135,7 +1135,6 @@ export default function GestionFormulariosSimple({
       return
     }
 
-    // 6. Notas a los Estados Financieros: errores de validación local
     if (nombresFormularios.includes("Notas a los Estados Financieros")) {
       console.log("[v0] Evento Notas: Errores de validación local")
       setValidationPhase(4) // Fase 4: Expresiones de validación local
@@ -1147,11 +1146,17 @@ export default function GestionFormulariosSimple({
           formulario: "CGN-2025-05",
           concepto: "Nota 1 - Políticas contables",
           mensaje: "Expresión E001: Total activos debe ser mayor que cero",
+          codigo: "E001",
+          permisible: "NO",
+          necesitaComentario: "NO",
         },
         {
           formulario: "CGN-2025-05",
           concepto: "Nota 3 - Inventarios",
           mensaje: "Expresión E003: La suma de inventarios no coincide con el total declarado",
+          codigo: "E003",
+          permisible: "NO",
+          necesitaComentario: "SI",
         },
       ]
 
