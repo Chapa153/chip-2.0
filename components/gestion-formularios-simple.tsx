@@ -1735,7 +1735,8 @@ export default function GestionFormulariosSimple({
                 <div className="border-t pt-4 mt-4">
                   <h4 className="text-base font-semibold text-gray-900 mb-2">Adjuntar Documento</h4>
                   <p className="text-sm text-gray-600 mb-4">
-                    Permite adjuntar documento PDF con información adicional o soporte.
+                    Permite adjuntar documento PDF con información adicional o soporte.{" "}
+                    <span className="font-medium text-gray-700">Tamaño máximo: 20MB</span>
                   </p>
 
                   <div className="border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -1745,7 +1746,7 @@ export default function GestionFormulariosSimple({
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                           </svg>
-                          <span className="text-sm font-medium">Choose</span>
+                          <span className="text-sm font-medium">Seleccionar</span>
                         </div>
                       </label>
                       <input
@@ -1755,6 +1756,14 @@ export default function GestionFormulariosSimple({
                         onChange={(e) => {
                           const file = e.target.files?.[0]
                           if (file) {
+                            const maxSize = 20 * 1024 * 1024 // 20MB en bytes
+                            if (file.size > maxSize) {
+                              alert(
+                                "El archivo excede el tamaño máximo permitido de 20MB. Por favor seleccione un archivo más pequeño.",
+                              )
+                              e.target.value = "" // Limpiar el input
+                              return
+                            }
                             setAdjuntoPDF(file)
                             setNombreAdjunto(file.name)
                           }
@@ -1775,7 +1784,7 @@ export default function GestionFormulariosSimple({
                               d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                             />
                           </svg>
-                          Upload
+                          Subir
                         </span>
                       </button>
                       <button
@@ -1796,7 +1805,7 @@ export default function GestionFormulariosSimple({
                               d="M6 18L18 6M6 6l12 12"
                             />
                           </svg>
-                          Cancel
+                          Cancelar
                         </span>
                       </button>
                     </div>
@@ -1805,7 +1814,7 @@ export default function GestionFormulariosSimple({
                       <p className="text-sm text-orange-700">
                         {adjuntoPDF
                           ? `Archivo seleccionado: ${nombreAdjunto}`
-                          : "Drag and drop files to here to upload."}
+                          : "Arrastra y suelta archivos aquí para cargar."}
                       </p>
                     </div>
                   </div>
