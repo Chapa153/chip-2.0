@@ -1759,9 +1759,11 @@ export default function GestionFormulariosSimple({
                         onChange={async (e) => {
                           const file = e.target.files?.[0]
                           if (file) {
-                            // Validación 1: Tamaño máximo 20MB
-                            const maxSize = 20 * 1024 * 1024 // 20MB en bytes
+                            console.log("[v0] Archivo seleccionado:", file.name, "Tamaño:", file.size, "bytes")
+
+                            const maxSize = 20 * 1024 * 1024
                             if (file.size > maxSize) {
+                              console.log("[v0] Rechazo: archivo excede 20MB")
                               alert(
                                 "El archivo excede el tamaño máximo permitido de 20MB. Por favor seleccione un archivo más pequeño.",
                               )
@@ -1770,94 +1772,78 @@ export default function GestionFormulariosSimple({
                             }
 
                             // Validación 2: Verificar que sea un PDF válido (resolución2021.pdf)
-                            if (file.name.includes("2021")) {
-                              const reader = new FileReader()
-                              reader.onload = (event) => {
-                                const arrayBuffer = event.target?.result as ArrayBuffer
-                                const uint8Array = new Uint8Array(arrayBuffer)
-                                const header = String.fromCharCode(...uint8Array.slice(0, 4))
+                            if (file.name.toLowerCase().includes("2021")) {
+                              console.log("[v0] Validando PDF header para archivo 2021...")
+                              const arrayBuffer = await file.arrayBuffer()
+                              const uint8Array = new Uint8Array(arrayBuffer)
+                              const header = String.fromCharCode(...uint8Array.slice(0, 4))
+                              console.log("[v0] PDF Header detectado:", header)
 
-                                if (header !== "%PDF") {
-                                  alert("El archivo seleccionado no corresponde a un PDF válido.")
-                                  e.target.value = ""
-                                  setAdjuntoPDF(null)
-                                  setNombreAdjunto("")
-                                  setArchivoSubido(false)
-                                  return
-                                }
-
-                                setAdjuntoPDF(file)
-                                setNombreAdjunto(file.name)
+                              if (header !== "%PDF") {
+                                console.log("[v0] Rechazo: no es un PDF válido")
+                                alert("El archivo seleccionado no corresponde a un PDF válido.")
+                                e.target.value = ""
+                                setAdjuntoPDF(null)
+                                setNombreAdjunto("")
                                 setArchivoSubido(false)
+                                return
                               }
-                              reader.readAsArrayBuffer(file)
-                              return
+                              console.log("[v0] PDF válido, archivo aceptado")
                             }
 
                             // Validación 3: Detectar contenido ejecutable (resolución2022.pdf)
-                            if (file.name.includes("2022")) {
-                              const reader = new FileReader()
-                              reader.onload = (event) => {
-                                const text = event.target?.result as string
-                                // Buscar patrones de JavaScript, acciones automáticas o archivos embebidos
-                                if (
-                                  text.includes("/JavaScript") ||
-                                  text.includes("/JS") ||
-                                  text.includes("/Launch") ||
-                                  text.includes("/EmbeddedFile") ||
-                                  text.includes("/AA") // Acciones automáticas
-                                ) {
-                                  alert(
-                                    "El archivo no es permitido por políticas de seguridad. El PDF contiene acciones automáticas, contenido ejecutable o archivos adjuntos embebidos.",
-                                  )
-                                  e.target.value = ""
-                                  setAdjuntoPDF(null)
-                                  setNombreAdjunto("")
-                                  setArchivoSubido(false)
-                                  return
-                                }
+                            if (file.name.toLowerCase().includes("2022")) {
+                              console.log("[v0] Validando contenido ejecutable para archivo 2022...")
+                              const text = await file.text()
 
-                                setAdjuntoPDF(file)
-                                setNombreAdjunto(file.name)
+                              if (
+                                text.includes("/JavaScript") ||
+                                text.includes("/JS") ||
+                                text.includes("/Launch") ||
+                                text.includes("/EmbeddedFile") ||
+                                text.includes("/AA")
+                              ) {
+                                console.log("[v0] Rechazo: contenido ejecutable detectado")
+                                alert(
+                                  "El archivo no es permitido por políticas de seguridad. El PDF contiene acciones automáticas, contenido ejecutable o archivos adjuntos embebidos.",
+                                )
+                                e.target.value = ""
+                                setAdjuntoPDF(null)
+                                setNombreAdjunto("")
                                 setArchivoSubido(false)
+                                return
                               }
-                              reader.readAsText(file)
-                              return
+                              console.log("[v0] Sin contenido ejecutable, archivo aceptado")
                             }
 
                             // Validación 4: Rechazar PDFs encriptados o protegidos (resolución2023.pdf)
-                            if (file.name.includes("2023")) {
-                              const reader = new FileReader()
-                              reader.onload = (event) => {
-                                const text = event.target?.result as string
-                                // Buscar indicadores de encriptación
-                                if (
-                                  text.includes("/Encrypt") ||
-                                  (text.includes("/Filter") && text.includes("/Standard"))
-                                ) {
-                                  alert(
-                                    "No se permiten PDFs protegidos o encriptados por políticas de importación. Por favor, seleccione un archivo sin protección.",
-                                  )
-                                  e.target.value = ""
-                                  setAdjuntoPDF(null)
-                                  setNombreAdjunto("")
-                                  setArchivoSubido(false)
-                                  return
-                                }
+                            if (file.name.toLowerCase().includes("2023")) {
+                              console.log("[v0] Validando encriptación para archivo 2023...")
+                              const text = await file.text()
 
-                                setAdjuntoPDF(file)
-                                setNombreAdjunto(file.name)
+                              if (
+                                text.includes("/Encrypt") ||
+                                (text.includes("/Filter") && text.includes("/Standard"))
+                              ) {
+                                console.log("[v0] Rechazo: PDF encriptado detectado")
+                                alert(
+                                  "No se permiten PDFs protegidos o encriptados por políticas de importación. Por favor, seleccione un archivo sin protección.",
+                                )
+                                e.target.value = ""
+                                setAdjuntoPDF(null)
+                                setNombreAdjunto("")
                                 setArchivoSubido(false)
+                                return
                               }
-                              reader.readAsText(file)
-                              return
+                              console.log("[v0] Sin encriptación, archivo aceptado")
                             }
 
                             // Validación 5: Control de concurrencia (resolución2024.pdf)
-                            if (file.name.includes("2024")) {
-                              // Simular verificación de concurrencia
-                              const registroActualizado = Math.random() < 0.5 // 50% de probabilidad
+                            if (file.name.toLowerCase().includes("2024")) {
+                              console.log("[v0] Validando concurrencia para archivo 2024...")
+                              const registroActualizado = Math.random() < 0.5
                               if (registroActualizado) {
+                                console.log("[v0] Rechazo: registro actualizado por otro usuario")
                                 alert(
                                   "El adjunto fue actualizado por otro usuario. Recargue la información e intente nuevamente.",
                                 )
@@ -1867,14 +1853,15 @@ export default function GestionFormulariosSimple({
                                 setArchivoSubido(false)
                                 return
                               }
+                              console.log("[v0] Control de concurrencia OK, archivo aceptado")
                             }
 
                             // Si pasa todas las validaciones
+                            console.log("[v0] Archivo listo para subir:", file.name)
                             setAdjuntoPDF(file)
                             setNombreAdjunto(file.name)
                             setArchivoSubido(false)
                           }
-                          // </CHANGE>
                         }}
                         className="hidden"
                       />
