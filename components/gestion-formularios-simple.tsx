@@ -1021,6 +1021,23 @@ export default function GestionFormulariosSimple({
     if (adjuntoEnviarPDF) {
       console.log("[v0] Archivo subido exitosamente:", adjuntoEnviarPDF.name)
       setArchivoSubidoEnviar(true)
+
+      // Crear nuevo formulario con nombre predefinido
+      const nuevoFormulario = {
+        id: `ADJ-${Date.now()}`, // Use 'id' instead of 'codigo' for the unique identifier
+        nombre: "Documentación Adicional",
+        tipo: "Categoría",
+        estado: "Validado",
+        fecha: new Date().toLocaleDateString("es-CO"), // Use 'fecha' instead of 'ultimaModificacion'
+        estadoColor: "green" as const, // Add estadoColor
+      }
+
+      console.log("[v0] Creando formulario desde Enviar adjunto:", nuevoFormulario)
+      setFormulariosState((prev) => [...prev, nuevoFormulario]) // Use setFormulariosState
+
+      alert(
+        `Archivo "${adjuntoEnviarPDF.name}" subido exitosamente. Se ha creado el formulario "${nuevoFormulario.nombre}".`,
+      )
     }
   }
 
@@ -1485,8 +1502,7 @@ export default function GestionFormulariosSimple({
                   size="sm"
                   className="bg-green-600 hover:bg-green-700"
                   onClick={handleEnviarAdjunto}
-                  disabled={selectedFormularios.length === 0}
-                  // </CHANGE>
+                  // </CHANGE> Eliminando condición disabled del botón Enviar adjunto para que esté siempre habilitado
                 >
                   <FileUp className="w-4 h-4 mr-2" />
                   Enviar Adjunto
