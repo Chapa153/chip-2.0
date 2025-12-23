@@ -19,11 +19,9 @@ import {
   FileText,
   Download,
   ChevronLeft,
-  Info,
   AlertCircle,
   Mail,
   FileUp,
-  X,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -41,7 +39,6 @@ import { toast } from "@/components/ui/use-toast" // Corregido import de toast d
 import DataTable from "@/components/data-table" // Assuming DataTable is imported here
 import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog" // Import Dialog components
-import { Label } from "@/components/ui/label" // Import Label
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -939,7 +936,7 @@ export default function GestionFormulariosSimple({
 
     // Determinar qué tipo de evento ejecutar según los formularios seleccionados
     const nombresFormularios = formulariosAValidar.map((f) => f.nombre)
-    const todosLosFormularios = formulariosSeleccionados.length === filteredFormularios.length
+    const todosLosFormularios = selectedFormularios.length === filteredFormularios.length
 
     if (selectedFormularios.length === filteredFormularios.length) {
       console.log("[v0] Todos los formularios seleccionados: Validación exitosa completa")
@@ -1403,17 +1400,15 @@ export default function GestionFormulariosSimple({
                   {/* </CHANGE> */}
                 </Button>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  // </CHANGE> Botón Enviar se habilita según condiciones en formularios filtrados, no seleccionados
-                  disabled={!canSendSelectedFormularios() || isSubmitting}
+                  variant="default"
                   onClick={handleEnviar}
-                  className={!canSendSelectedFormularios() && !isSubmitting ? "opacity-50 cursor-not-allowed" : ""}
+                  disabled={!canSendSelectedFormularios() || isSubmitting}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
                 >
-                  <Send className="w-4 h-4 mr-2" />
+                  <Send className="w-4 h-4" />
                   Enviar
-                  {/* </CHANGE> */}
                 </Button>
+                {/* </CHANGE> */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="flex items-center gap-2 bg-transparent">
@@ -1682,195 +1677,128 @@ export default function GestionFormulariosSimple({
           </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog open={showCertificationDialog} onOpenChange={setShowCertificationDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Info className="w-7 h-7 text-blue-600" />
+        {/* </CHANGE> Aplicando estilo PrimeNG al diálogo de certificación */}
+        {showCertificationDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full border border-gray-200">
+              <div className="flex items-center gap-3 p-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
                 </div>
-                <DialogTitle className="text-xl font-semibold">CHIP - Mensaje del Sistema</DialogTitle>
-              </div>
-            </DialogHeader>
-            <div className="space-y-5 py-4">
-              <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
-                <p className="font-semibold text-blue-900 text-lg mb-2">CAPTURA047</p>
-                <p className="text-sm text-blue-800">Con el envío de la información, usted certifica que:</p>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">CHIP - Mensaje del Sistema</h3>
+                </div>
               </div>
 
-              <ol className="list-decimal list-inside space-y-3 text-sm text-gray-700 ml-2">
-                <li className="pl-2">Los datos básicos y los responsables de la entidad están actualizados.</li>
-                <li className="pl-2">
-                  La información remitida está acorde con la normatividad expedida para cada categoría.
-                </li>
-              </ol>
-
-              <div className="bg-amber-50 border-l-4 border-amber-400 rounded p-4">
-                <p className="text-sm text-gray-700 flex items-start gap-2">
-                  <span className="font-semibold text-amber-700">Nota:</span>
-                  <span>La información Contable Pública debe reportarse en pesos.</span>
-                </p>
-              </div>
-
-              <div className="space-y-4 border-t border-gray-200 pt-5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="pdf-adjunto" className="text-base font-semibold text-gray-900">
-                    Adjuntar Documento de Soporte (Opcional)
-                  </Label>
-                  {adjuntoPDF && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setAdjuntoPDF(null)
-                        setNombreAdjunto("")
-                        setErrorAdjunto("")
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      Remover
-                    </Button>
-                  )}
+              <div className="p-6 space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                  <p className="text-sm font-semibold text-blue-900 mb-2">CAPTURA047</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Con el envío de la información, usted certifica que:
+                  </p>
                 </div>
 
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-                      <FileUp className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <div className="text-center">
-                      <Label
-                        htmlFor="pdf-adjunto"
-                        className="text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer"
-                      >
-                        Seleccionar archivo PDF
-                      </Label>
-                      <p className="text-xs text-gray-500 mt-1">o arrastra y suelta aquí</p>
-                    </div>
-                    <Input id="pdf-adjunto" type="file" accept=".pdf" onChange={handleFileChange} className="hidden" />
+                <div className="space-y-3 text-sm text-gray-700">
+                  <div className="flex gap-2">
+                    <span className="text-blue-600 font-semibold">1.</span>
+                    <p>Los datos básicos y los responsables de la entidad están actualizados.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-blue-600 font-semibold">2.</span>
+                    <p>La información que acaba de reportar está completa y es expedida en cada categoría.</p>
                   </div>
                 </div>
 
-                {errorAdjunto && (
-                  <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded">
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-700">{errorAdjunto}</p>
-                  </div>
-                )}
+                <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
+                  <p className="text-sm text-amber-800 font-medium">
+                    Nota: La información Contable Pública debe reportarse en pesos.
+                  </p>
+                </div>
+              </div>
 
-                {adjuntoPDF && !errorAdjunto && (
-                  <div className="space-y-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded bg-green-100 flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-5 h-5 text-green-700" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-green-900 truncate">{adjuntoPDF.name}</p>
-                        <p className="text-xs text-green-700">{(adjuntoPDF.size / 1024 / 1024).toFixed(2)} MB</p>
-                      </div>
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    </div>
+              <div className="flex justify-end gap-2 p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowCertificationDialog(false)
+                    setAdjuntoPDF(null)
+                    setNombreAdjunto("")
+                  }}
+                  className="px-4 py-2 text-gray-700 border-gray-300 hover:bg-gray-100"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (adjuntoPDF && nombreAdjunto) {
+                      console.log("[v0] PDF adjunto:", nombreAdjunto, adjuntoPDF.name)
+                    }
 
-                    <div className="space-y-2 pt-2 border-t border-green-200">
-                      <Label htmlFor="nombre-adjunto" className="text-sm font-medium text-gray-700">
-                        Nombre del documento en el sistema
-                      </Label>
-                      <Input
-                        id="nombre-adjunto"
-                        value={nombreAdjunto}
-                        onChange={(e) => setNombreAdjunto(e.target.value)}
-                        placeholder="Ej: Certificación_Contable_2024"
-                        className="bg-white border-green-300 focus:border-green-500 focus:ring-green-500"
-                      />
-                      <p className="text-xs text-gray-500">
-                        Este nombre se usará para identificar el documento en el detalle de formularios
-                      </p>
-                    </div>
-                  </div>
-                )}
+                    setShowCertificationDialog(false)
+                    setIsSubmitting(true)
+                    setValidationPhase(5)
 
-                <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5" />
-                  Tamaño máximo: 10MB. Solo archivos en formato PDF.
-                </p>
+                    setTimeout(() => {
+                      setIsSubmitting(false)
+                      setValidationPhase(0)
+
+                      // Mostrar resultado según la categoría
+                      if (categoria === "INFORMACIÓN CONTABLE PÚBLICA") {
+                        console.log("[v0] Mostrando error de validación central para INFORMACIÓN CONTABLE PÚBLICA")
+                        setShowCentralErrorDialog(true)
+                        // Actualizar todos los formularios filtrados a Categoría y Rechazado por Deficiencia
+                        setFormulariosState((prev) =>
+                          prev.map((f) => {
+                            const isFiltered = filteredFormularios.some((ff) => ff.id === f.id)
+                            if (isFiltered) {
+                              return {
+                                ...f,
+                                tipo: "Categoría",
+                                estado: "Rechazado por Deficiencia",
+                                estadoColor: "red",
+                                fecha: new Date().toLocaleDateString("es-ES"),
+                              }
+                            }
+                            return f
+                          }),
+                        )
+                      } else if (categoria === "INFORMACIÓN PRESUPUESTAL") {
+                        console.log("[v0] Mostrando validación central exitosa para INFORMACIÓN PRESUPUESTAL")
+                        setShowCentralSuccessDialog(true)
+                        // Actualizar todos los formularios filtrados a Categoría y Aceptado
+                        setFormulariosState((prev) =>
+                          prev.map((f) => {
+                            const isFiltered = filteredFormularios.some((ff) => ff.id === f.id)
+                            if (isFiltered) {
+                              return {
+                                ...f,
+                                tipo: "Categoría",
+                                estado: "Aceptado",
+                                estadoColor: "green",
+                                fecha: new Date().toLocaleDateString("es-ES"),
+                              }
+                            }
+                            return f
+                          }),
+                        )
+                      }
+                    }, 2000)
+                  }}
+                  className="px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                >
+                  Aceptar
+                </Button>
               </div>
             </div>
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowCertificationDialog(false)
-                  setAdjuntoPDF(null)
-                  setNombreAdjunto("")
-                  setErrorAdjunto("")
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => {
-                  if (adjuntoPDF && nombreAdjunto) {
-                    console.log("[v0] PDF adjunto:", nombreAdjunto, adjuntoPDF.name)
-                  }
-
-                  setShowCertificationDialog(false)
-                  setIsSubmitting(true)
-                  setValidationPhase(5)
-
-                  setTimeout(() => {
-                    setIsSubmitting(false)
-                    setValidationPhase(0)
-
-                    // Mostrar resultado según la categoría
-                    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA") {
-                      console.log("[v0] Mostrando error de validación central para INFORMACIÓN CONTABLE PÚBLICA")
-                      setShowCentralErrorDialog(true)
-                      // Actualizar todos los formularios filtrados a Categoría y Rechazado por Deficiencia
-                      setFormulariosState((prev) =>
-                        prev.map((f) => {
-                          const isFiltered = filteredFormularios.some((ff) => ff.id === f.id)
-                          if (isFiltered) {
-                            return {
-                              ...f,
-                              tipo: "Categoría",
-                              estado: "Rechazado por Deficiencia",
-                              estadoColor: "red",
-                              fecha: new Date().toLocaleDateString("es-ES"),
-                            }
-                          }
-                          return f
-                        }),
-                      )
-                    } else if (categoria === "INFORMACIÓN PRESUPUESTAL") {
-                      console.log("[v0] Mostrando validación central exitosa para INFORMACIÓN PRESUPUESTAL")
-                      setShowCentralSuccessDialog(true)
-                      // Actualizar todos los formularios filtrados a Categoría y Aceptado
-                      setFormulariosState((prev) =>
-                        prev.map((f) => {
-                          const isFiltered = filteredFormularios.some((ff) => ff.id === f.id)
-                          if (isFiltered) {
-                            return {
-                              ...f,
-                              tipo: "Categoría",
-                              estado: "Aceptado",
-                              estadoColor: "green",
-                              fecha: new Date().toLocaleDateString("es-ES"),
-                            }
-                          }
-                          return f
-                        }),
-                      )
-                    }
-                  }, 2000)
-                  // </CHANGE>
-                }}
-              >
-                Aceptar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </div>
+        )}
 
         <Dialog open={showBalanceSuccessDialog} onOpenChange={setShowBalanceSuccessDialog}>
           <DialogContent className="max-w-2xl">
