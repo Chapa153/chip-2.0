@@ -22,6 +22,8 @@ import {
   AlertCircle,
   Mail,
   FileUp,
+  Plus,
+  X,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -38,7 +40,14 @@ import {
 import { toast } from "@/components/ui/use-toast" // Corregido import de toast desde use-toast en lugar de toast
 import DataTable from "@/components/data-table" // Assuming DataTable is imported here
 import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog" // Import Dialog components
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog" // Import Dialog components
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -109,6 +118,11 @@ export default function GestionFormulariosSimple({
   const [showErrorEmailFormatDialog, setShowErrorEmailFormatDialog] = useState(false)
   const [showSuccessEmailFormatDialog, setShowSuccessEmailFormatDialog] = useState(false)
   // </CHANGE>
+  const [showEnviarAdjuntoDialog, setShowEnviarAdjuntoDialog] = useState(false)
+  const [adjuntoEnviarPDF, setAdjuntoEnviarPDF] = useState<File | null>(null)
+  const [nombreAdjuntoEnviar, setNombreAdjuntoEnviar] = useState("")
+  const [archivoSubidoEnviar, setArchivoSubidoEnviar] = useState(false)
+  // </CHANGE>
 
   const [validationPhase, setValidationPhase] = useState(0)
   const [showCertificationDialog, setShowCertificationDialog] = useState(false)
@@ -136,9 +150,7 @@ export default function GestionFormulariosSimple({
   const [reenvioAction, setReenvioAction] = useState<"importar" | "registro" | null>(null)
   const [reenvioFormId, setReenvioFormId] = useState<string | null>(null)
   // </CHANGE>
-  const [showEnviarAdjuntoDialog, setShowEnviarAdjuntoDialog] = useState(false)
 
-  const [showAllFormsSuccessDialog, setShowAllFormsSuccessDialog] = useState(false)
   // </CHANGE>
 
   // const [archivoSubido, setArchivoSubido] = useState(false) // Duplicated, removed
@@ -152,6 +164,7 @@ export default function GestionFormulariosSimple({
       estado: "Pendiente en validar",
       fecha: "9/11/2024",
       estadoColor: "yellow",
+      codigo: "CGN-2025-01", // Added for filtering logic
     },
     {
       id: "CGN-2025-02",
@@ -160,6 +173,7 @@ export default function GestionFormulariosSimple({
       estado: "Pendiente en validar",
       fecha: "8/11/2024",
       estadoColor: "yellow",
+      codigo: "CGN-2025-02", // Added for filtering logic
     },
     {
       id: "CGN-2025-03",
@@ -168,6 +182,7 @@ export default function GestionFormulariosSimple({
       estado: "Pendiente en validar",
       fecha: "7/11/2024",
       estadoColor: "yellow",
+      codigo: "CGN-2025-03", // Added for filtering logic
     },
     {
       id: "CGN-2025-04",
@@ -176,6 +191,7 @@ export default function GestionFormulariosSimple({
       estado: "Pendiente en validar",
       fecha: "6/11/2024",
       estadoColor: "yellow",
+      codigo: "CGN-2025-04", // Added for filtering logic
     },
     {
       id: "CGN-2025-05",
@@ -184,6 +200,7 @@ export default function GestionFormulariosSimple({
       estado: "Pendiente en validar",
       fecha: "5/11/2024",
       estadoColor: "yellow",
+      codigo: "CGN-2025-05", // Added for filtering logic
     },
     {
       id: "CGN-2025-06",
@@ -192,6 +209,7 @@ export default function GestionFormulariosSimple({
       estado: "Rechazado por Deficiencia",
       fecha: "4/11/2024",
       estadoColor: "red",
+      codigo: "CGN-2025-06", // Added for filtering logic
     },
   ])
 
@@ -919,6 +937,103 @@ export default function GestionFormulariosSimple({
   }
   // </CHANGE>
 
+  const handleFileSelectEnviar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) {
+      console.log("[v0] No se seleccionó ningún archivo")
+      return
+    }
+
+    console.log("[v0] Archivo seleccionado:", file.name, "Tamaño:", file.size)
+
+    // Validar tamaño máximo (20MB)
+    const maxSize = 20 * 1024 * 1024 // 20MB en bytes
+    if (file.size > maxSize) {
+      alert("El archivo excede el tamaño máximo permitido de 20MB.")
+      e.target.value = ""
+      return
+    }
+
+    // Validar extensión PDF
+    if (!file.type.includes("pdf") && !file.name.toLowerCase().endsWith(".pdf")) {
+      alert("Solo se permiten archivos PDF.")
+      e.target.value = ""
+      return
+    }
+
+    const fileName = file.name.toLowerCase()
+    console.log("[v0] Iniciando validaciones para:", fileName)
+
+    // Escenario 1: Resolución2021.pdf - Simular PDF no válido
+    if (fileName.includes("2021")) {
+      console.log("[v0] Detectado archivo 2021 - Simulando PDF inválido")
+      alert("El archivo no es un PDF válido. Por favor, seleccione un archivo PDF correcto.")
+      e.target.value = ""
+      setAdjuntoEnviarPDF(null)
+      setNombreAdjuntoEnviar("")
+      setArchivoSubidoEnviar(false)
+      return
+    }
+
+    // Escenario 2: Resolución2022.pdf - Simular contenido ejecutable
+    if (fileName.includes("2022")) {
+      console.log("[v0] Detectado archivo 2022 - Simulando contenido ejecutable")
+      alert("El PDF contiene contenido ejecutable o archivos embebidos peligrosos. No se permite su carga.")
+      e.target.value = ""
+      setAdjuntoEnviarPDF(null)
+      setNombreAdjuntoEnviar("")
+      setArchivoSubidoEnviar(false)
+      return
+    }
+
+    // Escenario 3: Resolución2023.pdf - Simular PDF encriptado
+    if (fileName.includes("2023")) {
+      console.log("[v0] Detectado archivo 2023 - Simulando PDF encriptado")
+      alert("El PDF está encriptado o protegido con contraseña. No se permite su carga.")
+      e.target.value = ""
+      setAdjuntoEnviarPDF(null)
+      setNombreAdjuntoEnviar("")
+      setArchivoSubidoEnviar(false)
+      return
+    }
+
+    // Escenario 4: Resolución2024.pdf - Simular conflicto de concurrencia
+    if (fileName.includes("2024")) {
+      console.log("[v0] Detectado archivo 2024 - Simulando conflicto de concurrencia")
+      alert(
+        "No se puede cargar el archivo. Otro usuario actualizó el mismo contexto. Por favor, recargue la página e intente nuevamente.",
+      )
+      e.target.value = ""
+      setAdjuntoEnviarPDF(null)
+      setNombreAdjuntoEnviar("")
+      setArchivoSubidoEnviar(false)
+      return
+    }
+
+    // Si pasa todas las validaciones
+    console.log("[v0] Archivo válido. Listo para subir.")
+    setAdjuntoEnviarPDF(file)
+    setNombreAdjuntoEnviar(file.name)
+    setArchivoSubidoEnviar(false)
+  }
+
+  const handleUploadFileEnviar = () => {
+    if (adjuntoEnviarPDF) {
+      console.log("[v0] Archivo subido exitosamente:", adjuntoEnviarPDF.name)
+      setArchivoSubidoEnviar(true)
+    }
+  }
+
+  const handleCancelFileEnviar = () => {
+    console.log("[v0] Cancelando archivo")
+    setAdjuntoEnviarPDF(null)
+    setNombreAdjuntoEnviar("")
+    setArchivoSubidoEnviar(false)
+    const fileInput = document.getElementById("file-input-enviar") as HTMLInputElement
+    if (fileInput) fileInput.value = ""
+  }
+  // </CHANGE>
+
   // Function to handle 'Validar' button click
   const handleValidarSeleccionados = async () => {
     const formulariosSeleccionados = formulariosState.filter((f) => selectedFormularios.includes(f.id))
@@ -1370,7 +1485,13 @@ export default function GestionFormulariosSimple({
                   size="sm"
                   className="bg-green-600 hover:bg-green-700"
                   onClick={handleEnviarAdjunto}
-                  disabled={!adjuntoPDF || !nombreAdjunto}
+                  disabled={
+                    selectedFormularios.filter((id) => {
+                      const form = formulariosState.find((f) => f.id === id) // Use id here instead of codigo
+                      return form?.estado === "Validado"
+                    }).length === 0
+                  }
+                  // </CHANGE>
                 >
                   <FileUp className="w-4 h-4 mr-2" />
                   Enviar Adjunto
@@ -1755,7 +1876,7 @@ export default function GestionFormulariosSimple({
                         onChange={async (e) => {
                           const file = e.target.files?.[0]
                           if (file) {
-                            console.log("[v0] Archivo seleccionado:", file.name, "Tamaño:", file.size, "bytes")
+                            console.log("[v0] Archivo seleccionado:", file.name, "Tamaño:", file.size)
 
                             const maxSize = 20 * 1024 * 1024
                             if (file.size > maxSize) {
@@ -2395,24 +2516,133 @@ export default function GestionFormulariosSimple({
           </DialogContent>
         </Dialog>
 
+        {/* Diálogo de Enviar Adjunto */}
         <Dialog open={showEnviarAdjuntoDialog} onOpenChange={setShowEnviarAdjuntoDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckCircle2 className="w-6 h-6 text-green-600" />
-                </div>
-                <DialogTitle className="text-lg">Adjunto Enviado</DialogTitle>
-              </div>
+              <DialogTitle className="text-xl font-semibold text-gray-900">Enviar Adjunto</DialogTitle>
+              <DialogDescription className="text-sm text-gray-600">
+                Adjunte un documento PDF relacionado con los formularios seleccionados
+              </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
-              <p className="text-sm text-gray-700">
-                El archivo <span className="font-semibold">{nombreAdjunto}</span> ha sido enviado exitosamente y se ha
-                agregado al detalle de los formularios.
-              </p>
+
+            <div className="space-y-4">
+              <div className="border-t pt-4">
+                <h3 className="text-base font-semibold text-gray-900 mb-2">Adjuntar Documento</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Permite adjuntar documento PDF con información adicional o soporte. Tamaño máximo: 20MB
+                </p>
+
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <label htmlFor="file-input-enviar">
+                      <Button
+                        type="button"
+                        className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium"
+                        onClick={() => document.getElementById("file-input-enviar")?.click()}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Seleccionar
+                      </Button>
+                    </label>
+                    <input
+                      id="file-input-enviar"
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={handleFileSelectEnviar}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md text-sm bg-transparent"
+                      disabled={!adjuntoEnviarPDF || archivoSubidoEnviar}
+                      onClick={handleUploadFileEnviar}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Subir
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md text-sm bg-transparent"
+                      onClick={handleCancelFileEnviar}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Cancelar
+                    </Button>
+                  </div>
+
+                  {!archivoSubidoEnviar && !adjuntoEnviarPDF && (
+                    <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-md">
+                      <p className="text-sm text-orange-700">Arrastre y suelte archivos aquí para cargar.</p>
+                    </div>
+                  )}
+
+                  {adjuntoEnviarPDF && !archivoSubidoEnviar && (
+                    <div className="border-2 border-orange-500 rounded-md p-3 bg-orange-50">
+                      <p className="text-sm text-gray-700">
+                        Archivo seleccionado: <span className="font-medium">{nombreAdjuntoEnviar}</span>
+                      </p>
+                    </div>
+                  )}
+
+                  {archivoSubidoEnviar && (
+                    <div className="border-2 border-green-500 rounded-md p-3 bg-green-50">
+                      <p className="text-sm text-green-700">
+                        Archivo cargado exitosamente: <span className="font-medium">{nombreAdjuntoEnviar}</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* </CHANGE> */}
+
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Formularios seleccionados validados:</strong>
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {selectedFormularios
+                    .filter((id) => {
+                      const form = formulariosState.find((f) => f.id === id) // Use id here instead of codigo
+                      return form?.estado === "Validado"
+                    })
+                    .map((id) => {
+                      const form = formulariosState.find((f) => f.id === id) // Use id here instead of codigo
+                      return (
+                        <li key={id} className="text-sm text-blue-700">
+                          • {form?.id} - {form?.nombre}
+                        </li>
+                      )
+                    })}
+                </ul>
+              </div>
             </div>
-            <DialogFooter>
-              <Button onClick={() => setShowEnviarAdjuntoDialog(false)}>Aceptar</Button>
+
+            <DialogFooter className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEnviarAdjuntoDialog(false)
+                  handleCancelFileEnviar()
+                }}
+                className="border border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => {
+                  alert("Adjunto enviado exitosamente")
+                  setShowEnviarAdjuntoDialog(false)
+                  handleCancelFileEnviar()
+                }}
+                disabled={!archivoSubidoEnviar}
+                // </CHANGE>
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Enviar
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
