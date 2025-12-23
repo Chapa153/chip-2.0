@@ -105,6 +105,10 @@ export default function GestionFormulariosSimple({
   const [errorData, setErrorData] = useState<ErrorData | null>(null)
   const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({})
   const [showErrorsView, setShowErrorsView] = useState(false) // Declared showErrorsView
+  const [showEmailFormatDialog, setShowEmailFormatDialog] = useState(false)
+  const [showErrorEmailFormatDialog, setShowErrorEmailFormatDialog] = useState(false)
+  const [showSuccessEmailFormatDialog, setShowSuccessEmailFormatDialog] = useState(false)
+  // </CHANGE>
 
   const [validationPhase, setValidationPhase] = useState(0)
   const [showCertificationDialog, setShowCertificationDialog] = useState(false)
@@ -113,7 +117,6 @@ export default function GestionFormulariosSimple({
   const [errorAdjunto, setErrorAdjunto] = useState("")
   // </CHANGE>
   const [showCentralErrorDialog, setShowCentralErrorDialog] = useState(false)
-  const [showEmailFormatDialog, setShowEmailFormatDialog] = useState(false)
   const [isValidatingCentral, setIsValidatingCentral] = useState(false)
   // </CHANGE>
 
@@ -123,7 +126,6 @@ export default function GestionFormulariosSimple({
 
   const [showBalanceSuccessDialog, setShowBalanceSuccessDialog] = useState(false)
   const [showCentralSuccessDialog, setShowCentralSuccessDialog] = useState(false)
-  const [showSuccessEmailFormatDialog, setShowSuccessEmailFormatDialog] = useState(false)
   const [balanceValidatedFormularios, setBalanceValidatedFormularios] = useState<string[]>([])
   // </CHANGE>
 
@@ -1729,6 +1731,26 @@ export default function GestionFormulariosSimple({
                     Nota: La información Contable Pública debe reportarse en pesos.
                   </p>
                 </div>
+
+                {/* Sección de adjunto */}
+                <div className="border-t pt-4 mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Adjuntar PDF (Opcional)</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          setAdjuntoPDF(file)
+                          setNombreAdjunto(file.name)
+                        }
+                      }}
+                      className="flex-1 text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                  </div>
+                  {adjuntoPDF && <p className="text-xs text-gray-600 mt-2">Archivo seleccionado: {nombreAdjunto}</p>}
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
@@ -1941,7 +1963,7 @@ export default function GestionFormulariosSimple({
                 variant="outline"
                 onClick={() => {
                   setShowCentralErrorDialog(false)
-                  setShowEmailFormatDialog(true)
+                  setShowErrorEmailFormatDialog(true)
                 }}
               >
                 Ver formato del correo
@@ -2026,6 +2048,192 @@ export default function GestionFormulariosSimple({
             </div>
             <DialogFooter>
               <Button onClick={() => setShowEmailFormatDialog(false)}>Cerrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showErrorEmailFormatDialog} onOpenChange={setShowErrorEmailFormatDialog}>
+          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-red-500" />
+                Formato del Correo - Envío Rechazado por Deficiencia
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Banner CHIP */}
+              <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white rounded-lg p-2">
+                    <span className="text-2xl">🏛️</span>
+                  </div>
+                  <h2 className="text-3xl font-bold">Sistema CHIP</h2>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
+                </div>
+              </div>
+
+              {/* Contenido del correo de rechazo */}
+              <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
+                <p className="font-semibold">Doctor(a)</p>
+                <p className="font-semibold">MARIBEL MUÑOZ MOLINA</p>
+                <p>Contador</p>
+                <p>E.S.E Empresa de Acueductos y Alcantarillado del RÍO Palo S.A.S</p>
+                <p className="mb-4">PUERTO TEJADA - DEPARTAMENTO DE CAUCA</p>
+
+                <p className="italic text-gray-600">Este es un correo automático que genera el sistema CHIP</p>
+
+                <p className="mt-4">Cordial saludo,</p>
+
+                <p className="mt-4">Respetado(a) Doctor(a):</p>
+
+                <p className="mt-4 font-semibold text-red-600">
+                  La Contaduría General de la Nación se permite informarle que su envío fue rechazado dado que se
+                  encontraron inconsistencias.
+                </p>
+
+                <div className="mt-4 space-y-1">
+                  <p>
+                    <strong>Categoría:</strong> INFORMACIÓN CONTABLE PÚBLICA - CONVERGENCIA
+                  </p>
+                  <p>
+                    <strong>Formularios:</strong> Todos
+                  </p>
+                  <p>
+                    <strong>Periodo:</strong> Abr-Jun
+                  </p>
+                  <p>
+                    <strong>Año:</strong> 2024
+                  </p>
+                  <p>
+                    <strong>Recepción:</strong> 2024-07-31
+                  </p>
+                  <p>
+                    <strong>Radicado (Id) de Envío:</strong> 4515447
+                  </p>
+                </div>
+
+                <div className="mt-6 bg-red-50 border-l-4 border-red-500 p-4">
+                  <p className="font-semibold text-red-800 mb-2">Los mensajes generados fueron:</p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700">
+                    <li>
+                      <strong>Propuesta diferencia</strong> entre el saldo final reportado por la entidad en el cuarto
+                      trimestre 2023 por concepto 110365, COND31 - 001 SALDOS Y MOVIMIENTOS CONVERGENCIA - (8 ENTIDADES
+                      1-ALCALDÍAS), asciende a: <strong>$3,043,565.13</strong>
+                    </li>
+                    <li>
+                      <strong>Propuesta diferencia</strong> en el saldo final que en un concepto no coincide con la
+                      diferencia entre el saldo inicial y el total de aumentos y disminuciones.{" "}
+                      <strong>$130,418.50</strong>
+                      para saldo inicial de período 2024-01, ID concepto 130302, formulario 001 - SALDOS Y MOVIMIENTOS
+                      CONVERGENCIA - (8 ENTIDADES 1-ALCALDÍAS), comparado con saldo final del período 2023-12.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="mt-4 p-4 bg-blue-50 rounded">
+                  <p className="text-sm">
+                    <strong>
+                      Por favor revisar y corregir las inconsistencias reportadas antes de realizar un nuevo envío.
+                    </strong>
+                  </p>
+                </div>
+
+                <p className="mt-6">Atentamente,</p>
+
+                <div className="mt-4 pt-4 border-t space-y-1 text-xs text-gray-600">
+                  <p className="font-semibold">Sistema CHIP</p>
+                  <p className="font-semibold">Contaduría General de la Nación</p>
+                  <p className="text-blue-600">chip@contaduria.gov.co</p>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowErrorEmailFormatDialog(false)}>Cerrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showSuccessEmailFormatDialog} onOpenChange={setShowSuccessEmailFormatDialog}>
+          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-green-500" />
+                Formato del Correo - Envío Aceptado
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Banner CHIP */}
+              <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white rounded-lg p-2">
+                    <span className="text-2xl">🏛️</span>
+                  </div>
+                  <h2 className="text-3xl font-bold">Sistema CHIP</h2>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
+                </div>
+              </div>
+
+              {/* Contenido del correo de éxito */}
+              <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
+                <p className="font-semibold">Doctor(a)</p>
+                <p className="font-semibold">GABRIELA MORENO ALBA</p>
+                <p>Contador</p>
+                <p>Jenesano</p>
+                <p className="mb-4">JENESANO - DEPARTAMENTO DE BOYACA</p>
+
+                <p className="italic text-gray-600">Este es un correo automático que genera el sistema CHIP</p>
+
+                <p className="mt-4">Cordial saludo,</p>
+
+                <p className="mt-4">Respetado(a) Doctor(a):</p>
+
+                <p className="mt-4 font-semibold text-green-600">
+                  La Contaduría General de la Nación se permite informarle que su envío fue Aceptado.
+                </p>
+
+                <div className="mt-4 space-y-1">
+                  <p>
+                    <strong>Categoría:</strong> INFORMACIÓN PRESUPUESTAL
+                  </p>
+                  <p>
+                    <strong>Formularios:</strong> Todos
+                  </p>
+                  <p>
+                    <strong>Periodo:</strong> Ene-Mar
+                  </p>
+                  <p>
+                    <strong>Año:</strong> 2024
+                  </p>
+                  <p>
+                    <strong>Recepción:</strong> 2024-04-15
+                  </p>
+                  <p>
+                    <strong>Radicado (Id) de Envío:</strong> 4512345
+                  </p>
+                </div>
+
+                <div className="mt-6 bg-green-50 border-l-4 border-green-500 p-4">
+                  <p className="text-green-800">
+                    Su información ha sido recibida exitosamente y cumple con todos los requisitos de validación
+                    central. No se requieren correcciones.
+                  </p>
+                </div>
+
+                <p className="mt-6">Atentamente,</p>
+
+                <div className="mt-4 pt-4 border-t space-y-1 text-xs text-gray-600">
+                  <p className="font-semibold">Sistema CHIP</p>
+                  <p className="font-semibold">Contaduría General de la Nación</p>
+                  <p className="text-blue-600">chip@contaduria.gov.co</p>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowSuccessEmailFormatDialog(false)}>Cerrar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
