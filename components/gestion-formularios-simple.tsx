@@ -1485,12 +1485,7 @@ export default function GestionFormulariosSimple({
                   size="sm"
                   className="bg-green-600 hover:bg-green-700"
                   onClick={handleEnviarAdjunto}
-                  disabled={
-                    selectedFormularios.filter((id) => {
-                      const form = formulariosState.find((f) => f.id === id) // Use id here instead of codigo
-                      return form?.estado === "Validado"
-                    }).length === 0
-                  }
+                  disabled={selectedFormularios.length === 0}
                   // </CHANGE>
                 >
                   <FileUp className="w-4 h-4 mr-2" />
