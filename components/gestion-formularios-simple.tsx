@@ -914,14 +914,10 @@ export default function GestionFormulariosSimple({
   }
 
   const handleEnviarAdjunto = () => {
-    if (adjuntoPDF && nombreAdjunto) {
-      console.log("[v0] Enviando adjunto:", nombreAdjunto, adjuntoPDF.name)
-      // Add attachment to form details
-      setShowEnviarAdjuntoDialog(true)
-    } else {
-      alert("Por favor, adjunte un archivo PDF y asigne un nombre.")
-    }
+    // Abrir diálogo con funcionalidad de adjuntar
+    setShowEnviarAdjuntoDialog(true)
   }
+  // </CHANGE>
 
   // Function to handle 'Validar' button click
   const handleValidarSeleccionados = async () => {
