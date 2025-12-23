@@ -1400,13 +1400,21 @@ export default function GestionFormulariosSimple({
                   {/* </CHANGE> */}
                 </Button>
                 <Button
-                  variant="default"
                   onClick={handleEnviar}
                   disabled={!canSendSelectedFormularios() || isSubmitting}
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-md shadow-sm transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500"
                 >
-                  <Send className="w-4 h-4" />
-                  Enviar
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Enviar
+                    </>
+                  )}
                 </Button>
                 {/* </CHANGE> */}
                 <DropdownMenu>
@@ -1750,8 +1758,8 @@ export default function GestionFormulariosSimple({
                       setValidationPhase(0)
 
                       // Mostrar resultado según la categoría
-                      if (categoria === "INFORMACIÓN CONTABLE PÚBLICA") {
-                        console.log("[v0] Mostrando error de validación central para INFORMACIÓN CONTABLE PÚBLICA")
+                      if (categoria?.includes("INFORMACIÓN CONTABLE")) {
+                        console.log("[v0] Mostrando error de validación central para INFORMACIÓN CONTABLE")
                         setShowCentralErrorDialog(true)
                         // Actualizar todos los formularios filtrados a Categoría y Rechazado por Deficiencia
                         setFormulariosState((prev) =>
@@ -1769,7 +1777,7 @@ export default function GestionFormulariosSimple({
                             return f
                           }),
                         )
-                      } else if (categoria === "INFORMACIÓN PRESUPUESTAL") {
+                      } else if (categoria?.includes("INFORMACIÓN PRESUPUESTAL")) {
                         console.log("[v0] Mostrando validación central exitosa para INFORMACIÓN PRESUPUESTAL")
                         setShowCentralSuccessDialog(true)
                         // Actualizar todos los formularios filtrados a Categoría y Aceptado
@@ -1952,28 +1960,6 @@ export default function GestionFormulariosSimple({
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              {/* Header del correo */}
-              <div className="border-b pb-3 space-y-1 text-sm">
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">De:</span>
-                  <span className="text-gray-600">chip@contaduria.gov.co</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">Date:</span>
-                  <span className="text-gray-600">mar, 12 ago 2025 a las 8:45</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">Subject:</span>
-                  <span className="text-gray-600">
-                    Envío en Estado Aceptado categoría INFORMACIÓN CONTABLE PÚBLICA - CONVERGENCIA
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-gray-700 w-20">To:</span>
-                  <span className="text-gray-600"></span>
-                </div>
-              </div>
-
               {/* Banner CHIP */}
               <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
                 <div className="flex items-center gap-3">
