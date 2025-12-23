@@ -282,13 +282,8 @@ export default function GestionFormulariosSimple({
   )
 
   const handleEnviar = () => {
-    // Validación para INFORMACIÓN CONTABLE PÚBLICA con todos en estado Validado
-    if (categoria === "INFORMACIÓN CONTABLE PÚBLICA" && filteredFormularios.every((f) => f.estado === "Validado")) {
-      console.log("[v0] Categoría INFORMACIÓN CONTABLE PÚBLICA - Mostrando diálogo de certificación")
-      // Mostrar diálogo de certificación inicial
-      setShowCertificationDialog(true)
-      return
-    }
+    console.log("[v0] Botón Enviar - Mostrando diálogo de certificación para categoría:", categoria)
+    setShowCertificationDialog(true)
     // </CHANGE>
   }
   // </CHANGE>
@@ -1827,7 +1822,7 @@ export default function GestionFormulariosSimple({
                     setIsSubmitting(false)
                     setValidationPhase(0)
 
-                    // Para INFORMACIÓN CONTABLE PÚBLICA siempre mostrar error central
+                    // Mostrar resultado según la categoría
                     if (categoria === "INFORMACIÓN CONTABLE PÚBLICA") {
                       console.log("[v0] Mostrando error de validación central para INFORMACIÓN CONTABLE PÚBLICA")
                       setShowCentralErrorDialog(true)
@@ -1848,6 +1843,7 @@ export default function GestionFormulariosSimple({
                         }),
                       )
                     } else if (categoria === "INFORMACIÓN PRESUPUESTAL") {
+                      console.log("[v0] Mostrando validación central exitosa para INFORMACIÓN PRESUPUESTAL")
                       setShowCentralSuccessDialog(true)
                       // Actualizar todos los formularios filtrados a Categoría y Aceptado
                       setFormulariosState((prev) =>
@@ -2142,33 +2138,32 @@ export default function GestionFormulariosSimple({
           </DialogContent>
         </Dialog>
 
-        {isSubmitting && validationPhase > 0 && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4">
-              <div className="flex flex-col items-center gap-6">
-                <Loader2 className="w-16 h-16 text-blue-600 animate-spin" />
-                <div className="text-center space-y-2">
-                  <h3 className="text-xl font-semibold text-gray-900">Procesando validaciones</h3>
-                  <p className="text-sm text-gray-600">
-                    {validationPhase === 1 && "Validando contenido de variables..."}
-                    {validationPhase === 2 && "Verificando completitud de datos..."}
-                    {validationPhase === 3 && "Ejecutando validaciones generales..."}
-                    {validationPhase === 4 && "Aplicando expresiones de validación local..."}
-                    {validationPhase === 5 && "Validando expresiones centrales..."}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <div className={`w-3 h-3 rounded-full ${validationPhase >= 1 ? "bg-blue-600" : "bg-gray-300"}`} />
-                  <div className={`w-3 h-3 rounded-full ${validationPhase >= 2 ? "bg-blue-600" : "bg-gray-300"}`} />
-                  <div className={`w-3 h-3 rounded-full ${validationPhase >= 3 ? "bg-blue-600" : "bg-gray-300"}`} />
-                  <div className={`w-3 h-3 rounded-full ${validationPhase >= 4 ? "bg-blue-600" : "bg-gray-300"}`} />
-                  <div className={`w-3 h-3 rounded-full ${validationPhase >= 5 ? "bg-blue-600" : "bg-gray-300"}`} />
-                </div>
+        <Dialog open={isSubmitting && validationPhase > 0} onOpenChange={(open) => !open && setIsSubmitting(false)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                Procesando validaciones
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-gray-600">
+                {validationPhase === 1 && "Validando contenido de variables..."}
+                {validationPhase === 2 && "Verificando completitud de datos..."}
+                {validationPhase === 3 && "Ejecutando validaciones generales..."}
+                {validationPhase === 4 && "Aplicando expresiones de validación local..."}
+                {validationPhase === 5 && "Validando expresiones centrales..."}
+              </p>
+              <div className="flex gap-2 justify-center">
+                <div className={`w-3 h-3 rounded-full ${validationPhase >= 1 ? "bg-blue-600" : "bg-gray-300"}`} />
+                <div className={`w-3 h-3 rounded-full ${validationPhase >= 2 ? "bg-blue-600" : "bg-gray-300"}`} />
+                <div className={`w-3 h-3 rounded-full ${validationPhase >= 3 ? "bg-blue-600" : "bg-gray-300"}`} />
+                <div className={`w-3 h-3 rounded-full ${validationPhase >= 4 ? "bg-blue-600" : "bg-gray-300"}`} />
+                <div className={`w-3 h-3 rounded-full ${validationPhase >= 5 ? "bg-blue-600" : "bg-gray-300"}`} />
               </div>
             </div>
-          </div>
-        )}
-        {/* </CHANGE> */}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
