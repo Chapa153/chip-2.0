@@ -62,6 +62,7 @@ interface Formulario {
   estado: string
   fecha: string
   estadoColor: string
+  codigo?: string // Agregado para el nuevo tipo de error
 }
 
 // Define Error Types
@@ -104,9 +105,9 @@ export default function GestionFormulariosSimple({
   const [simpleAlertMessage, setSimpleAlertMessage] = useState("")
   const [errorsSeen, setErrorsSeen] = useState(false)
   const [showErrorAlert, setShowErrorAlert] = useState(false)
-  const [showErrorsView, setShowErrorsView] = useState(false)
   const [errorData, setErrorData] = useState<ErrorData | null>(null)
   const [errorComments, setErrorComments] = useState<{ [key: number]: string }>({})
+  const [showErrorsView, setShowErrorsView] = useState(false) // Declared showErrorsView
 
   const [validationPhase, setValidationPhase] = useState(0)
   const [showCertificationDialog, setShowCertificationDialog] = useState(false)
@@ -126,6 +127,8 @@ export default function GestionFormulariosSimple({
   const [showBalanceSuccessDialog, setShowBalanceSuccessDialog] = useState(false)
   const [showCentralSuccessDialog, setShowCentralSuccessDialog] = useState(false)
   const [showSuccessEmailFormatDialog, setShowSuccessEmailFormatDialog] = useState(false)
+  const [balanceValidatedFormularios, setBalanceValidatedFormularios] = useState<string[]>([])
+  // </CHANGE>
 
   const [showReenvioDialog, setShowReenvioDialog] = useState(false)
   const [reenvioMotivo, setReenvioMotivo] = useState("")
@@ -943,24 +946,29 @@ export default function GestionFormulariosSimple({
     const nombresFormularios = formulariosAValidar.map((f) => f.nombre)
     const todosLosFormularios = formulariosSeleccionados.length === filteredFormularios.length
 
-    if (todosLosFormularios) {
-      console.log("[v0] Todos los formularios seleccionados - Evento Balance General")
-
-      // Mostrar fases de validación
-      setValidationPhase(1) // Contenido
+    if (selectedFormularios.length === filteredFormularios.length) {
+      console.log("[v0] Todos los formularios seleccionados: Validación exitosa completa")
+      setValidationPhase(1)
       await new Promise((resolve) => setTimeout(resolve, 800))
-      setValidationPhase(2) // Completitud
+      setValidationPhase(2)
       await new Promise((resolve) => setTimeout(resolve, 800))
-      setValidationPhase(3) // Validaciones generales
+      setValidationPhase(3)
       await new Promise((resolve) => setTimeout(resolve, 800))
-      setValidationPhase(4) // Expresiones de validación
+      setValidationPhase(4)
       await new Promise((resolve) => setTimeout(resolve, 800))
       setValidationPhase(0)
 
-      // Actualizar estado solo de los formularios NO calculados (excluir los que tienen "Calculado" en el nombre)
+      // Obtener nombres de los formularios validados (solo los normales, no calculados)
+      const formulariosValidados = formulariosAValidar
+        .filter((f) => !f.nombre.includes("Calculado"))
+        .map((f) => f.nombre)
+
+      // Actualizar estado solo de formularios NO calculados
       const updatedFormularios = formulariosState.map((form) => {
-        // Solo actualizar si está en formulariosAValidar y NO es un formulario calculado
-        if (formulariosAValidar.some((f) => f.id === form.id) && !form.nombre.includes("Calculado")) {
+        const esFormularioSeleccionado = formulariosAValidar.some((f) => f.id === form.id)
+        const esCalculado = form.nombre.includes("Calculado")
+
+        if (esFormularioSeleccionado && !esCalculado) {
           return {
             ...form,
             estado: "Validado",
@@ -972,27 +980,36 @@ export default function GestionFormulariosSimple({
         return form
       })
 
-      // Generar formularios calculados con estado "Pendiente en validar"
-      const formulariosCalculados: Formulario[] = [
-        {
-          id: "CALC-17653753363416-1",
-          nombre: "Estado de Resultados Calculado",
-          tipo: "Formulario",
-          estado: "Pendiente en validar",
-          fecha: new Date().toLocaleDateString("es-CO"),
-          estadoColor: "yellow" as const,
-        },
-        {
-          id: "CALC-17653753363430-2",
-          nombre: "Flujo de Efectivo Calculado",
-          tipo: "Formulario",
-          estado: "Pendiente en validar",
-          fecha: new Date().toLocaleDateString("es-CO"),
-          estadoColor: "yellow" as const,
-        },
-      ]
+      // Generar formularios calculados si Balance General está incluido
+      const tieneBalanceGeneral = formulariosAValidar.some((f) => f.nombre === "Balance General")
+      if (tieneBalanceGeneral) {
+        const nuevosCalculados = [
+          {
+            id: `CALC-${Date.now()}-1`,
+            codigo: `CALC-17653753363416-1`,
+            nombre: "Estado de Resultados Calculado",
+            tipo: "Formulario" as const,
+            estado: "Pendiente en validar",
+            estadoColor: "yellow" as const,
+            fecha: new Date().toLocaleDateString("es-CO"),
+          },
+          {
+            id: `CALC-${Date.now()}-2`,
+            codigo: `CALC-17653753363430-2`,
+            nombre: "Flujo de Efectivo Calculado",
+            tipo: "Formulario" as const,
+            estado: "Pendiente en validar",
+            estadoColor: "yellow" as const,
+            fecha: new Date().toLocaleDateString("es-CO"),
+          },
+        ]
+        setFormulariosState([...updatedFormularios, ...nuevosCalculados])
+      } else {
+        setFormulariosState(updatedFormularios)
+      }
 
-      setFormulariosState([...updatedFormularios, ...formulariosCalculados])
+      // Mostrar mensaje con lista de formularios validados
+      setBalanceValidatedFormularios(formulariosValidados)
       setIsSubmitting(false)
       setShowBalanceSuccessDialog(true)
       return
@@ -1872,10 +1889,23 @@ export default function GestionFormulariosSimple({
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                   <div className="space-y-3">
-                    <p className="font-semibold text-green-900">
-                      El formulario Balance General fue <strong>validado</strong> exitosamente.
-                      {/* </CHANGE> */}
-                    </p>
+                    {balanceValidatedFormularios.length === 1 ? (
+                      <p className="font-semibold text-green-900">
+                        El formulario <strong>{balanceValidatedFormularios[0]}</strong> fue validado exitosamente.
+                      </p>
+                    ) : (
+                      <>
+                        <p className="font-semibold text-green-900">
+                          Los siguientes formularios fueron validados exitosamente:
+                        </p>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-green-800 ml-2">
+                          {balanceValidatedFormularios.map((nombre, idx) => (
+                            <li key={idx}>{nombre}</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                    {/* </CHANGE> */}
                     <p className="text-sm text-green-800">
                       Se han generado automáticamente los siguientes formularios calculados:
                     </p>
@@ -2124,6 +2154,7 @@ export default function GestionFormulariosSimple({
                     {validationPhase === 2 && "Verificando completitud de datos..."}
                     {validationPhase === 3 && "Ejecutando validaciones generales..."}
                     {validationPhase === 4 && "Aplicando expresiones de validación local..."}
+                    {validationPhase === 5 && "Validando expresiones centrales..."}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -2131,6 +2162,7 @@ export default function GestionFormulariosSimple({
                   <div className={`w-3 h-3 rounded-full ${validationPhase >= 2 ? "bg-blue-600" : "bg-gray-300"}`} />
                   <div className={`w-3 h-3 rounded-full ${validationPhase >= 3 ? "bg-blue-600" : "bg-gray-300"}`} />
                   <div className={`w-3 h-3 rounded-full ${validationPhase >= 4 ? "bg-blue-600" : "bg-gray-300"}`} />
+                  <div className={`w-3 h-3 rounded-full ${validationPhase >= 5 ? "bg-blue-600" : "bg-gray-300"}`} />
                 </div>
               </div>
             </div>
