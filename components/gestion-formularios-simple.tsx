@@ -140,6 +140,8 @@ export default function GestionFormulariosSimple({
   const [showAllFormsSuccessDialog, setShowAllFormsSuccessDialog] = useState(false)
   // </CHANGE>
 
+  const [archivoSubido, setArchivoSubido] = useState(false)
+
   const [formulariosState, setFormulariosState] = useState<Formulario[]>([
     // Renombrado a setFormulariosState para evitar conflicto
     {
@@ -1766,16 +1768,17 @@ export default function GestionFormulariosSimple({
                             }
                             setAdjuntoPDF(file)
                             setNombreAdjunto(file.name)
+                            setArchivoSubido(false)
                           }
                         }}
                         className="hidden"
                       />
                       <button
                         type="button"
-                        disabled={!adjuntoPDF}
+                        disabled={!adjuntoPDF || archivoSubido}
                         onClick={() => {
                           if (adjuntoPDF) {
-                            alert(`Archivo "${nombreAdjunto}" subido exitosamente.`)
+                            setArchivoSubido(true)
                           }
                         }}
                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -1798,6 +1801,7 @@ export default function GestionFormulariosSimple({
                         onClick={() => {
                           setAdjuntoPDF(null)
                           setNombreAdjunto("")
+                          setArchivoSubido(false)
                         }}
                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
@@ -1816,11 +1820,17 @@ export default function GestionFormulariosSimple({
                     </div>
 
                     <div className="text-center py-4">
-                      <p className="text-sm text-orange-700">
-                        {adjuntoPDF
-                          ? `Archivo seleccionado: ${nombreAdjunto}`
-                          : "Arrastra y suelta archivos aquí para cargar."}
-                      </p>
+                      {archivoSubido ? (
+                        <div className="border-2 border-green-500 bg-green-50 rounded-md p-3">
+                          <p className="text-sm text-green-700 font-medium">Archivo seleccionado: {nombreAdjunto}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-orange-700">
+                          {adjuntoPDF
+                            ? `Archivo seleccionado: ${nombreAdjunto}`
+                            : "Arrastra y suelta archivos aquí para cargar."}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1833,6 +1843,7 @@ export default function GestionFormulariosSimple({
                     setShowCertificationDialog(false)
                     setAdjuntoPDF(null)
                     setNombreAdjunto("")
+                    setArchivoSubido(false)
                   }}
                   className="px-4 py-2 text-gray-700 border-gray-300 hover:bg-gray-100"
                 >
