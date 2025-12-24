@@ -1380,6 +1380,16 @@ export default function GestionFormulariosSimple({
     setShowSimpleAlert(true)
   }
 
+  // Placeholder for handleSendData
+  const handleSendData = () => {
+    console.log("handleSendData called")
+    // Add your logic here for sending data after certification
+    toast({
+      title: "Datos enviados",
+      description: "La información ha sido enviada exitosamente.",
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Filtros de Búsqueda */}
@@ -2045,54 +2055,32 @@ export default function GestionFormulariosSimple({
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Formularios seleccionados validados:</strong>
-                </p>
-                <ul className="mt-2 space-y-1">
-                  {selectedFormularios
-                    .filter((id) => {
-                      const form = formulariosState.find((f) => f.id === id)
-                      return form?.estado === "Validado"
-                    })
-                    .map((id) => {
-                      const form = formulariosState.find((f) => f.id === id)
-                      return (
-                        <li key={id} className="text-sm text-blue-700">
-                          • {form?.id} - {form?.nombre}
-                        </li>
-                      )
-                    })}
-                </ul>
-              </div>
+              {/* La sección estaba aquí y ha sido removida */}
             </div>
 
             <DialogFooter className="flex justify-end gap-2 mt-6">
-              {archivoSubidoEnviar ? (
-                <Button
-                  onClick={() => {
-                    setShowEnviarAdjuntoDialog(false)
-                    handleCancelFileEnviar()
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Cerrar
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    onClick={() => {
-                      setShowEnviarAdjuntoDialog(false)
-                      setAdjuntoEnviarPDF(null)
-                      setNombreAdjuntoEnviar("")
-                    }}
-                    variant="outline"
-                  >
-                    Cancelar
-                  </Button>
-                </>
-              )}
+              <Button
+                onClick={() => {
+                  setShowCertificationDialog(false)
+                  setAdjuntoPDF(null)
+                  setNombreAdjunto("")
+                  setArchivoSubido(false)
+                }}
+                variant="outline"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowCertificationDialog(false)
+                  handleSendData()
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Aceptar
+              </Button>
             </DialogFooter>
+            {/* </CHANGE> */}
           </DialogContent>
         </Dialog>
 
