@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useRef } from "react" // Import useRef
 import type React from "react"
 
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,8 @@ import {
   Download,
   ChevronLeft,
   FileUp,
+  Plus,
+  X,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -111,6 +113,7 @@ export default function GestionFormulariosSimple({
   const [adjuntoEnviarPDF, setAdjuntoEnviarPDF] = useState<File | null>(null)
   const [nombreAdjuntoEnviar, setNombreAdjuntoEnviar] = useState("")
   const [archivoSubidoEnviar, setArchivoSubidoEnviar] = useState(false)
+  const fileInputEnviarRef = useRef<HTMLInputElement>(null) // Ref for file input
   // </CHANGE>
 
   const [validationPhase, setValidationPhase] = useState(0)
@@ -2040,18 +2043,127 @@ export default function GestionFormulariosSimple({
               ) : (
                 <>
                   <Button
-                    variant="outline"
                     onClick={() => {
                       setShowEnviarAdjuntoDialog(false)
-                      handleCancelFileEnviar()
+                      setAdjuntoEnviarPDF(null)
+                      setNombreAdjuntoEnviar("")
                     }}
-                    className="border border-gray-300 text-gray-700 hover:bg-gray-100"
+                    variant="outline"
                   >
                     Cancelar
                   </Button>
                 </>
               )}
-              {/* </CHANGE> */}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog de Enviar Adjunto */}
+        <Dialog open={showEnviarAdjuntoDialog} onOpenChange={setShowEnviarAdjuntoDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">Enviar Adjunto</DialogTitle>
+            </DialogHeader>
+
+            {/* Sección de Adjuntar Documento */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-base mb-2">Adjuntar Documento</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Permite adjuntar documento PDF con información adicional o soporte. Tamaño máximo: 20MB
+                </p>
+              </div>
+
+              <div className="border rounded-lg p-4 space-y-4">
+                {/* Botones de acción estilo PrimeNG */}
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={fileInputEnviarRef}
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileSelectEnviar}
+                    className="hidden"
+                    id="file-input-enviar"
+                  />
+                  <Button
+                    onClick={() => fileInputEnviarRef.current?.click()}
+                    className="bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white px-4 py-2 rounded-md flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Seleccionar
+                  </Button>
+                  <Button
+                    onClick={handleUploadFileEnviar}
+                    disabled={!adjuntoEnviarPDF}
+                    variant="outline"
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-md flex items-center gap-2 bg-transparent"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Subir
+                  </Button>
+                  <Button
+                    onClick={handleCancelFileEnviar}
+                    variant="outline"
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-md flex items-center gap-2 bg-transparent"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancelar
+                  </Button>
+                </div>
+
+                {/* Mensaje de archivo seleccionado o subido */}
+                {adjuntoEnviarPDF && !archivoSubidoEnviar && (
+                  <div className="border-2 border-orange-400 bg-orange-50 rounded-md p-3">
+                    <p className="text-sm text-orange-700">
+                      Archivo seleccionado: <span className="font-medium">{nombreAdjuntoEnviar}</span>
+                    </p>
+                  </div>
+                )}
+
+                {archivoSubidoEnviar && (
+                  <div className="border-2 border-green-500 bg-green-50 rounded-md p-3">
+                    <p className="text-sm text-green-700">
+                      Archivo cargado exitosamente: <span className="font-medium">{nombreAdjuntoEnviar}</span>
+                    </p>
+                  </div>
+                )}
+
+                {/* Área de drag and drop */}
+                {!adjuntoEnviarPDF && (
+                  <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center">
+                    <p className="text-sm text-[#8B5A2B]">Arrastre y suelte archivos aquí para cargar.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter className="mt-6">
+              {archivoSubidoEnviar ? (
+                <Button
+                  onClick={() => {
+                    setShowEnviarAdjuntoDialog(false)
+                    setAdjuntoEnviarPDF(null)
+                    setNombreAdjuntoEnviar("")
+                    setArchivoSubidoEnviar(false)
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Cerrar
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => {
+                      setShowEnviarAdjuntoDialog(false)
+                      setAdjuntoEnviarPDF(null)
+                      setNombreAdjuntoEnviar("")
+                    }}
+                    variant="outline"
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
