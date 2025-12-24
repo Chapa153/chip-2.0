@@ -2047,7 +2047,7 @@ export default function GestionFormulariosSimple({
                     setShowEnviarAdjuntoDialog(false)
                     handleCancelFileEnviar()
                   }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   Cerrar
                 </Button>
