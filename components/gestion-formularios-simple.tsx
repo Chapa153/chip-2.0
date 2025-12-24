@@ -1009,25 +1009,19 @@ export default function GestionFormulariosSimple({
 
   const handleUploadFileEnviar = () => {
     if (adjuntoEnviarPDF) {
-      console.log("[v0] Archivo subido exitosamente:", adjuntoEnviarPDF.name)
       setArchivoSubidoEnviar(true)
 
-      // Crear nuevo formulario con nombre predefinido
       const nuevoFormulario = {
-        id: `ADJ-${Date.now()}`, // Use 'id' instead of 'codigo' for the unique identifier
+        id: `ADJ-${Date.now()}`,
         nombre: "Documentación Adicional",
         tipo: "Categoría",
         estado: "Validado",
-        fecha: new Date().toLocaleDateString("es-CO"), // Use 'fecha' instead of 'ultimaModificacion'
-        estadoColor: "green" as const, // Add estadoColor
+        fecha: new Date().toLocaleDateString("es-CO"),
+        estadoColor: "green" as const,
       }
 
       console.log("[v0] Creando formulario desde Enviar adjunto:", nuevoFormulario)
-      setFormulariosState((prev) => [...prev, nuevoFormulario]) // Use setFormulariosState
-
-      alert(
-        `Archivo "${adjuntoEnviarPDF.name}" subido exitosamente. Se ha creado el formulario "${nuevoFormulario.nombre}".`,
-      )
+      setFormulariosState((prev) => [...prev, nuevoFormulario])
     }
   }
 
