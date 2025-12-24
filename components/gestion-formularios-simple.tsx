@@ -1965,8 +1965,33 @@ export default function GestionFormulariosSimple({
                       disabled={!adjuntoPDF || archivoSubido}
                       onClick={() => {
                         if (adjuntoPDF) {
+                          const adjuntoExistente = formulariosState.find((f) => f.nombre === "Documentación Adicional")
+
+                          if (adjuntoExistente) {
+                            console.log(
+                              "[v0] Ya existe un adjunto en mensaje informativo. Mostrando diálogo de confirmación.",
+                            )
+                            setShowReplaceAdjuntoDialog(true)
+                            setReplaceContext("mensaje")
+                            return
+                          }
+
+                          // Si no existe, crear el formulario y marcar como subido
                           setArchivoSubido(true)
+
+                          const nuevoFormulario = {
+                            id: `ADJ-${Date.now()}`,
+                            nombre: "Documentación Adicional",
+                            tipo: "Categoría",
+                            estado: "Validado",
+                            fecha: new Date().toLocaleDateString("es-CO"),
+                            estadoColor: "green" as const,
+                          }
+
+                          console.log("[v0] Creando formulario desde mensaje informativo:", nuevoFormulario)
+                          setFormulariosState((prev) => [...prev, nuevoFormulario])
                         }
+                        // </CHANGE>
                       }}
                       className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
