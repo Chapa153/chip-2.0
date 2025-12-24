@@ -921,8 +921,11 @@ export default function GestionFormulariosSimple({
   }
 
   const handleEnviarAdjunto = () => {
+    console.log("[v0] handleEnviarAdjunto ejecutado")
+    console.log("[v0] showEnviarAdjuntoDialog actual:", showEnviarAdjuntoDialog)
     // Abrir diálogo con funcionalidad de adjuntar
     setShowEnviarAdjuntoDialog(true)
+    console.log("[v0] setShowEnviarAdjuntoDialog(true) llamado")
   }
   // </CHANGE>
 
