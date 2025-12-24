@@ -1023,7 +1023,7 @@ export default function GestionFormulariosSimple({
 
       if (adjuntoExistente) {
         console.log("[v0] Ya existe un adjunto. Mostrando diálogo de confirmación.")
-        setShowReplaceAdjuntoDialog(true) // Cambiado de showReplaceConfirmDialog a showReplaceAdjuntoDialog
+        setShowReplaceAdjuntoDialog(true)
         setReplaceContext("enviar")
         return
       }
@@ -1035,7 +1035,7 @@ export default function GestionFormulariosSimple({
         id: `ADJ-${Date.now()}`,
         nombre: "Documentación Adicional",
         tipo: "Categoría",
-        estado: "Validado",
+        estado: "Aceptado",
         fecha: new Date().toLocaleDateString("es-CO"),
         estadoColor: "green" as const,
       }
@@ -1732,7 +1732,7 @@ export default function GestionFormulariosSimple({
                       <td className="px-4 py-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" disabled={form.tipo === "Categoría"}>
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
