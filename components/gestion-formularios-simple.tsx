@@ -19,10 +19,7 @@ import {
   FileText,
   Download,
   ChevronLeft,
-  AlertCircle,
-  Mail,
   FileUp,
-  Plus,
   X,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -40,14 +37,7 @@ import {
 import { toast } from "@/components/ui/use-toast" // Corregido import de toast desde use-toast en lugar de toast
 import DataTable from "@/components/data-table" // Assuming DataTable is imported here
 import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog" // Import Dialog components
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog" // Import Dialog components
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -1381,7 +1371,7 @@ export default function GestionFormulariosSimple({
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Filtros de Búsqueda */}
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-6">
         <div className="bg-white rounded-lg border border-border p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Filter className="w-5 h-5" />
@@ -1819,10 +1809,10 @@ export default function GestionFormulariosSimple({
         </AlertDialog>
 
         {/* </CHANGE> Aplicando estilo PrimeNG al diálogo de certificación */}
-        {showCertificationDialog && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full border border-gray-200">
-              <div className="flex items-center gap-3 p-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+        <Dialog open={showCertificationDialog} onOpenChange={setShowCertificationDialog}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -1833,708 +1823,282 @@ export default function GestionFormulariosSimple({
                     />
                   </svg>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">CHIP - Mensaje del Sistema</h3>
+                <DialogTitle className="text-lg font-semibold text-gray-900">CHIP - Mensaje del Sistema</DialogTitle>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <p className="text-sm font-semibold text-blue-900 mb-2">CAPTURA047</p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Con el envío de la información, usted certifica que:
+                </p>
+              </div>
+
+              <div className="space-y-3 text-sm text-gray-700">
+                <div className="flex gap-2">
+                  <span className="text-blue-600 font-semibold">1.</span>
+                  <p>Los datos básicos y los responsables de la entidad están actualizados.</p>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-blue-600 font-semibold">2.</span>
+                  <p>La información que acaba de reportar está completa y es expedida en cada categoría.</p>
                 </div>
               </div>
 
-              <div className="p-6 space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                  <p className="text-sm font-semibold text-blue-900 mb-2">CAPTURA047</p>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    Con el envío de la información, usted certifica que:
-                  </p>
-                </div>
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
+                <p className="text-sm text-amber-800 font-medium">
+                  Nota: La información Contable Pública debe reportarse en pesos.
+                </p>
+              </div>
 
-                <div className="space-y-3 text-sm text-gray-700">
-                  <div className="flex gap-2">
-                    <span className="text-blue-600 font-semibold">1.</span>
-                    <p>Los datos básicos y los responsables de la entidad están actualizados.</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-blue-600 font-semibold">2.</span>
-                    <p>La información que acaba de reportar está completa y es expedida en cada categoría.</p>
-                  </div>
-                </div>
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-base font-semibold text-gray-900 mb-2">Adjuntar Documento</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  Permite adjuntar documento PDF con información adicional o soporte.{" "}
+                  <span className="font-medium text-gray-700">Tamaño máximo: 20MB</span>
+                </p>
 
-                <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
-                  <p className="text-sm text-amber-800 font-medium">
-                    Nota: La información Contable Pública debe reportarse en pesos.
-                  </p>
-                </div>
+                <div className="border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center gap-2 mb-4">
+                    <label htmlFor="pdf-upload" className="cursor-pointer">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="text-sm font-medium">Seleccionar</span>
+                      </div>
+                    </label>
+                    <input
+                      id="pdf-upload"
+                      type="file"
+                      accept=".pdf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          console.log("[v0] Archivo seleccionado:", file.name, "Tamaño:", file.size)
 
-                <div className="border-t pt-4 mt-4">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2">Adjuntar Documento</h4>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Permite adjuntar documento PDF con información adicional o soporte.{" "}
-                    <span className="font-medium text-gray-700">Tamaño máximo: 20MB</span>
-                  </p>
+                          const maxSize = 20 * 1024 * 1024
+                          if (file.size > maxSize) {
+                            console.log("[v0] Rechazo: archivo excede 20MB")
+                            alert(
+                              "El archivo excede el tamaño máximo permitido de 20MB. Por favor seleccione un archivo más pequeño.",
+                            )
+                            e.target.value = ""
+                            return
+                          }
 
-                  <div className="border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <div className="flex items-center gap-2 mb-4">
-                      <label htmlFor="pdf-upload" className="cursor-pointer">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                          <span className="text-sm font-medium">Seleccionar</span>
-                        </div>
-                      </label>
-                      <input
-                        id="pdf-upload"
-                        type="file"
-                        accept=".pdf"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0]
-                          if (file) {
-                            console.log("[v0] Archivo seleccionado:", file.name, "Tamaño:", file.size)
+                          const fileName = file.name.toLowerCase()
 
-                            const maxSize = 20 * 1024 * 1024
-                            if (file.size > maxSize) {
-                              console.log("[v0] Rechazo: archivo excede 20MB")
-                              alert(
-                                "El archivo excede el tamaño máximo permitido de 20MB. Por favor seleccione un archivo más pequeño.",
-                              )
-                              e.target.value = ""
-                              return
-                            }
-
-                            if (file.name.toLowerCase().includes("2021")) {
-                              console.log("[v0] Validando PDF header para archivo 2021...")
-                              const arrayBuffer = await file.arrayBuffer()
-                              const uint8Array = new Uint8Array(arrayBuffer)
-                              const header = String.fromCharCode(...uint8Array.slice(0, 4))
-                              console.log("[v0] PDF Header detectado:", header)
-
-                              // Simular que este archivo NO tiene un header PDF válido
-                              console.log("[v0] Rechazo: no es un PDF válido (header inválido detectado)")
-                              alert("El archivo seleccionado no corresponde a un PDF válido.")
-                              e.target.value = ""
-                              setAdjuntoPDF(null)
-                              setNombreAdjunto("")
-                              setArchivoSubido(false)
-                              return
-                            }
-                            // </CHANGE>
-
-                            if (file.name.toLowerCase().includes("2022")) {
-                              console.log("[v0] Validando contenido ejecutable para archivo 2022...")
-
-                              // Simular que este archivo contiene contenido ejecutable peligroso
-                              console.log("[v0] Rechazo: contenido ejecutable detectado")
-                              alert(
-                                "El archivo no es permitido por políticas de seguridad. El PDF contiene acciones automáticas, contenido ejecutable o archivos adjuntos embebidos.",
-                              )
-                              e.target.value = ""
-                              setAdjuntoPDF(null)
-                              setNombreAdjunto("")
-                              setArchivoSubido(false)
-                              return
-                            }
-                            // </CHANGE>
-
-                            if (file.name.toLowerCase().includes("2023")) {
-                              console.log("[v0] Validando encriptación para archivo 2023...")
-
-                              // Simular que este archivo está protegido con contraseña
-                              console.log("[v0] Rechazo: PDF encriptado detectado")
-                              alert(
-                                "No se permiten PDFs protegidos o encriptados por políticas de importación. Por favor, seleccione un archivo sin protección.",
-                              )
-                              e.target.value = ""
-                              setAdjuntoPDF(null)
-                              setNombreAdjunto("")
-                              setArchivoSubido(false)
-                              return
-                            }
-                            // </CHANGE>
-
-                            if (file.name.toLowerCase().includes("2024")) {
-                              console.log("[v0] Validando concurrencia para archivo 2024...")
-
-                              // Simular que otro usuario actualizó el registro
-                              console.log("[v0] Rechazo: registro actualizado por otro usuario")
-                              alert(
-                                "El adjunto fue actualizado por otro usuario. Recargue la información e intente nuevamente.",
-                              )
-                              e.target.value = ""
-                              setAdjuntoPDF(null)
-                              setNombreAdjunto("")
-                              setArchivoSubido(false)
-                              return
-                            }
-                            // </CHANGE>
-
-                            // Si pasa todas las validaciones (cualquier otro archivo)
-                            console.log("[v0] Archivo listo para subir:", file.name)
-                            setAdjuntoPDF(file)
-                            setNombreAdjunto(file.name)
+                          if (fileName.includes("2021")) {
+                            console.log("[v0] Validando PDF header para archivo 2021...")
+                            console.log("[v0] Rechazo: no es un PDF válido (header inválido detectado)")
+                            alert("El archivo seleccionado no corresponde a un PDF válido.")
+                            e.target.value = ""
+                            setAdjuntoPDF(null)
+                            setNombreAdjunto("")
                             setArchivoSubido(false)
+                            return
                           }
-                        }}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        disabled={!adjuntoPDF || archivoSubido}
-                        onClick={() => {
-                          if (adjuntoPDF) {
-                            setArchivoSubido(true)
+
+                          if (fileName.includes("2022")) {
+                            console.log("[v0] Validando contenido ejecutable para archivo 2022...")
+                            console.log("[v0] Rechazo: contenido ejecutable detectado")
+                            alert(
+                              "El archivo no es permitido por políticas de seguridad. El PDF contiene acciones automáticas, contenido ejecutable o archivos adjuntos embebidos.",
+                            )
+                            e.target.value = ""
+                            setAdjuntoPDF(null)
+                            setNombreAdjunto("")
+                            setArchivoSubido(false)
+                            return
                           }
-                          // </CHANGE>
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <span className="flex items-center gap-2">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                            />
-                          </svg>
-                          Subir
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!adjuntoPDF}
-                        onClick={() => {
-                          setAdjuntoPDF(null)
-                          setNombreAdjunto("")
+
+                          if (fileName.includes("2023")) {
+                            console.log("[v0] Validando encriptación para archivo 2023...")
+                            console.log("[v0] Rechazo: PDF encriptado detectado")
+                            alert(
+                              "No se permiten PDFs protegidos o encriptados por políticas de importación. Por favor, seleccione un archivo sin protección.",
+                            )
+                            e.target.value = ""
+                            setAdjuntoPDF(null)
+                            setNombreAdjunto("")
+                            setArchivoSubido(false)
+                            return
+                          }
+
+                          if (fileName.includes("2024")) {
+                            console.log("[v0] Validando concurrencia para archivo 2024...")
+                            console.log("[v0] Rechazo: registro actualizado por otro usuario")
+                            alert(
+                              "El adjunto fue actualizado por otro usuario. Recargue la información e intente nuevamente.",
+                            )
+                            e.target.value = ""
+                            setAdjuntoPDF(null)
+                            setNombreAdjunto("")
+                            setArchivoSubido(false)
+                            return
+                          }
+
+                          console.log("[v0] Archivo listo para subir:", file.name)
+                          setAdjuntoPDF(file)
+                          setNombreAdjunto(file.name)
                           setArchivoSubido(false)
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <span className="flex items-center gap-2">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                          Cancelar
-                        </span>
-                      </button>
-                    </div>
-
-                    <div className="text-center py-4">
-                      {archivoSubido ? (
-                        <div className="border-2 border-green-500 bg-green-50 rounded-md p-3">
-                          <p className="text-sm text-green-700 font-medium">
-                            Archivo cargado exitosamente: {nombreAdjunto}
-                          </p>
-                        </div>
-                        // </CHANGE>
-                      ) : (
-                        <p className="text-sm text-orange-700">
-                          {adjuntoPDF
-                            ? `Archivo seleccionado: ${nombreAdjunto}`
-                            : "Arrastra y suelta archivos aquí para cargar."}
-                        </p>
-                      )}
-                    </div>
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={!adjuntoPDF || archivoSubido}
+                      onClick={() => {
+                        if (adjuntoPDF) {
+                          setArchivoSubido(true)
+                        }
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                          />
+                        </svg>
+                        Subir
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdjuntoPDF(null)
+                        setNombreAdjunto("")
+                        setArchivoSubido(false)
+                        const input = document.getElementById("pdf-upload") as HTMLInputElement
+                        if (input) input.value = ""
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Cancelar
+                      </span>
+                    </button>
                   </div>
-                </div>
-              </div>
 
-              <div className="flex justify-end gap-2 p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowCertificationDialog(false)
-                    setAdjuntoPDF(null)
-                    setNombreAdjunto("")
-                    setArchivoSubido(false)
-                  }}
-                  className="px-4 py-2 text-gray-700 border-gray-300 hover:bg-gray-100"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (adjuntoPDF && nombreAdjunto) {
-                      console.log("[v0] PDF adjunto:", nombreAdjunto, adjuntoPDF.name)
-                    }
-
-                    setShowCertificationDialog(false)
-                    setIsSubmitting(true)
-                    setValidationPhase(5)
-
-                    setTimeout(() => {
-                      setIsSubmitting(false)
-                      setValidationPhase(0)
-
-                      // Mostrar resultado según la categoría
-                      if (categoria?.includes("INFORMACIÓN CONTABLE")) {
-                        console.log("[v0] Mostrando error de validación central para INFORMACIÓN CONTABLE")
-                        setShowCentralErrorDialog(true)
-                        // Actualizar todos los formularios filtrados a Categoría y Rechazado por Deficiencia
-                        setFormulariosState((prev) =>
-                          prev.map((f) => {
-                            const isFiltered = filteredFormularios.some((ff) => ff.id === f.id)
-                            if (isFiltered) {
-                              return {
-                                ...f,
-                                tipo: "Categoría",
-                                estado: "Rechazado por Deficiencia",
-                                estadoColor: "red",
-                                fecha: new Date().toLocaleDateString("es-ES"),
-                              }
-                            }
-                            return f
-                          }),
-                        )
-                      } else if (categoria?.includes("INFORMACIÓN PRESUPUESTAL")) {
-                        console.log("[v0] Mostrando validación central exitosa para INFORMACIÓN PRESUPUESTAL")
-                        setShowCentralSuccessDialog(true)
-                        // Actualizar todos los formularios filtrados a Categoría y Aceptado
-                        setFormulariosState((prev) =>
-                          prev.map((f) => {
-                            const isFiltered = filteredFormularios.some((ff) => ff.id === f.id)
-                            if (isFiltered) {
-                              return {
-                                ...f,
-                                tipo: "Categoría",
-                                estado: "Aceptado",
-                                estadoColor: "green",
-                                fecha: new Date().toLocaleDateString("es-ES"),
-                              }
-                            }
-                            return f
-                          }),
-                        )
-                      }
-                    }, 2000)
-                  }}
-                  className="px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
-                >
-                  Aceptar
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <Dialog open={showBalanceSuccessDialog} onOpenChange={setShowBalanceSuccessDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
-                Validación Exitosa
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <div className="space-y-3">
-                    {balanceValidatedFormularios.length === 1 ? (
-                      <p className="font-semibold text-green-900">
-                        El formulario <strong>{balanceValidatedFormularios[0]}</strong> fue validado exitosamente.
-                      </p>
+                  <div className="text-center py-4">
+                    {archivoSubido ? (
+                      <div className="border-2 border-green-500 bg-green-50 rounded-md p-3">
+                        <p className="text-sm text-green-700 font-medium">
+                          Archivo cargado exitosamente: {nombreAdjunto}
+                        </p>
+                      </div>
                     ) : (
-                      <>
-                        <p className="font-semibold text-green-900">
-                          Los siguientes formularios fueron validados exitosamente:
-                        </p>
-                        <ul className="list-disc list-inside space-y-1 text-sm text-green-800 ml-2">
-                          {balanceValidatedFormularios.map((nombre, idx) => (
-                            <li key={idx}>{nombre}</li>
-                          ))}
-                        </ul>
-                      </>
+                      <p className="text-sm text-orange-700">
+                        {adjuntoPDF
+                          ? `Archivo seleccionado: ${nombreAdjunto}`
+                          : "Arrastra y suelta archivos aquí para cargar."}
+                      </p>
                     )}
-                    {/* </CHANGE> */}
-                    <p className="text-sm text-green-800">
-                      Se han generado automáticamente los siguientes formularios calculados:
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-green-800 ml-2">
-                      <li>Estado de Resultados Calculado</li>
-                      <li>Flujo de Efectivo Calculado</li>
-                    </ul>
-                    <div className="bg-white border border-green-300 rounded p-3 mt-3">
-                      <p className="text-sm text-gray-700">
-                        <strong className="text-green-900">Estado:</strong> Los formularios calculados han sido
-                        agregados al detalle de formularios con estado{" "}
-                        <span className="font-semibold">'Pendiente en validar'</span> y tipo{" "}
-                        <span className="font-semibold">'Formulario'</span>.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setShowBalanceSuccessDialog(false)}>Aceptar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
-        <Dialog open={showCentralSuccessDialog} onOpenChange={setShowCentralSuccessDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
-                Validación Central Exitosa
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <div className="space-y-3">
-                    <p className="font-semibold text-green-900">
-                      La categoría {categoria} ha sido procesada exitosamente.
-                    </p>
-                    <p className="text-sm text-green-800">
-                      Todos los formularios han pasado las validaciones centrales (Fase 5) correctamente.
-                    </p>
-                    <p className="text-sm text-gray-700 mt-3">
-                      Se ha enviado un correo electrónico automático confirmando la aceptación del envío a la dirección
-                      registrada de la entidad.
-                    </p>
-                    <div className="bg-white border border-green-300 rounded p-3 mt-3">
-                      <p className="text-sm text-gray-700">
-                        <strong className="text-green-900">Estado:</strong> Todos los formularios han sido actualizados
-                        a tipo <span className="font-semibold">'Categoría'</span> con estado{" "}
-                        <span className="font-semibold text-green-700">'Aceptado'</span>.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Formularios seleccionados validados:</strong>
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {selectedFormularios
+                    .filter((id) => {
+                      const form = formulariosState.find((f) => f.id === id)
+                      return form?.estado === "Validado"
+                    })
+                    .map((id) => {
+                      const form = formulariosState.find((f) => f.id === id)
+                      return (
+                        <li key={id} className="text-sm text-blue-700">
+                          • {form?.id} - {form?.nombre}
+                        </li>
+                      )
+                    })}
+                </ul>
               </div>
             </div>
-            <DialogFooter className="flex-col sm:flex-row gap-2">
+
+            <DialogFooter className="flex justify-end gap-2 mt-6">
               <Button
                 variant="outline"
                 onClick={() => {
-                  setShowCentralSuccessDialog(false)
-                  setShowSuccessEmailFormatDialog(true)
+                  setShowCertificationDialog(false)
+                  setAdjuntoPDF(null)
+                  setNombreAdjunto("")
+                  setArchivoSubido(false)
                 }}
+                className="border border-gray-300 text-gray-700 hover:bg-gray-100"
               >
-                Ver formato del correo
+                Cancelar
               </Button>
-              <Button onClick={() => setShowCentralSuccessDialog(false)}>Cerrar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showCentralErrorDialog} onOpenChange={setShowCentralErrorDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-500" />
-                Error en Validación Central
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-gray-700">
-                  El envío de información fue rechazado debido a errores detectados en las{" "}
-                  <span className="font-semibold">expresiones de validación centrales (Fase 5)</span>.
-                </p>
-                <p className="text-sm text-gray-700 mt-3">
-                  Se ha enviado un correo electrónico automático con el detalle de todas las inconsistencias encontradas
-                  a la dirección registrada de la entidad.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Mail className="h-4 w-4" />
-                <span>Correo enviado desde: chip@contaduria.gov.co</span>
-              </div>
-            </div>
-            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
-                variant="outline"
-                onClick={() => {
-                  setShowCentralErrorDialog(false)
-                  setShowErrorEmailFormatDialog(true)
+                onClick={async () => {
+                  console.log("[v0] Botón Aceptar - Iniciando validación central para categoría:", categoria)
+                  setShowCertificationDialog(false)
+
+                  setIsValidatingCentral(true)
+                  setValidationPhase(5)
+                  await new Promise((resolve) => setTimeout(resolve, 2000))
+                  setValidationPhase(0)
+                  setIsValidatingCentral(false)
+
+                  if (categoria.includes("INFORMACIÓN CONTABLE")) {
+                    console.log("[v0] Categoría INFORMACIÓN CONTABLE - Mostrando error central")
+                    const updatedFormularios = formulariosState.map((form) => {
+                      if (filteredFormularios.some((f) => f.id === form.id)) {
+                        return {
+                          ...form,
+                          estado: "Rechazado por Deficiencia",
+                          tipo: "Categoría",
+                          estadoColor: "red" as const,
+                        }
+                      }
+                      return form
+                    })
+                    setFormulariosState(updatedFormularios)
+                    setShowCentralErrorDialog(true)
+                  } else if (categoria.includes("INFORMACIÓN PRESUPUESTAL")) {
+                    console.log("[v0] Categoría INFORMACIÓN PRESUPUESTAL - Mostrando éxito central")
+                    const updatedFormularios = formulariosState.map((form) => {
+                      if (filteredFormularios.some((f) => f.id === form.id)) {
+                        return {
+                          ...form,
+                          estado: "Aceptado",
+                          tipo: "Categoría",
+                          estadoColor: "green" as const,
+                        }
+                      }
+                      return form
+                    })
+                    setFormulariosState(updatedFormularios)
+                    setShowCentralSuccessDialog(true)
+                  }
                 }}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                Ver formato del correo
+                Aceptar
               </Button>
-              <Button onClick={() => setShowCentralErrorDialog(false)}>Cerrar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        {/* </CHANGE> */}
 
-        <Dialog open={showEmailFormatDialog} onOpenChange={setShowEmailFormatDialog}>
-          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-green-500" />
-                Formato del Correo - Envío Aceptado
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              {/* Banner CHIP */}
-              <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white rounded-lg p-2">
-                    <span className="text-2xl">🏛️</span>
-                  </div>
-                  <h2 className="text-3xl font-bold">Sistema CHIP</h2>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
-                </div>
-              </div>
-
-              {/* Contenido del correo */}
-              <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
-                <p className="font-semibold">Doctor(a)</p>
-                <p className="font-semibold">GABRIELA MORENO ALBA</p>
-                <p>Contador</p>
-                <p>Jenesano</p>
-                <p className="mb-4">JENESANO - DEPARTAMENTO DE BOYACA</p>
-
-                <p className="italic text-gray-600">Este es un correo automático que genera el sistema CHIP</p>
-
-                <p className="mt-4">Cordial saludo,</p>
-
-                <p className="mt-4">Respetado(a) Doctor(a):</p>
-
-                <p className="mt-4 font-semibold">
-                  La Contaduría General de la Nación se permite informarle que su envío fue Aceptado.
-                </p>
-
-                <div className="mt-4 space-y-1">
-                  <p>
-                    <strong>Categoría:</strong> INFORMACIÓN CONTABLE PÚBLICA - CONVERGENCIA
-                  </p>
-                  <p>
-                    <strong>Formularios y</strong> REPORTE DE ESTADOS FINANCIEROS
-                  </p>
-                  <p>
-                    <strong>Periodo:</strong> Oct-Dic
-                  </p>
-                  <p>
-                    <strong>Año:</strong> 2024
-                  </p>
-                  <p>
-                    <strong>Recepción:</strong> 2025-08-12
-                  </p>
-                  <p>
-                    <strong>Radicado (Id) de Envío:</strong> 4589500
-                  </p>
-                </div>
-
-                <p className="mt-6">Atentamente,</p>
-
-                <div className="mt-4 pt-4 border-t space-y-1 text-xs text-gray-600">
-                  <p className="font-semibold">Contaduría General de la Nación</p>
-                  <p className="text-blue-600 underline">chip@contaduria.gov.co</p>
-                  <p>Calle 26 No 69 - 76, Edificio Elemento</p>
-                  <p>Torre 1 (Aire) - Piso 15, Bogotá D.C. Colombia</p>
-                  <p>Código Postal: 111071</p>
-                  <p>PBX: +57 (601) 492 6400</p>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setShowEmailFormatDialog(false)}>Cerrar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showErrorEmailFormatDialog} onOpenChange={setShowErrorEmailFormatDialog}>
-          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-red-500" />
-                Formato del Correo - Envío Rechazado por Deficiencia
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              {/* Banner CHIP */}
-              <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white rounded-lg p-2">
-                    <span className="text-2xl">🏛️</span>
-                  </div>
-                  <h2 className="text-3xl font-bold">Sistema CHIP</h2>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
-                </div>
-              </div>
-
-              {/* Contenido del correo de rechazo */}
-              <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
-                <p className="font-semibold">Doctor(a)</p>
-                <p className="font-semibold">MARIBEL MUÑOZ MOLINA</p>
-                <p>Contador</p>
-                <p>E.S.E Empresa de Acueductos y Alcantarillado del RÍO Palo S.A.S</p>
-                <p className="mb-4">PUERTO TEJADA - DEPARTAMENTO DE CAUCA</p>
-
-                <p className="italic text-gray-600">Este es un correo automático que genera el sistema CHIP</p>
-
-                <p className="mt-4">Cordial saludo,</p>
-
-                <p className="mt-4">Respetado(a) Doctor(a):</p>
-
-                <p className="mt-4 font-semibold text-red-600">
-                  La Contaduría General de la Nación se permite informarle que su envío fue rechazado dado que se
-                  encontraron inconsistencias.
-                </p>
-
-                <div className="mt-4 space-y-1">
-                  <p>
-                    <strong>Categoría:</strong> INFORMACIÓN CONTABLE PÚBLICA - CONVERGENCIA
-                  </p>
-                  <p>
-                    <strong>Formularios:</strong> Todos
-                  </p>
-                  <p>
-                    <strong>Periodo:</strong> Abr-Jun
-                  </p>
-                  <p>
-                    <strong>Año:</strong> 2024
-                  </p>
-                  <p>
-                    <strong>Recepción:</strong> 2024-07-31
-                  </p>
-                  <p>
-                    <strong>Radicado (Id) de Envío:</strong> 4515447
-                  </p>
-                </div>
-
-                <div className="mt-6 bg-red-50 border-l-4 border-red-500 p-4">
-                  <p className="font-semibold text-red-800 mb-2">Los mensajes generados fueron:</p>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
-                    <li>
-                      <strong>Propuesta diferencia</strong> entre el saldo final reportado por la entidad en el cuarto
-                      trimestre 2023 por concepto 110365, COND31 - 001 SALDOS Y MOVIMIENTOS CONVERGENCIA - (8 ENTIDADES
-                      1-ALCALDÍAS), asciende a: <strong>$3,043,565.13</strong>
-                    </li>
-                    <li>
-                      <strong>Propuesta diferencia</strong> en el saldo final que en un concepto no coincide con la
-                      diferencia entre el saldo inicial y el total de aumentos y disminuciones.{" "}
-                      <strong>$130,418.50</strong>
-                      para saldo inicial de período 2024-01, ID concepto 130302, formulario 001 - SALDOS Y MOVIMIENTOS
-                      CONVERGENCIA - (8 ENTIDADES 1-ALCALDÍAS), comparado con saldo final del período 2023-12.
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mt-4 p-4 bg-blue-50 rounded">
-                  <p className="text-sm">
-                    <strong>
-                      Por favor revisar y corregir las inconsistencias reportadas antes de realizar un nuevo envío.
-                    </strong>
-                  </p>
-                </div>
-
-                <p className="mt-6">Atentamente,</p>
-
-                <div className="mt-4 pt-4 border-t space-y-1 text-xs text-gray-600">
-                  <p className="font-semibold">Sistema CHIP</p>
-                  <p className="font-semibold">Contaduría General de la Nación</p>
-                  <p className="text-blue-600">chip@contaduria.gov.co</p>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setShowErrorEmailFormatDialog(false)}>Cerrar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showSuccessEmailFormatDialog} onOpenChange={setShowSuccessEmailFormatDialog}>
-          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-green-500" />
-                Formato del Correo - Envío Aceptado
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              {/* Banner CHIP */}
-              <div className="bg-[#008b8b] text-white p-6 rounded-t-lg flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white rounded-lg p-2">
-                    <span className="text-2xl">🏛️</span>
-                  </div>
-                  <h2 className="text-3xl font-bold">Sistema CHIP</h2>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm italic">Cuentas Claras, Estado Transparente</p>
-                </div>
-              </div>
-
-              {/* Contenido del correo de éxito */}
-              <div className="bg-white border rounded-b-lg p-6 space-y-4 text-sm">
-                <p className="font-semibold">Doctor(a)</p>
-                <p className="font-semibold">GABRIELA MORENO ALBA</p>
-                <p>Contador</p>
-                <p>Jenesano</p>
-                <p className="mb-4">JENESANO - DEPARTAMENTO DE BOYACA</p>
-
-                <p className="italic text-gray-600">Este es un correo automático que genera el sistema CHIP</p>
-
-                <p className="mt-4">Cordial saludo,</p>
-
-                <p className="mt-4">Respetado(a) Doctor(a):</p>
-
-                <p className="mt-4 font-semibold text-green-600">
-                  La Contaduría General de la Nación se permite informarle que su envío fue Aceptado.
-                </p>
-
-                <div className="mt-4 space-y-1">
-                  <p>
-                    <strong>Categoría:</strong> INFORMACIÓN PRESUPUESTAL
-                  </p>
-                  <p>
-                    <strong>Formularios:</strong> Todos
-                  </p>
-                  <p>
-                    <strong>Periodo:</strong> Ene-Mar
-                  </p>
-                  <p>
-                    <strong>Año:</strong> 2024
-                  </p>
-                  <p>
-                    <strong>Recepción:</strong> 2024-04-15
-                  </p>
-                  <p>
-                    <strong>Radicado (Id) de Envío:</strong> 4512345
-                  </p>
-                </div>
-
-                <div className="mt-6 bg-green-50 border-l-4 border-green-500 p-4">
-                  <p className="text-green-800">
-                    Su información ha sido recibida exitosamente y cumple con todos los requisitos de validación
-                    central. No se requieren correcciones.
-                  </p>
-                </div>
-
-                <p className="mt-6">Atentamente,</p>
-
-                <div className="mt-4 pt-4 border-t space-y-1 text-xs text-gray-600">
-                  <p className="font-semibold">Sistema CHIP</p>
-                  <p className="font-semibold">Contaduría General de la Nación</p>
-                  <p className="text-blue-600">chip@contaduria.gov.co</p>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setShowSuccessEmailFormatDialog(false)}>Cerrar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Diálogo de Enviar Adjunto */}
         <Dialog open={showEnviarAdjuntoDialog} onOpenChange={setShowEnviarAdjuntoDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold text-gray-900">Enviar Adjunto</DialogTitle>
-              <DialogDescription className="text-sm text-gray-600">
-                Adjunte un documento PDF relacionado con los formularios seleccionados
-              </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
@@ -2552,7 +2116,9 @@ export default function GestionFormulariosSimple({
                         className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium"
                         onClick={() => document.getElementById("file-input-enviar")?.click()}
                       >
-                        <Plus className="w-4 h-4 mr-2" />
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
                         Seleccionar
                       </Button>
                     </label>
@@ -2607,28 +2173,6 @@ export default function GestionFormulariosSimple({
                   )}
                 </div>
               </div>
-              {/* </CHANGE> */}
-
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Formularios seleccionados validados:</strong>
-                </p>
-                <ul className="mt-2 space-y-1">
-                  {selectedFormularios
-                    .filter((id) => {
-                      const form = formulariosState.find((f) => f.id === id) // Use id here instead of codigo
-                      return form?.estado === "Validado"
-                    })
-                    .map((id) => {
-                      const form = formulariosState.find((f) => f.id === id) // Use id here instead of codigo
-                      return (
-                        <li key={id} className="text-sm text-blue-700">
-                          • {form?.id} - {form?.nombre}
-                        </li>
-                      )
-                    })}
-                </ul>
-              </div>
             </div>
 
             <DialogFooter className="flex justify-end gap-2">
@@ -2644,12 +2188,10 @@ export default function GestionFormulariosSimple({
               </Button>
               <Button
                 onClick={() => {
-                  alert("Adjunto enviado exitosamente")
                   setShowEnviarAdjuntoDialog(false)
                   handleCancelFileEnviar()
                 }}
                 disabled={!archivoSubidoEnviar}
-                // </CHANGE>
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Enviar
@@ -2657,6 +2199,7 @@ export default function GestionFormulariosSimple({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        {/* </CHANGE> */}
 
         <Dialog open={isSubmitting && validationPhase > 0} onOpenChange={(open) => !open && setIsSubmitting(false)}>
           <DialogContent className="max-w-md">
