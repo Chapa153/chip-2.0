@@ -20,8 +20,7 @@ import {
   Download,
   ChevronLeft,
   FileUp,
-  Plus,
-  X,
+  AlertCircle,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -134,6 +133,10 @@ export default function GestionFormulariosSimple({
   const [showCentralSuccessDialog, setShowCentralSuccessDialog] = useState(false)
   const [balanceValidatedFormularios, setBalanceValidatedFormularios] = useState<string[]>([])
   const [archivoSubido, setArchivoSubido] = useState(false)
+  // </CHANGE>
+  const [showReplaceAdjuntoDialog, setShowReplaceAdjuntoDialog] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [replaceContext, setReplaceContext] = useState<"mensaje" | "enviar" | null>(null)
   // </CHANGE>
 
   const [showReenvioDialog, setShowReenvioDialog] = useState(false)
@@ -1014,6 +1017,16 @@ export default function GestionFormulariosSimple({
 
   const handleUploadFileEnviar = () => {
     if (adjuntoEnviarPDF) {
+      const adjuntoExistente = formulariosState.find((f) => f.nombre === "Documentación Adicional")
+
+      if (adjuntoExistente) {
+        console.log("[v0] Ya existe un adjunto. Mostrando diálogo de confirmación.")
+        setShowReplaceAdjuntoDialog(true)
+        setReplaceContext("enviar")
+        return
+      }
+      // </CHANGE>
+
       setArchivoSubidoEnviar(true)
 
       const nuevoFormulario = {
@@ -1100,7 +1113,6 @@ export default function GestionFormulariosSimple({
         const nuevosCalculados = [
           {
             id: `CALC-${Date.now()}-1`,
-            codigo: `CALC-17653753363416-1`,
             nombre: "Estado de Resultados Calculado",
             tipo: "Formulario" as const,
             estado: "Pendiente en validar",
@@ -1109,7 +1121,6 @@ export default function GestionFormulariosSimple({
           },
           {
             id: `CALC-${Date.now()}-2`,
-            codigo: `CALC-17653753363430-2`,
             nombre: "Flujo de Efectivo Calculado",
             tipo: "Formulario" as const,
             estado: "Pendiente en validar",
@@ -2058,112 +2069,70 @@ export default function GestionFormulariosSimple({
           </DialogContent>
         </Dialog>
 
-        {/* Dialog de Enviar Adjunto */}
-        <Dialog open={showEnviarAdjuntoDialog} onOpenChange={setShowEnviarAdjuntoDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        {/* Dialogo de reemplazo de adjunto */}
+        <Dialog open={showReplaceAdjuntoDialog} onOpenChange={setShowReplaceAdjuntoDialog}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">Enviar Adjunto</DialogTitle>
+              <DialogTitle className="flex items-center gap-2 text-amber-600">
+                <AlertCircle className="h-5 w-5" />
+                Adjunto Existente
+              </DialogTitle>
             </DialogHeader>
-
-            {/* Sección de Adjuntar Documento */}
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-base mb-2">Adjuntar Documento</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Permite adjuntar documento PDF con información adicional o soporte. Tamaño máximo: 20MB
+            <div className="py-4">
+              <p className="text-sm text-gray-700">
+                Ya existe un documento adjunto de "Documentación Adicional". ¿Desea reemplazarlo con el nuevo archivo?
+              </p>
+              <div className="mt-4 rounded-md bg-amber-50 p-3 border border-amber-200">
+                <p className="text-xs text-amber-800">
+                  <strong>Nota:</strong> Si reemplaza el adjunto, el formulario anterior será eliminado y se creará uno
+                  nuevo.
                 </p>
               </div>
-
-              <div className="border rounded-lg p-4 space-y-4">
-                {/* Botones de acción estilo PrimeNG */}
-                <div className="flex items-center gap-2">
-                  <input
-                    ref={fileInputEnviarRef}
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileSelectEnviar}
-                    className="hidden"
-                    id="file-input-enviar"
-                  />
-                  <Button
-                    onClick={() => fileInputEnviarRef.current?.click()}
-                    className="bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white px-4 py-2 rounded-md flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Seleccionar
-                  </Button>
-                  <Button
-                    onClick={handleUploadFileEnviar}
-                    disabled={!adjuntoEnviarPDF}
-                    variant="outline"
-                    className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-md flex items-center gap-2 bg-transparent"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Subir
-                  </Button>
-                  <Button
-                    onClick={handleCancelFileEnviar}
-                    variant="outline"
-                    className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-md flex items-center gap-2 bg-transparent"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancelar
-                  </Button>
-                </div>
-
-                {/* Mensaje de archivo seleccionado o subido */}
-                {adjuntoEnviarPDF && !archivoSubidoEnviar && (
-                  <div className="border-2 border-orange-400 bg-orange-50 rounded-md p-3">
-                    <p className="text-sm text-orange-700">
-                      Archivo seleccionado: <span className="font-medium">{nombreAdjuntoEnviar}</span>
-                    </p>
-                  </div>
-                )}
-
-                {archivoSubidoEnviar && (
-                  <div className="border-2 border-green-500 bg-green-50 rounded-md p-3">
-                    <p className="text-sm text-green-700">
-                      Archivo cargado exitosamente: <span className="font-medium">{nombreAdjuntoEnviar}</span>
-                    </p>
-                  </div>
-                )}
-
-                {/* Área de drag and drop */}
-                {!adjuntoEnviarPDF && (
-                  <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center">
-                    <p className="text-sm text-[#8B5A2B]">Arrastre y suelte archivos aquí para cargar.</p>
-                  </div>
-                )}
-              </div>
             </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  console.log("[v0] Cancelando reemplazo de adjunto")
+                  setShowReplaceAdjuntoDialog(false)
+                  setReplaceContext(null)
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => {
+                  console.log("[v0] Confirmando reemplazo de adjunto")
 
-            <DialogFooter className="mt-6">
-              {archivoSubidoEnviar ? (
-                <Button
-                  onClick={() => {
-                    setShowEnviarAdjuntoDialog(false)
-                    setAdjuntoEnviarPDF(null)
-                    setNombreAdjuntoEnviar("")
-                    setArchivoSubidoEnviar(false)
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Cerrar
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    onClick={() => {
-                      setShowEnviarAdjuntoDialog(false)
-                      setAdjuntoEnviarPDF(null)
-                      setNombreAdjuntoEnviar("")
-                    }}
-                    variant="outline"
-                  >
-                    Cancelar
-                  </Button>
-                </>
-              )}
+                  // Eliminar el formulario existente
+                  setFormulariosState((prev) => prev.filter((f) => f.nombre !== "Documentación Adicional"))
+
+                  // Crear el nuevo formulario
+                  const nuevoFormulario = {
+                    id: `ADJ-${Date.now()}`,
+                    nombre: "Documentación Adicional",
+                    tipo: "Categoría",
+                    estado: "Validado",
+                    fecha: new Date().toLocaleDateString("es-CO"),
+                    estadoColor: "green" as const,
+                  }
+
+                  setFormulariosState((prev) => [...prev, nuevoFormulario])
+
+                  // Actualizar el estado según el contexto
+                  if (replaceContext === "mensaje") {
+                    setArchivoSubido(true)
+                  } else if (replaceContext === "enviar") {
+                    setArchivoSubidoEnviar(true)
+                  }
+
+                  setShowReplaceAdjuntoDialog(false)
+                  setReplaceContext(null)
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Reemplazar
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
