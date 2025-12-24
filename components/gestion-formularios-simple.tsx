@@ -20,7 +20,6 @@ import {
   Download,
   ChevronLeft,
   FileUp,
-  X,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -2025,171 +2024,31 @@ export default function GestionFormulariosSimple({
             </div>
 
             <DialogFooter className="flex justify-end gap-2 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowCertificationDialog(false)
-                  setAdjuntoPDF(null)
-                  setNombreAdjunto("")
-                  setArchivoSubido(false)
-                }}
-                className="border border-gray-300 text-gray-700 hover:bg-gray-100"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={async () => {
-                  console.log("[v0] Botón Aceptar - Iniciando validación central para categoría:", categoria)
-                  setShowCertificationDialog(false)
-
-                  setIsValidatingCentral(true)
-                  setValidationPhase(5)
-                  await new Promise((resolve) => setTimeout(resolve, 2000))
-                  setValidationPhase(0)
-                  setIsValidatingCentral(false)
-
-                  if (categoria.includes("INFORMACIÓN CONTABLE")) {
-                    console.log("[v0] Categoría INFORMACIÓN CONTABLE - Mostrando error central")
-                    const updatedFormularios = formulariosState.map((form) => {
-                      if (filteredFormularios.some((f) => f.id === form.id)) {
-                        return {
-                          ...form,
-                          estado: "Rechazado por Deficiencia",
-                          tipo: "Categoría",
-                          estadoColor: "red" as const,
-                        }
-                      }
-                      return form
-                    })
-                    setFormulariosState(updatedFormularios)
-                    setShowCentralErrorDialog(true)
-                  } else if (categoria.includes("INFORMACIÓN PRESUPUESTAL")) {
-                    console.log("[v0] Categoría INFORMACIÓN PRESUPUESTAL - Mostrando éxito central")
-                    const updatedFormularios = formulariosState.map((form) => {
-                      if (filteredFormularios.some((f) => f.id === form.id)) {
-                        return {
-                          ...form,
-                          estado: "Aceptado",
-                          tipo: "Categoría",
-                          estadoColor: "green" as const,
-                        }
-                      }
-                      return form
-                    })
-                    setFormulariosState(updatedFormularios)
-                    setShowCentralSuccessDialog(true)
-                  }
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Aceptar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        {/* </CHANGE> */}
-
-        <Dialog open={showEnviarAdjuntoDialog} onOpenChange={setShowEnviarAdjuntoDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold text-gray-900">Enviar Adjunto</DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="border-t pt-4">
-                <h3 className="text-base font-semibold text-gray-900 mb-2">Adjuntar Documento</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Permite adjuntar documento PDF con información adicional o soporte. Tamaño máximo: 20MB
-                </p>
-
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <label htmlFor="file-input-enviar">
-                      <Button
-                        type="button"
-                        className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium"
-                        onClick={() => document.getElementById("file-input-enviar")?.click()}
-                      >
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Seleccionar
-                      </Button>
-                    </label>
-                    <input
-                      id="file-input-enviar"
-                      type="file"
-                      accept=".pdf,application/pdf"
-                      onChange={handleFileSelectEnviar}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md text-sm bg-transparent"
-                      disabled={!adjuntoEnviarPDF || archivoSubidoEnviar}
-                      onClick={handleUploadFileEnviar}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Subir
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="border border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-md text-sm bg-transparent"
-                      onClick={handleCancelFileEnviar}
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Cancelar
-                    </Button>
-                  </div>
-
-                  {!archivoSubidoEnviar && !adjuntoEnviarPDF && (
-                    <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-md">
-                      <p className="text-sm text-orange-700">Arrastre y suelte archivos aquí para cargar.</p>
-                    </div>
-                  )}
-
-                  {adjuntoEnviarPDF && !archivoSubidoEnviar && (
-                    <div className="border-2 border-orange-500 rounded-md p-3 bg-orange-50">
-                      <p className="text-sm text-gray-700">
-                        Archivo seleccionado: <span className="font-medium">{nombreAdjuntoEnviar}</span>
-                      </p>
-                    </div>
-                  )}
-
-                  {archivoSubidoEnviar && (
-                    <div className="border-2 border-green-500 rounded-md p-3 bg-green-50">
-                      <p className="text-sm text-green-700">
-                        Archivo cargado exitosamente: <span className="font-medium">{nombreAdjuntoEnviar}</span>
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowEnviarAdjuntoDialog(false)
-                  handleCancelFileEnviar()
-                }}
-                className="border border-gray-300 text-gray-700 hover:bg-gray-100"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowEnviarAdjuntoDialog(false)
-                  handleCancelFileEnviar()
-                }}
-                disabled={!archivoSubidoEnviar}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Enviar
-              </Button>
+              {archivoSubidoEnviar ? (
+                <Button
+                  onClick={() => {
+                    setShowEnviarAdjuntoDialog(false)
+                    handleCancelFileEnviar()
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Cerrar
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowEnviarAdjuntoDialog(false)
+                      handleCancelFileEnviar()
+                    }}
+                    className="border border-gray-300 text-gray-700 hover:bg-gray-100"
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              )}
+              {/* </CHANGE> */}
             </DialogFooter>
           </DialogContent>
         </Dialog>
