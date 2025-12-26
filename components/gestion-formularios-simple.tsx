@@ -1400,8 +1400,37 @@ export default function GestionFormulariosSimple({
     const selectedFormsData = formulariosState.filter((f) => selectedFormularios.includes(f.id))
     console.log("[v0] Formularios seleccionados para validación:", selectedFormsData)
 
-    setShowCertificationDialog(true)
-    // </CHANGE>
+    // Cerrar el diálogo de certificación
+    setShowCertificationDialog(false)
+
+    // Simular proceso de validaciones centrales
+    setTimeout(() => {
+      // Para INFORMACIÓN PRESUPUESTAL, las validaciones son exitosas
+      if (categoria === "INFORMACIÓN PRESUPUESTAL") {
+        console.log("[v0] Validaciones centrales exitosas para INFORMACIÓN PRESUPUESTAL")
+
+        // Actualizar el estado de los formularios seleccionados a "Enviado"
+        setFormulariosState((prev) =>
+          prev.map((f) => (selectedFormsData.some((sf) => sf.id === f.id) ? { ...f, estado: "Enviado" as const } : f)),
+        )
+
+        // Limpiar selección
+        setSelectedFormularios([])
+
+        toast({
+          title: "Validaciones centrales exitosas",
+          description: "Los formularios han sido enviados exitosamente y pasaron todas las validaciones centrales.",
+        })
+      } else {
+        // Para otras categorías, simular validaciones según la lógica de negocio
+        console.log("[v0] Procesando validaciones centrales para categoría:", categoria)
+
+        toast({
+          title: "Validaciones en proceso",
+          description: "Las validaciones centrales están siendo procesadas.",
+        })
+      }
+    }, 1000)
   }
   // </CHANGE>
 
@@ -2008,7 +2037,7 @@ export default function GestionFormulariosSimple({
                             id: `ADJ-${Date.now()}`,
                             nombre: "Documentación Adicional",
                             tipo: "Categoría",
-                            estado: "Validado",
+                            estado: "Aceptado",
                             fecha: new Date().toLocaleDateString("es-CO"),
                             estadoColor: "green" as const,
                           }
@@ -2016,7 +2045,6 @@ export default function GestionFormulariosSimple({
                           console.log("[v0] Creando formulario desde mensaje informativo:", nuevoFormulario)
                           setFormulariosState((prev) => [...prev, nuevoFormulario])
                         }
-                        // </CHANGE>
                       }}
                       className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
@@ -2088,8 +2116,7 @@ export default function GestionFormulariosSimple({
               <Button
                 onClick={() => {
                   setShowCertificationDialog(false)
-                  // handleSendData() // Comentado ya que handleSendDataWithCentralValidation es el que se llama ahora
-                  handleSendDataWithCentralValidation() // Llamar a la función correcta
+                  handleSendData()
                 }}
                 className="bg-blue-600 hover:bg-blue-700"
               >
@@ -2236,7 +2263,7 @@ export default function GestionFormulariosSimple({
                     id: `ADJ-${Date.now()}`,
                     nombre: "Documentación Adicional",
                     tipo: "Categoría",
-                    estado: "Validado",
+                    estado: "Aceptado",
                     fecha: new Date().toLocaleDateString("es-CO"),
                     estadoColor: "green" as const,
                   }
@@ -2288,43 +2315,6 @@ export default function GestionFormulariosSimple({
             </div>
           </DialogContent>
         </Dialog>
-        {/* </CHANGE> Agregar diálogo de validación exitosa */}
-        <Dialog open={showBalanceSuccessDialog} onOpenChange={setShowBalanceSuccessDialog}>
-          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-2 border-green-500">
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
-                  <CheckCircle2 className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <DialogTitle className="text-2xl font-bold text-green-800 mb-1">Validación Exitosa</DialogTitle>
-                  <p className="text-green-700 text-sm">Proceso completado correctamente</p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
-                <p className="text-gray-700 mb-3">
-                  Los formularios seleccionados han sido enviados exitosamente y han pasado todas las validaciones
-                  centrales.
-                </p>
-                <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Estado actualizado a "Enviado"</span>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter className="px-6 py-4 bg-gray-50">
-              <Button
-                onClick={() => setShowBalanceSuccessDialog(false)}
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
-              >
-                Cerrar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        {/* </CHANGE> */}
       </div>
     </div>
   )
