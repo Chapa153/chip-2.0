@@ -1149,7 +1149,6 @@ export default function GestionFormulariosSimple({
     if (nombresFormularios.includes("Balance General") && formulariosAValidar.length === 1) {
       console.log("[v0] Evento Balance General: Validación exitosa (un formulario)")
 
-      // Mostrar fases de validación
       setValidationPhase(1)
       await new Promise((resolve) => setTimeout(resolve, 800))
       setValidationPhase(2)
@@ -1177,7 +1176,7 @@ export default function GestionFormulariosSimple({
       // Generar formularios calculados con estado "Pendiente en validar"
       const formulariosCalculados: Formulario[] = [
         {
-          id: "CALC-17653753363416-1",
+          id: `CALC-${Date.now()}-1`,
           nombre: "Estado de Resultados Calculado",
           tipo: "Formulario",
           estado: "Pendiente en validar",
@@ -1185,7 +1184,7 @@ export default function GestionFormulariosSimple({
           estadoColor: "yellow" as const,
         },
         {
-          id: "CALC-17653753363430-2",
+          id: `CALC-${Date.now()}-2`,
           nombre: "Flujo de Efectivo Calculado",
           tipo: "Formulario",
           estado: "Pendiente en validar",
@@ -1195,6 +1194,8 @@ export default function GestionFormulariosSimple({
       ]
 
       setFormulariosState([...updatedFormularios, ...formulariosCalculados])
+
+      setBalanceValidatedFormularios(["Balance General"])
       setIsSubmitting(false)
       setShowBalanceSuccessDialog(true)
       return
@@ -1203,7 +1204,7 @@ export default function GestionFormulariosSimple({
     // 3. Estado de Resultados: validaciones generales (NO cambia estado)
     if (nombresFormularios.includes("Estado de Resultados")) {
       console.log("[v0] Evento Estado de Resultados: Validaciones generales")
-      setValidationPhase(3) // Solo fase 3: Validaciones generales
+      setValidationPhase(1)
       await new Promise((resolve) => setTimeout(resolve, 1500))
       setValidationPhase(0)
       setIsSubmitting(false)
@@ -1219,7 +1220,7 @@ export default function GestionFormulariosSimple({
     // 4. Flujo de Efectivo: errores de datos
     if (nombresFormularios.includes("Flujo de Efectivo")) {
       console.log("[v0] Evento Flujo de Efectivo: Errores de datos")
-      setValidationPhase(1) // Fase 1: Validación de contenido/datos
+      setValidationPhase(2)
       await new Promise((resolve) => setTimeout(resolve, 1500))
       setValidationPhase(0)
 
@@ -1266,7 +1267,7 @@ export default function GestionFormulariosSimple({
     // 5. Estado de Cambios en el Patrimonio: errores de completitud
     if (nombresFormularios.includes("Estado de Cambios en el Patrimonio")) {
       console.log("[v0] Evento Estado de Cambios: Errores de completitud")
-      setValidationPhase(2) // Fase 2: Validación de completitud
+      setValidationPhase(3)
       await new Promise((resolve) => setTimeout(resolve, 1500))
       setValidationPhase(0)
 
@@ -1313,7 +1314,7 @@ export default function GestionFormulariosSimple({
     // 6. Notas a los Estados Financieros: errores de validación local
     if (nombresFormularios.includes("Notas a los Estados Financieros")) {
       console.log("[v0] Evento Notas: Errores de validación local")
-      setValidationPhase(4) // Fase 4: Expresiones de validación local
+      setValidationPhase(4)
       await new Promise((resolve) => setTimeout(resolve, 1500))
       setValidationPhase(0)
 
@@ -2299,9 +2300,9 @@ export default function GestionFormulariosSimple({
             </DialogHeader>
             <div className="space-y-4 py-4">
               <p className="text-sm text-gray-600">
-                {validationPhase === 1 && "Validando contenido de variables..."}
-                {validationPhase === 2 && "Verificando completitud de datos..."}
-                {validationPhase === 3 && "Ejecutando validaciones generales..."}
+                {validationPhase === 1 && "Ejecutando validaciones generales..."}
+                {validationPhase === 2 && "Validando contenido de variables..."}
+                {validationPhase === 3 && "Verificando completitud de datos..."}
                 {validationPhase === 4 && "Aplicando expresiones de validación local..."}
                 {validationPhase === 5 && "Validando expresiones centrales..."}
               </p>
@@ -2313,6 +2314,49 @@ export default function GestionFormulariosSimple({
                 <div className={`w-3 h-3 rounded-full ${validationPhase >= 5 ? "bg-blue-600" : "bg-gray-300"}`} />
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={showBalanceSuccessDialog} onOpenChange={setShowBalanceSuccessDialog}>
+          <DialogContent className="sm:max-w-[500px] p-message p-component p-confirm-dialog">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-green-700">
+                <CheckCircle2 className="h-5 w-5" />
+                Validación Exitosa
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-gray-700">Los formularios seleccionados han sido validados exitosamente.</p>
+
+              {balanceValidatedFormularios.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-gray-800">Formularios validados:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
+                    {balanceValidatedFormularios.map((nombre, index) => (
+                      <li key={index}>{nombre}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-gray-800">Formularios generados automáticamente:</p>
+                <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
+                  <li>Estado de Resultados Calculado</li>
+                  <li>Flujo de Efectivo Calculado</li>
+                </ul>
+                <p className="text-xs text-amber-600 mt-2">
+                  Los formularios calculados tienen estado "Pendiente en validar" y deben ser validados por separado.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={() => setShowBalanceSuccessDialog(false)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Aceptar
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
