@@ -1388,16 +1388,35 @@ export default function GestionFormulariosSimple({
   const handleSendData = () => {
     console.log("[v0] handleSendData llamado - Iniciando validaciones centrales")
 
-    const selectedFormsData = formulariosState.filter((f) => selectedFormularios.includes(f.id))
-    console.log("[v0] Formularios seleccionados para validación:", selectedFormsData)
+    // En lugar de filtrar por seleccionados, enviar TODOS los formularios que cumplan las condiciones
+    // Formularios tipo "Formulario" con estado "Validado" + Categorías con estado "Aceptado"
+    const formulasToSend = formulariosState.filter((f) => {
+      if (f.tipo === "Formulario" && f.estado === "Validado") return true
+      if (f.tipo === "Categoría" && f.estado === "Aceptado") return true
+      return false
+    })
+
+    console.log(
+      "[v0] Formularios a enviar:",
+      formulasToSend.map((f) => ({ id: f.id, nombre: f.nombre, tipo: f.tipo, estado: f.estado })),
+    )
     console.log("[v0] Categoría actual:", categoria)
+
+    if (formulasToSend.length === 0) {
+      toast({
+        title: "No hay formularios para enviar",
+        description: "No se encontraron formularios válidos para enviar.",
+        variant: "destructive",
+      })
+      return
+    }
 
     // Simular proceso de validaciones centrales
     setTimeout(() => {
-      // Actualizar el estado de los formularios seleccionados a "Enviado"
+      // Actualizar el estado de los formularios válidos a "Enviado"
       setFormulariosState((prev) =>
         prev.map((f) =>
-          selectedFormsData.some((sf) => sf.id === f.id)
+          formulasToSend.some((sf) => sf.id === f.id)
             ? { ...f, estado: "Enviado" as const, estadoColor: "blue" as const }
             : f,
         ),
@@ -1410,10 +1429,11 @@ export default function GestionFormulariosSimple({
 
       toast({
         title: "Envío exitoso",
-        description: `Los formularios han sido enviados exitosamente para la categoría ${categoria}.`,
+        description: `Se han enviado ${formulasToSend.length} formulario(s) exitosamente para la categoría ${categoria}.`,
       })
     }, 1000)
   }
+  // </CHANGE>
 
   // const handleSendDataWithCentralValidation = () => { ... }
   // </CHANGE>
