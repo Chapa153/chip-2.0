@@ -264,15 +264,18 @@ export default function GestionFormulariosSimple({
   const canSendSelectedFormularios = (): boolean => {
     if (filteredFormularios.length === 0) return false
 
-    // Regla 1: Todos los formularios filtrados están en estado Validado
-    const todosValidados = filteredFormularios.every((f) => f.estado === "Validado")
-
-    // Regla 2: Los registros de tipo Categoría están en cualquier estado excepto Aceptado
+    // Separar formularios por tipo
+    const formularios = filteredFormularios.filter((f) => f.tipo === "Formulario")
     const categorias = filteredFormularios.filter((f) => f.tipo === "Categoría")
-    const categoriasValidas = categorias.length > 0 && categorias.every((f) => f.estado !== "Aceptado")
 
-    // Se habilita si se cumple al menos una de las dos reglas
-    return todosValidados || categoriasValidas
+    // Regla 1: Todos los formularios tipo "Formulario" deben estar en estado "Validado"
+    const formulariosValidados = formularios.length === 0 || formularios.every((f) => f.estado === "Validado")
+
+    // Regla 2: Todas las categorías deben estar en estado "Aceptado"
+    const categoriasAceptadas = categorias.length === 0 || categorias.every((f) => f.estado === "Aceptado")
+
+    // Se habilita solo si ambas condiciones se cumplen
+    return formulariosValidados && categoriasAceptadas
   }
 
   const getEstadoBadgeClass = (color: string) => {
@@ -1307,6 +1310,7 @@ export default function GestionFormulariosSimple({
       return
     }
 
+    // 6. Notas a los Estados Financieros: errores de validación local
     if (nombresFormularios.includes("Notas a los Estados Financieros")) {
       console.log("[v0] Evento Notas: Errores de validación local")
       setValidationPhase(4) // Fase 4: Expresiones de validación local
