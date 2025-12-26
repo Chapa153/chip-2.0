@@ -473,7 +473,7 @@ export default function GestionFormulariosSimple({
     setErrorData(null)
     setErrorComments({})
     setSelectedFormularios([])
-    // Los formularios mantienen su estado original para poder ser reenviados
+    // Los formularios<bos>tienen su estado original para poder ser reenviados
   }
 
   const handleExportErrors = (format: "csv" | "excel" | "pdf" | "txt") => {
@@ -1385,54 +1385,37 @@ export default function GestionFormulariosSimple({
     setShowSimpleAlert(true)
   }
 
-  // Placeholder for handleSendData
   const handleSendData = () => {
-    console.log("handleSendData called")
-    // Add your logic here for sending data after certification
-    toast({
-      title: "Datos enviados",
-      description: "La información ha sido enviada exitosamente.",
-    })
-  }
-
-  const handleSendDataWithCentralValidation = () => {
     console.log("[v0] handleSendData llamado - Iniciando validaciones centrales")
 
     const selectedFormsData = formulariosState.filter((f) => selectedFormularios.includes(f.id))
     console.log("[v0] Formularios seleccionados para validación:", selectedFormsData)
-
-    // Cerrar el diálogo de certificación
-    setShowCertificationDialog(false)
+    console.log("[v0] Categoría actual:", categoria)
 
     // Simular proceso de validaciones centrales
     setTimeout(() => {
-      // Para INFORMACIÓN PRESUPUESTAL, las validaciones son exitosas
-      if (categoria === "INFORMACIÓN PRESUPUESTAL") {
-        console.log("[v0] Validaciones centrales exitosas para INFORMACIÓN PRESUPUESTAL")
+      // Actualizar el estado de los formularios seleccionados a "Enviado"
+      setFormulariosState((prev) =>
+        prev.map((f) =>
+          selectedFormsData.some((sf) => sf.id === f.id)
+            ? { ...f, estado: "Enviado" as const, estadoColor: "blue" as const }
+            : f,
+        ),
+      )
 
-        // Actualizar el estado de los formularios seleccionados a "Enviado"
-        setFormulariosState((prev) =>
-          prev.map((f) => (selectedFormsData.some((sf) => sf.id === f.id) ? { ...f, estado: "Enviado" as const } : f)),
-        )
+      // Limpiar selección
+      setSelectedFormularios([])
 
-        // Limpiar selección
-        setSelectedFormularios([])
+      console.log("[v0] Validaciones centrales completadas - Formularios actualizados a Enviado")
 
-        toast({
-          title: "Validaciones centrales exitosas",
-          description: "Los formularios han sido enviados exitosamente y pasaron todas las validaciones centrales.",
-        })
-      } else {
-        // Para otras categorías, simular validaciones según la lógica de negocio
-        console.log("[v0] Procesando validaciones centrales para categoría:", categoria)
-
-        toast({
-          title: "Validaciones en proceso",
-          description: "Las validaciones centrales están siendo procesadas.",
-        })
-      }
+      toast({
+        title: "Envío exitoso",
+        description: `Los formularios han sido enviados exitosamente para la categoría ${categoria}.`,
+      })
     }, 1000)
   }
+
+  // const handleSendDataWithCentralValidation = () => { ... }
   // </CHANGE>
 
   return (
@@ -1590,7 +1573,7 @@ export default function GestionFormulariosSimple({
                   {/* </CHANGE> */}
                 </Button>
                 <Button
-                  onClick={handleSendDataWithCentralValidation} // Usar la nueva función con validación central
+                  onClick={handleSendData} // Usar la nueva función handleSendData
                   disabled={!canSendSelectedFormularios() || isSubmitting}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-md shadow-sm transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500"
                 >
