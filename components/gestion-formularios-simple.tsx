@@ -1397,9 +1397,11 @@ export default function GestionFormulariosSimple({
   const handleSendDataWithCentralValidation = () => {
     console.log("[v0] handleSendData llamado - Iniciando validaciones centrales")
 
-    // Obtener formularios seleccionados
-    const selectedFormularios = formulariosState.filter((f) => selectedFormularios.includes(f.id))
-    console.log("[v0] Formularios seleccionados para validación:", selectedFormularios)
+    const selectedFormsData = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+    console.log("[v0] Formularios seleccionados para validación:", selectedFormsData)
+
+    // Cerrar el diálogo de certificación
+    setShowCertificationDialog(false)
 
     // Simular proceso de validaciones centrales
     setTimeout(() => {
@@ -1409,9 +1411,7 @@ export default function GestionFormulariosSimple({
 
         // Actualizar el estado de los formularios seleccionados a "Enviado"
         setFormulariosState((prev) =>
-          prev.map((f) =>
-            selectedFormularios.some((sf) => sf.id === f.id) ? { ...f, estado: "Enviado" as const } : f,
-          ),
+          prev.map((f) => (selectedFormsData.some((sf) => sf.id === f.id) ? { ...f, estado: "Enviado" as const } : f)),
         )
 
         // Limpiar selección
