@@ -2300,12 +2300,13 @@ export default function GestionFormulariosSimple({
             </DialogHeader>
             <div className="space-y-4 py-4">
               <p className="text-sm text-gray-600">
-                {validationPhase === 1 && "Ejecutando validaciones generales..."}
-                {validationPhase === 2 && "Validando contenido de variables..."}
-                {validationPhase === 3 && "Verificando completitud de datos..."}
-                {validationPhase === 4 && "Aplicando expresiones de validación local..."}
+                {validationPhase === 1 && "Fase 1: Validaciones generales"}
+                {validationPhase === 2 && "Fase 2: Validación de contenido/datos"}
+                {validationPhase === 3 && "Fase 3: Validación de completitud"}
+                {validationPhase === 4 && "Fase 4: Expresiones de validación local"}
                 {validationPhase === 5 && "Validando expresiones centrales..."}
               </p>
+              {/* </CHANGE> */}
               <div className="flex gap-2 justify-center">
                 <div className={`w-3 h-3 rounded-full ${validationPhase >= 1 ? "bg-blue-600" : "bg-gray-300"}`} />
                 <div className={`w-3 h-3 rounded-full ${validationPhase >= 2 ? "bg-blue-600" : "bg-gray-300"}`} />
