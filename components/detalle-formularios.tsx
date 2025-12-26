@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { ChevronDown, Info } from 'lucide-react'
+import { ChevronDown, Info } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
@@ -500,11 +500,11 @@ export default function DetalleFormularios({ onBack, detalleData }: DetalleFormu
                 <TooltipProvider>
                   <DropdownMenu open={showExportMenu} onOpenChange={setShowExportMenu}>
                     <DropdownMenuTrigger asChild>
-                      <button 
+                      <button
                         disabled={nivelFiltro === "todos"}
                         className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                          nivelFiltro === "todos" 
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                          nivelFiltro === "todos"
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                             : "bg-teal-600 text-white hover:bg-teal-700"
                         }`}
                       >
@@ -643,14 +643,25 @@ export default function DetalleFormularios({ onBack, detalleData }: DetalleFormu
           </div>
 
           <div className="border-t border-gray-200 p-4 flex justify-end bg-gray-50">
-            {onBack && (
+            <div className="flex gap-3">
               <button
-                onClick={onBack}
-                className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                onClick={() => {
+                  // TODO: Implementar lógica de validación
+                  alert("Validación completada exitosamente")
+                }}
+                className="px-6 py-2 bg-[#4CAF50] text-white rounded-md hover:bg-[#45a049] transition-colors font-medium"
               >
-                Volver
+                Validar
               </button>
-            )}
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                >
+                  Volver
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
