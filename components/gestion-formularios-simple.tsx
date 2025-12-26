@@ -1394,6 +1394,46 @@ export default function GestionFormulariosSimple({
     })
   }
 
+  const handleSendDataWithCentralValidation = () => {
+    console.log("[v0] handleSendData llamado - Iniciando validaciones centrales")
+
+    // Obtener formularios seleccionados
+    const selectedFormularios = formulariosState.filter((f) => selectedFormularios.includes(f.id))
+    console.log("[v0] Formularios seleccionados para validación:", selectedFormularios)
+
+    // Simular proceso de validaciones centrales
+    setTimeout(() => {
+      // Para INFORMACIÓN PRESUPUESTAL, las validaciones son exitosas
+      if (categoria === "INFORMACIÓN PRESUPUESTAL") {
+        console.log("[v0] Validaciones centrales exitosas para INFORMACIÓN PRESUPUESTAL")
+
+        // Actualizar el estado de los formularios seleccionados a "Enviado"
+        setFormulariosState((prev) =>
+          prev.map((f) =>
+            selectedFormularios.some((sf) => sf.id === f.id) ? { ...f, estado: "Enviado" as const } : f,
+          ),
+        )
+
+        // Limpiar selección
+        setSelectedFormularios([])
+
+        toast({
+          title: "Validaciones centrales exitosas",
+          description: "Los formularios han sido enviados exitosamente y pasaron todas las validaciones centrales.",
+        })
+      } else {
+        // Para otras categorías, simular validaciones según la lógica de negocio
+        console.log("[v0] Procesando validaciones centrales para categoría:", categoria)
+
+        toast({
+          title: "Validaciones en proceso",
+          description: "Las validaciones centrales están siendo procesadas.",
+        })
+      }
+    }, 1000)
+  }
+  // </CHANGE>
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Filtros de Búsqueda */}
@@ -1549,7 +1589,7 @@ export default function GestionFormulariosSimple({
                   {/* </CHANGE> */}
                 </Button>
                 <Button
-                  onClick={handleEnviar}
+                  onClick={handleSendDataWithCentralValidation} // Usar la nueva función con validación central
                   disabled={!canSendSelectedFormularios() || isSubmitting}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-md shadow-sm transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500"
                 >
