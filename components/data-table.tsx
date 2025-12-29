@@ -1935,7 +1935,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 variant="outline"
                 size="sm"
                 onClick={() => setVariablePage(Math.max(0, variablePage - 1))}
-                disabled={variablePage === 0}
+                disabled={variablePage === 0 || hasUnsavedChanges()}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -1947,21 +1947,43 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 variant="outline"
                 size="sm"
                 onClick={() => setVariablePage(Math.min(totalVariablePages - 1, variablePage + 1))}
-                disabled={variablePage >= totalVariablePages - 1}
+                disabled={variablePage >= totalVariablePages - 1 || hasUnsavedChanges()}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="ml-2 bg-transparent">
+                  <Button variant="outline" size="sm" className="ml-2 bg-transparent" disabled={hasUnsavedChanges()}>
                     <Columns3 className="h-4 w-4 mr-2" />
                     Columnas
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <div className="p-2 space-y-2">
-                    {/* Removed Acciones and Conceptos from here */}
+                    {/* Opción para seleccionar/deseleccionar todas */}
+                    <div className="border-b border-gray-200 pb-2 mb-2">
+                      <div
+                        className="flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer"
+                        onClick={() => {
+                          const allVisible = allVariables.every((v) => visibleColumns[v.id] !== false)
+                          const newVisibility = { ...visibleColumns }
+                          allVariables.forEach((variable) => {
+                            newVisibility[variable.id] = !allVisible
+                          })
+                          setVisibleColumns(newVisibility)
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={allVariables.every((v) => visibleColumns[v.id] !== false)}
+                          onChange={() => {}}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <label className="text-sm font-semibold cursor-pointer flex-1">Seleccionar todas</label>
+                      </div>
+                    </div>
+
                     {allVariables.map((variable) => (
                       <div
                         key={variable.id}
@@ -1982,6 +2004,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {hasUnsavedChanges() && (
+                <span className="text-xs text-orange-600 ml-2">Guarda o descarta cambios para modificar columnas</span>
+              )}
             </div>
           </div>
 
