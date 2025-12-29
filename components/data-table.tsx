@@ -401,13 +401,29 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     }))
   }
 
-  const totalVariablePages = Math.ceil(totalVariables / VARIABLES_PER_PAGE)
+  const visibleVariables = useMemo(() => {
+    return allVariables.filter((variable) => visibleColumns[variable.id] !== false)
+  }, [allVariables, visibleColumns])
 
-  // Derived for paginated variables
+  const totalVisibleVariables = visibleVariables.length
+  const totalVariablePages = Math.ceil(totalVisibleVariables / VARIABLES_PER_PAGE)
+
   const paginatedVariables = useMemo(() => {
     const start = variablePage * VARIABLES_PER_PAGE
-    return allVariables.slice(start, start + VARIABLES_PER_PAGE)
-  }, [variablePage, allVariables])
+    return visibleVariables.slice(start, start + VARIABLES_PER_PAGE)
+  }, [variablePage, visibleVariables])
+
+  useEffect(() => {
+    if (variablePage >= totalVariablePages && totalVariablePages > 0) {
+      setVariablePage(totalVariablePages - 1)
+    }
+  }, [totalVariablePages, variablePage])
+
+  // Derived for paginated variables
+  // const paginatedVariables = useMemo(() => {
+  //   const start = variablePage * VARIABLES_PER_PAGE
+  //   return allVariables.slice(start, start + VARIABLES_PER_PAGE)
+  // }, [variablePage, allVariables])
 
   const getAllConceptsFlat = useMemo((): Array<{ id: string; label: string; level: number }> => {
     const result: Array<{ id: string; label: string; level: number }> = []
@@ -1925,7 +1941,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
               </Button>
               <span className="text-sm">
                 {variablePage * VARIABLES_PER_PAGE + 1} -{" "}
-                {Math.min((variablePage + 1) * VARIABLES_PER_PAGE, totalVariables)} de {totalVariables}
+                {Math.min((variablePage + 1) * VARIABLES_PER_PAGE, totalVisibleVariables)} de {totalVisibleVariables}
               </span>
               <Button
                 variant="outline"
@@ -1945,31 +1961,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <div className="p-2 space-y-2">
-                    <div className="flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        id="col-acciones"
-                        checked={visibleColumns.acciones}
-                        onChange={() => toggleColumnVisibility("acciones")}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                      <label htmlFor="col-acciones" className="text-sm cursor-pointer flex-1">
-                        Acciones
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        id="col-conceptos"
-                        checked={visibleColumns.conceptos}
-                        onChange={() => toggleColumnVisibility("conceptos")}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                      <label htmlFor="col-conceptos" className="text-sm cursor-pointer flex-1">
-                        Conceptos
-                      </label>
-                    </div>
-                    <div className="border-t border-gray-200 my-2" />
+                    {/* Removed Acciones and Conceptos from here */}
                     {allVariables.map((variable) => (
                       <div
                         key={variable.id}
@@ -1998,35 +1990,29 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
             <table className="w-full border-collapse">
               <thead className="bg-gray-100 sticky top-0 z-10">
                 <tr>
-                  {visibleColumns.acciones && (
-                    <th className="border border-gray-300 px-2 py-2 text-left text-sm font-semibold min-w-[100px]">
-                      Acciones
+                  <th className="border border-gray-300 px-2 py-2 text-left text-sm font-semibold min-w-[100px]">
+                    Acciones
+                  </th>
+                  <th className="border border-gray-300 px-2 py-2 text-left text-sm font-semibold min-w-[200px]">
+                    Conceptos
+                  </th>
+                  {paginatedVariables.map((variable) => (
+                    <th
+                      key={variable.id}
+                      className="border border-gray-300 px-2 py-2 text-center text-sm font-semibold min-w-[120px]"
+                    >
+                      {variable.label}
+                      <span className="block text-xs font-normal text-gray-500">
+                        {variable.type === "numeric" && "(Numérico)"}
+                        {variable.type === "dropdown" && "(Lista)"}
+                        {variable.type === "string" && "(Texto)"}
+                        {variable.type === "calculated" && "(Calculado)"}
+                        {variable.type === "decimal" && "(Decimal)"}
+                        {variable.type === "boolean" && "(Booleano)"}
+                        {variable.type === "date" && "(Fecha)"}
+                      </span>
                     </th>
-                  )}
-                  {visibleColumns.conceptos && (
-                    <th className="border border-gray-300 px-2 py-2 text-left text-sm font-semibold min-w-[200px]">
-                      Conceptos
-                    </th>
-                  )}
-                  {paginatedVariables
-                    .filter((variable) => visibleColumns[variable.id] !== false)
-                    .map((variable) => (
-                      <th
-                        key={variable.id}
-                        className="border border-gray-300 px-2 py-2 text-center text-sm font-semibold min-w-[120px]"
-                      >
-                        {variable.label}
-                        <span className="block text-xs font-normal text-gray-500">
-                          {variable.type === "numeric" && "(Numérico)"}
-                          {variable.type === "dropdown" && "(Lista)"}
-                          {variable.type === "string" && "(Texto)"}
-                          {variable.type === "calculated" && "(Calculado)"}
-                          {variable.type === "decimal" && "(Decimal)"}
-                          {variable.type === "boolean" && "(Booleano)"}
-                          {variable.type === "date" && "(Fecha)"}
-                        </span>
-                      </th>
-                    ))}
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -2041,105 +2027,53 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                     <React.Fragment key={concept.id}>
                       {/* Fila del concepto padre */}
                       <tr className={isParent ? "bg-gray-50" : ""}>
-                        {visibleColumns.acciones && (
-                          <td className="border border-gray-300 px-2 py-2">
-                            <div className="flex gap-1 justify-center">
-                              {isEditing ? (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSaveRow(concept.id)}
-                                    disabled={isSaving}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    {isSaving ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : (
-                                      <Check className="h-3 w-3" />
-                                    )}
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleCancelEdit}
-                                    disabled={isSaving}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </>
-                              ) : // Acciones para Estado de Cambios vs. otros formularios
-                              isChild && isEstadoCambiosPatrimonio ? (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => handleEditRow(concept.id)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    onClick={() => handleDeleteChildClick(concept.id, concept.label)}
-                                    title="Eliminar concepto hijo"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => handleVerAtributos(concept.id, concept.label)}
-                                  >
-                                    <Info className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              ) : isChild && !isEstadoCambiosPatrimonio ? (
-                                // Para formularios normales, mostrar editar e info en hijos
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => handleEditRow(concept.id)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => handleVerAtributos(concept.id, concept.label)}
-                                  >
-                                    <Info className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              ) : isRootParent && isEstadoCambiosPatrimonio ? (
-                                // Solo botón + para padres raíz en Estado de Cambios
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                    onClick={() => handleOpenAddDialog(concept.id, concept.label)}
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => handleVerAtributos(concept.id, concept.label)}
-                                  >
-                                    <Info className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              ) : (
-                                // Solo info para padres normales
+                        <td className="border border-gray-300 px-2 py-2">
+                          <div className="flex gap-1 justify-center">
+                            {isEditing ? (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleSaveRow(concept.id)}
+                                  disabled={isSaving}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  {isSaving ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Check className="h-3 w-3" />
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleCancelEdit}
+                                  disabled={isSaving}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </>
+                            ) : // Acciones para Estado de Cambios vs. otros formularios
+                            isChild && isEstadoCambiosPatrimonio ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => handleEditRow(concept.id)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleDeleteChildClick(concept.id, concept.label)}
+                                  title="Eliminar concepto hijo"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -2148,35 +2082,82 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                                 >
                                   <Info className="h-4 w-4" />
                                 </Button>
-                              )}
-                            </div>
-                          </td>
-                        )}
-                        {visibleColumns.conceptos && (
-                          <td
-                            className={cn(
-                              "border border-gray-300 px-2 py-2 text-sm",
-                              concept.level > 0 && "pl-8",
-                              concept.level === 0 && "font-semibold",
-                            )}
-                          >
-                            <div className="flex items-center gap-1">
-                              {isParent && (
-                                <button
-                                  onClick={() => toggleNode(concept.id)}
-                                  className="p-0 h-4 w-4 flex items-center justify-center hover:bg-gray-200 rounded"
+                              </>
+                            ) : isChild && !isEstadoCambiosPatrimonio ? (
+                              // Para formularios normales, mostrar editar e info en hijos
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => handleEditRow(concept.id)}
                                 >
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-3 w-3" />
-                                  ) : (
-                                    <ChevronRight className="h-3 w-3" />
-                                  )}
-                                </button>
-                              )}
-                              <span>{concept.label}</span>
-                            </div>
-                          </td>
-                        )}
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => handleVerAtributos(concept.id, concept.label)}
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
+                              </>
+                            ) : isRootParent && isEstadoCambiosPatrimonio ? (
+                              // Solo botón + para padres raíz en Estado de Cambios
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  onClick={() => handleOpenAddDialog(concept.id, concept.label)}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => handleVerAtributos(concept.id, concept.label)}
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              // Solo info para padres normales
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={() => handleVerAtributos(concept.id, concept.label)}
+                              >
+                                <Info className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+
+                        <td
+                          className={`border border-gray-300 px-2 py-2 ${
+                            concept.level > 0 ? `pl-${2 + concept.level * 4}` : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-1">
+                            {isParent && (
+                              <button
+                                onClick={() => toggleNode(concept.id)}
+                                className="p-0 h-4 w-4 flex items-center justify-center hover:bg-gray-200 rounded"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-3 w-3" />
+                                ) : (
+                                  <ChevronRight className="h-3 w-3" />
+                                )}
+                              </button>
+                            )}
+                            <span>{concept.label}</span>
+                          </div>
+                        </td>
 
                         {paginatedVariables.map((variable) => {
                           // Si es padre Y NO es Estado de Cambios, calculamos y mostramos la suma
@@ -2239,90 +2220,85 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
                         concept.children.map((child) => (
                           <React.Fragment key={child.id}>
                             <tr className="bg-gray-50">
-                              {visibleColumns.acciones && (
-                                <td className="border border-gray-300 px-2 py-2">
-                                  <div className="flex gap-1 justify-center">
-                                    {editingRow === child.id ? (
-                                      <>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleSaveRow(child.id)}
-                                          disabled={isSaving}
-                                          className="h-6 w-6 p-0"
-                                        >
-                                          {isSaving ? (
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                          ) : (
-                                            <Check className="h-3 w-3" />
-                                          )}
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={handleCancelEdit}
-                                          disabled={isSaving}
-                                          className="h-6 w-6 p-0"
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </Button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="h-7 w-7 p-0"
-                                          onClick={() => handleEditRow(child.id)}
-                                        >
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                          onClick={() => handleDeleteChildClick(child.id, child.label)}
-                                          title="Eliminar concepto hijo"
-                                        >
-                                          <X className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="h-7 w-7 p-0"
-                                          onClick={() => handleVerAtributos(child.id, child.label)}
-                                        >
-                                          <Info className="h-4 w-4" />
-                                        </Button>
-                                      </>
-                                    )}
-                                  </div>
-                                </td>
-                              )}
-                              {visibleColumns.conceptos && (
-                                <td
-                                  className={cn(
-                                    "border border-gray-300 px-2 py-2 text-sm",
-                                    child.level > 0 && `pl-${child.level * 24}px`, // Indentation for nested children
-                                  )}
-                                >
-                                  <div className="flex items-center gap-1">
-                                    {child.children && child.children.length > 0 && (
-                                      <button
-                                        onClick={() => toggleNode(child.id)}
-                                        className="p-0 h-4 w-4 flex items-center justify-center hover:bg-gray-200 rounded"
+                              <td className="border border-gray-300 px-2 py-2">
+                                <div className="flex gap-1 justify-center">
+                                  {editingRow === child.id ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleSaveRow(child.id)}
+                                        disabled={isSaving}
+                                        className="h-6 w-6 p-0"
                                       >
-                                        {expandedNodes.has(child.id) ? (
-                                          <ChevronDown className="h-3 w-3" />
+                                        {isSaving ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
                                         ) : (
-                                          <ChevronRight className="h-3 w-3" />
+                                          <Check className="h-3 w-3" />
                                         )}
-                                      </button>
-                                    )}
-                                    <span>{child.label}</span>
-                                  </div>
-                                </td>
-                              )}
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleCancelEdit}
+                                        disabled={isSaving}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => handleEditRow(child.id)}
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        onClick={() => handleDeleteChildClick(child.id, child.label)}
+                                        title="Eliminar concepto hijo"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => handleVerAtributos(child.id, child.label)}
+                                      >
+                                        <Info className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                              <td
+                                className={`border border-gray-300 px-2 py-2 text-sm ${
+                                  child.level > 0 ? `pl-${child.level * 24}px` : ""
+                                }`}
+                              >
+                                <div className="flex items-center gap-1">
+                                  {child.children && child.children.length > 0 && (
+                                    <button
+                                      onClick={() => toggleNode(child.id)}
+                                      className="p-0 h-4 w-4 flex items-center justify-center hover:bg-gray-200 rounded"
+                                    >
+                                      {expandedNodes.has(child.id) ? (
+                                        <ChevronDown className="h-3 w-3" />
+                                      ) : (
+                                        <ChevronRight className="h-3 w-3" />
+                                      )}
+                                    </button>
+                                  )}
+                                  <span>{child.label}</span>
+                                </div>
+                              </td>
 
                               {paginatedVariables
                                 .filter((variable) => visibleColumns[variable.id] !== false)
