@@ -1309,10 +1309,10 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     // Variables var-1 y var-2 en conceptos hijos: editables con fondo verde claro
     if (isEstadoCambiosPatrimonio && (variable.id === "var-1" || variable.id === "var-2") && concept.level > 0) {
       const nonEditableData = nonEditableVars.get(concept.id)
-      let displayValue = cellValue
+      let displayValue = cellValue || ""
 
       if (nonEditableData) {
-        displayValue = variable.id === "var-1" ? nonEditableData.var1 : nonEditableData.var2
+        displayValue = (variable.id === "var-1" ? nonEditableData.var1 : nonEditableData.var2) || ""
       }
 
       // Si está en modo edición, mostrar input editable
@@ -1387,7 +1387,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
     if (variable.type === "dropdown" && variable.opciones) {
       inputElement = (
         <select
-          value={cellValue}
+          value={cellValue || ""}
           onChange={(e) => handleCellChange(concept.id, variable.id, e.target.value)}
           className={cn(
             "w-full px-2 py-1 border rounded",
@@ -1407,7 +1407,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       inputElement = (
         <input
           type="text"
-          value={cellValue}
+          value={cellValue || ""}
           onChange={(e) => {
             const value = e.target.value.replace(/[^\d-]/g, "")
             // Limitar a 10 caracteres
@@ -1439,7 +1439,7 @@ function DataTable({ title = "Gestión de Datos", onBack, filtrosPrevios }: Data
       inputElement = (
         <input
           type="text"
-          value={cellValue}
+          value={cellValue || ""}
           onChange={(e) => {
             handleCellChange(concept.id, variable.id, e.target.value)
           }}
