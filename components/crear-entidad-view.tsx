@@ -50,6 +50,19 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
   const [responsablesGuardado, setResponsablesGuardado] = useState(false)
   const [atributosGuardado, setAtributosGuardado] = useState(false)
   const [composicionGuardada, setComposicionGuardada] = useState(false)
+  const [cuinGuardado, setCuinGuardado] = useState(false)
+
+  // CUIN states
+  const [showCuinModal, setShowCuinModal] = useState(false)
+  const [cuinSector, setCuinSector] = useState("")
+  const [cuinSubsector, setCuinSubsector] = useState("")
+  const [cuinTipo, setCuinTipo] = useState("")
+  const [cuinSupraRegion, setCuinSupraRegion] = useState("")
+  const [cuinNivelTerritorial, setCuinNivelTerritorial] = useState("")
+  const [codigoCuin, setCodigoCuin] = useState("")
+  const [consolidarCon, setConsolidarCon] = useState("")
+  const [marcoNormativo, setMarcoNormativo] = useState("")
+  const [erroresCuin, setErroresCuin] = useState<Record<string, string>>({})
 
   const [erroresInfo, setErroresInfo] = useState<Record<string, string>>({})
   const [erroresEstado, setErroresEstado] = useState<Record<string, string>>({})
@@ -167,6 +180,256 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
     "Director financiero": [],
     "Jefe de presupuesto": [],
     "Jefe de control interno": [],
+  }
+
+  // CUIN cascading data
+  const cuinSectorOptions = [
+    { value: "1", label: "1. Sociedad pública no financiera" },
+    { value: "2", label: "2. Sociedad pública financiera" },
+    { value: "3", label: "3. Gobierno general" },
+  ]
+
+  const cuinSubsectorBySector: Record<string, Array<{ value: string; label: string }>> = {
+    "1": [
+      { value: "1:1", label: "1:1 Sociedad no financiera nacional" },
+      { value: "1:2", label: "1:2 Sociedad no financiera territorial" },
+    ],
+    "2": [
+      { value: "2:1", label: "2:1 Sociedad financiera nacional" },
+      { value: "2:2", label: "2:2 Sociedad financiera territorial" },
+    ],
+    "3": [
+      { value: "3:1", label: "3:1 Gobierno central" },
+      { value: "3:2", label: "3:2 Gobierno Departamental" },
+      { value: "3:3", label: "3:3 Gobierno Municipal" },
+      { value: "3:4", label: "3:4 Seguridad social" },
+    ],
+  }
+
+  const cuinTipoBySubsector: Record<string, Array<{ value: string; label: string }>> = {
+    "1:1": [
+      { value: "1:1:1", label: "1:1:1 Industrial" },
+      { value: "1:1:2", label: "1:1:2 Comercial" },
+    ],
+    "1:2": [
+      { value: "1:2:1", label: "1:2:1 Industrial territorial" },
+      { value: "1:2:2", label: "1:2:2 Comercial territorial" },
+    ],
+    "2:1": [
+      { value: "2:1:1", label: "2:1:1 Bancario" },
+      { value: "2:1:2", label: "2:1:2 No bancario" },
+    ],
+    "2:2": [
+      { value: "2:2:1", label: "2:2:1 Bancario territorial" },
+      { value: "2:2:2", label: "2:2:2 No bancario territorial" },
+    ],
+    "3:1": [
+      { value: "3:1:1", label: "3:1:1 Presupuestario" },
+      { value: "3:1:2", label: "3:1:2 Extrapresupuestario" },
+    ],
+    "3:2": [
+      { value: "3:2:1", label: "3:2:1 Presupuestario departamental" },
+      { value: "3:2:2", label: "3:2:2 Extrapresupuestario departamental" },
+    ],
+    "3:3": [
+      { value: "3:3:1", label: "3:3:1 Presupuestario municipal" },
+      { value: "3:3:2", label: "3:3:2 Extrapresupuestario municipal" },
+    ],
+    "3:4": [
+      { value: "3:4:1", label: "3:4:1 Contributivo" },
+      { value: "3:4:2", label: "3:4:2 No contributivo" },
+    ],
+  }
+
+  const cuinSupraRegionByTipo: Record<string, Array<{ value: string; label: string }>> = {
+    "3:1:1": [
+      { value: "3:1:1:0", label: "3:1:1:0 Si" },
+      { value: "3:1:1:1", label: "3:1:1:1 No" },
+    ],
+    "3:1:2": [
+      { value: "3:1:2:0", label: "3:1:2:0 Si" },
+      { value: "3:1:2:1", label: "3:1:2:1 No" },
+    ],
+    "3:2:1": [
+      { value: "3:2:1:0", label: "3:2:1:0 Si" },
+      { value: "3:2:1:1", label: "3:2:1:1 No" },
+    ],
+    "3:2:2": [
+      { value: "3:2:2:0", label: "3:2:2:0 Si" },
+      { value: "3:2:2:1", label: "3:2:2:1 No" },
+    ],
+    "3:3:1": [
+      { value: "3:3:1:0", label: "3:3:1:0 Si" },
+      { value: "3:3:1:1", label: "3:3:1:1 No" },
+    ],
+    "3:3:2": [
+      { value: "3:3:2:0", label: "3:3:2:0 Si" },
+      { value: "3:3:2:1", label: "3:3:2:1 No" },
+    ],
+    "3:4:1": [
+      { value: "3:4:1:0", label: "3:4:1:0 Si" },
+      { value: "3:4:1:1", label: "3:4:1:1 No" },
+    ],
+    "3:4:2": [
+      { value: "3:4:2:0", label: "3:4:2:0 Si" },
+      { value: "3:4:2:1", label: "3:4:2:1 No" },
+    ],
+    "1:1:1": [
+      { value: "1:1:1:0", label: "1:1:1:0 Si" },
+      { value: "1:1:1:1", label: "1:1:1:1 No" },
+    ],
+    "1:1:2": [
+      { value: "1:1:2:0", label: "1:1:2:0 Si" },
+      { value: "1:1:2:1", label: "1:1:2:1 No" },
+    ],
+    "1:2:1": [
+      { value: "1:2:1:0", label: "1:2:1:0 Si" },
+      { value: "1:2:1:1", label: "1:2:1:1 No" },
+    ],
+    "1:2:2": [
+      { value: "1:2:2:0", label: "1:2:2:0 Si" },
+      { value: "1:2:2:1", label: "1:2:2:1 No" },
+    ],
+    "2:1:1": [
+      { value: "2:1:1:0", label: "2:1:1:0 Si" },
+      { value: "2:1:1:1", label: "2:1:1:1 No" },
+    ],
+    "2:1:2": [
+      { value: "2:1:2:0", label: "2:1:2:0 Si" },
+      { value: "2:1:2:1", label: "2:1:2:1 No" },
+    ],
+    "2:2:1": [
+      { value: "2:2:1:0", label: "2:2:1:0 Si" },
+      { value: "2:2:1:1", label: "2:2:1:1 No" },
+    ],
+    "2:2:2": [
+      { value: "2:2:2:0", label: "2:2:2:0 Si" },
+      { value: "2:2:2:1", label: "2:2:2:1 No" },
+    ],
+  }
+
+  const cuinNivelBySupraRegion: Record<string, Array<{ value: string; label: string }>> = {
+    "3:1:1:0": [{ value: "3:1:1:0:0", label: "3:1:1:0:0 Nacional" }],
+    "3:1:1:1": [{ value: "3:1:1:1:0", label: "3:1:1:1:0 Nacional" }],
+    "3:1:2:0": [{ value: "3:1:2:0:0", label: "3:1:2:0:0 Nacional" }],
+    "3:1:2:1": [{ value: "3:1:2:1:0", label: "3:1:2:1:0 Nacional" }],
+    "3:2:1:0": [{ value: "3:2:1:0:0", label: "3:2:1:0:0 Departamental" }],
+    "3:2:1:1": [{ value: "3:2:1:1:0", label: "3:2:1:1:0 Departamental" }],
+    "3:2:2:0": [{ value: "3:2:2:0:0", label: "3:2:2:0:0 Departamental" }],
+    "3:2:2:1": [{ value: "3:2:2:1:0", label: "3:2:2:1:0 Departamental" }],
+    "3:3:1:0": [{ value: "3:3:1:0:0", label: "3:3:1:0:0 Municipal" }],
+    "3:3:1:1": [{ value: "3:3:1:1:0", label: "3:3:1:1:0 Municipal" }],
+    "3:3:2:0": [{ value: "3:3:2:0:0", label: "3:3:2:0:0 Municipal" }],
+    "3:3:2:1": [{ value: "3:3:2:1:0", label: "3:3:2:1:0 Municipal" }],
+    "3:4:1:0": [{ value: "3:4:1:0:0", label: "3:4:1:0:0 Nacional" }],
+    "3:4:1:1": [{ value: "3:4:1:1:0", label: "3:4:1:1:0 Nacional" }],
+    "3:4:2:0": [{ value: "3:4:2:0:0", label: "3:4:2:0:0 Nacional" }],
+    "3:4:2:1": [{ value: "3:4:2:1:0", label: "3:4:2:1:0 Nacional" }],
+    "1:1:1:0": [{ value: "1:1:1:0:0", label: "1:1:1:0:0 Nacional" }],
+    "1:1:1:1": [{ value: "1:1:1:1:0", label: "1:1:1:1:0 Nacional" }],
+    "1:1:2:0": [{ value: "1:1:2:0:0", label: "1:1:2:0:0 Nacional" }],
+    "1:1:2:1": [{ value: "1:1:2:1:0", label: "1:1:2:1:0 Nacional" }],
+    "1:2:1:0": [{ value: "1:2:1:0:0", label: "1:2:1:0:0 Territorial" }],
+    "1:2:1:1": [{ value: "1:2:1:1:0", label: "1:2:1:1:0 Territorial" }],
+    "1:2:2:0": [{ value: "1:2:2:0:0", label: "1:2:2:0:0 Territorial" }],
+    "1:2:2:1": [{ value: "1:2:2:1:0", label: "1:2:2:1:0 Territorial" }],
+    "2:1:1:0": [{ value: "2:1:1:0:0", label: "2:1:1:0:0 Nacional" }],
+    "2:1:1:1": [{ value: "2:1:1:1:0", label: "2:1:1:1:0 Nacional" }],
+    "2:1:2:0": [{ value: "2:1:2:0:0", label: "2:1:2:0:0 Nacional" }],
+    "2:1:2:1": [{ value: "2:1:2:1:0", label: "2:1:2:1:0 Nacional" }],
+    "2:2:1:0": [{ value: "2:2:1:0:0", label: "2:2:1:0:0 Territorial" }],
+    "2:2:1:1": [{ value: "2:2:1:1:0", label: "2:2:1:1:0 Territorial" }],
+    "2:2:2:0": [{ value: "2:2:2:0:0", label: "2:2:2:0:0 Territorial" }],
+    "2:2:2:1": [{ value: "2:2:2:1:0", label: "2:2:2:1:0 Territorial" }],
+  }
+
+  const consolidarConOptions = ["Nacion", "Departamental", "Municipal"]
+
+  const marcoNormativoOptions = [
+    { value: "empresas_cotizantes", label: "Empresas cotizantes" },
+    { value: "empresas_no_cotizantes", label: "Empresas no cotizantes" },
+    { value: "empresas_no_cotizantes_pymes", label: "Empresas no cotizantes (PYMES)" },
+    { value: "entidades_gobierno", label: "Entidades de gobierno" },
+    { value: "entidades_liquidacion", label: "Entidades en liquidacion" },
+    { value: "marco_superfinanciera", label: "Marco superfinanciera" },
+  ]
+
+  const descripcionByMarcoNormativo: Record<string, string> = {
+    empresas_cotizantes: "Empresas que cotizan en el mercado de valores, o que captan o administran ahorro del publico.",
+    empresas_no_cotizantes: "Empresas que no cotizan en el mercado de valores y no captan ni administran ahorro del publico.",
+    empresas_no_cotizantes_pymes: "Pequenas y medianas empresas que no cotizan en el mercado de valores.",
+    entidades_gobierno: "Entidades que pertenecen al gobierno nacional, departamental o municipal.",
+    entidades_liquidacion: "Entidades que se encuentran en proceso de liquidacion voluntaria o forzosa.",
+    marco_superfinanciera: "Entidades vigiladas por la Superintendencia Financiera de Colombia.",
+  }
+
+  // DIVIPOLA codes mapping (simplified)
+  const divipolaCodes: Record<string, string> = {
+    "Amazonas-Leticia": "91001",
+    "Antioquia-Medellin": "05001",
+    "Atlantico-Barranquilla": "08001",
+    "Bolivar-Cartagena": "13001",
+    "Boyaca-Tunja": "15001",
+    "Caldas-Manizales": "17001",
+    "Caqueta-Florencia": "18001",
+    "Casanare-Yopal": "85001",
+    "Cauca-Popayan": "19001",
+    "Cesar-Valledupar": "20001",
+    "Cordoba-Monteria": "23001",
+    "Cundinamarca-Bogota": "11001",
+    "Cundinamarca-Soacha": "25754",
+    "Huila-Neiva": "41001",
+    "La Guajira-Riohacha": "44001",
+    "Magdalena-Santa Marta": "47001",
+    "Meta-Villavicencio": "50001",
+    "Narino-Pasto": "52001",
+    "Norte de Santander-Cucuta": "54001",
+    "Quindio-Armenia": "63001",
+    "Risaralda-Pereira": "66001",
+    "Santander-Bucaramanga": "68001",
+    "Sucre-Sincelejo": "70001",
+    "Tolima-Ibague": "73001",
+    "Valle del Cauca-Cali": "76001",
+  }
+
+  const getDivipolaCode = (depto: string, muni: string): string => {
+    const normalizeStr = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim()
+    const key = `${normalizeStr(depto)}-${normalizeStr(muni)}`
+    for (const [k, v] of Object.entries(divipolaCodes)) {
+      if (normalizeStr(k) === key) return v
+    }
+    // Generate a fallback 5-digit code
+    const hash = (depto + muni).split("").reduce((acc, c) => acc + c.charCodeAt(0), 0)
+    return String(hash % 100000).padStart(5, "0")
+  }
+
+  const handleAceptarCuin = () => {
+    if (!cuinNivelTerritorial) return
+    // Build numeric code from selections (remove colons)
+    const numericCode = cuinNivelTerritorial.replace(/:/g, "")
+    const divipolaCode = getDivipolaCode(formInfo.departamento, formInfo.municipio)
+    const randomDigits = String(Math.floor(Math.random() * 100000)).padStart(5, "0")
+    setCodigoCuin(`${numericCode}${divipolaCode}${randomDigits}`)
+    setShowCuinModal(false)
+  }
+
+  const handleSaveCuin = () => {
+    const errores: Record<string, string> = {}
+    if (!codigoCuin) errores.codigoCuin = "Debe generar el codigo CUIN usando el filtro"
+    if (!consolidarCon) errores.consolidarCon = "Debe seleccionar con quien consolidar"
+    if (!marcoNormativo) errores.marcoNormativo = "Debe seleccionar el marco normativo"
+
+    if (Object.keys(errores).length > 0) {
+      setErroresCuin(errores)
+      setValidationMessage("Por favor completa los campos obligatorios marcados en rojo.")
+      setShowValidationModal(true)
+      return
+    }
+
+    setErroresCuin({})
+    setCuinGuardado(true)
+    setValidationMessage("Configuracion CUIN guardada exitosamente. La entidad ha sido creada.")
+    setShowValidationModal(true)
   }
 
   const currentYear = new Date().getFullYear()
@@ -2477,40 +2740,156 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
 
       {activeTab === "cuin" && (
         <div className="bg-card border border-border rounded-lg p-8">
-          {/* Información de la entidad */}
-          <div className="bg-muted rounded-lg p-4 mb-6">
-            <div className="grid grid-cols-2 gap-4">
+          <h3 className="text-xl font-bold text-foreground mb-4">Configuracion CUIN</h3>
+          <p className="text-muted-foreground mb-6">
+            Configure el Codigo Unico de Identificacion Nacional (CUIN) para la entidad.
+          </p>
+
+          {/* Campos bloqueados de informacion general */}
+          <div className="bg-muted/50 border border-border rounded-lg p-6 mb-6">
+            <p className="text-sm font-semibold text-muted-foreground mb-4">Datos de la entidad (solo lectura)</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground">NIT</p>
-                <p className="text-lg font-semibold text-foreground">{formInfo.nit || "—"}</p>
+                <label className="block text-sm font-semibold text-foreground mb-1">NIT</label>
+                <input
+                  type="text"
+                  value={formInfo.nit || ""}
+                  disabled
+                  className="w-full px-4 py-2 border border-input rounded-md bg-muted text-foreground cursor-not-allowed"
+                />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Razón Social</p>
-                <p className="text-lg font-semibold text-foreground">{formInfo.razonSocial || "—"}</p>
+                <label className="block text-sm font-semibold text-foreground mb-1">Razon Social</label>
+                <input
+                  type="text"
+                  value={formInfo.razonSocial || ""}
+                  disabled
+                  className="w-full px-4 py-2 border border-input rounded-md bg-muted text-foreground cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1">Cometida Estatal</label>
+                <input
+                  type="text"
+                  value={formInfo.objeto || ""}
+                  disabled
+                  className="w-full px-4 py-2 border border-input rounded-md bg-muted text-foreground cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1">Sigla</label>
+                <input
+                  type="text"
+                  value={formInfo.sigla || ""}
+                  disabled
+                  className="w-full px-4 py-2 border border-input rounded-md bg-muted text-foreground cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1">Departamento</label>
+                <input
+                  type="text"
+                  value={formInfo.departamento || ""}
+                  disabled
+                  className="w-full px-4 py-2 border border-input rounded-md bg-muted text-foreground cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1">Municipio</label>
+                <input
+                  type="text"
+                  value={formInfo.municipio || ""}
+                  disabled
+                  className="w-full px-4 py-2 border border-input rounded-md bg-muted text-foreground cursor-not-allowed"
+                />
               </div>
             </div>
           </div>
 
-          <h3 className="text-xl font-bold text-foreground mb-4">Configuración CUIN</h3>
-          <p className="text-muted-foreground mb-6">
-            Configure el Código Único de Identificación Nacional (CUIN) para la entidad.
-          </p>
-
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-            <div className="flex items-center gap-3">
-              <Check className="text-green-600" size={24} />
-              <div>
-                <p className="text-green-800 font-semibold">Entidad creada correctamente</p>
-                <p className="text-green-700 text-sm">
-                  La entidad ha sido registrada en el sistema. Puede finalizar el proceso o configurar opciones
-                  adicionales.
-                </p>
+          {/* Campos a diligenciar */}
+          <div className="space-y-6">
+            {/* Codigo CUIN */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Codigo CUIN *</label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={codigoCuin}
+                  disabled
+                  placeholder="Se genera automaticamente al usar los filtros CUIN"
+                  className={`flex-1 px-4 py-2 border rounded-md bg-muted text-foreground cursor-not-allowed ${
+                    erroresCuin.codigoCuin ? "border-red-500" : "border-input"
+                  }`}
+                />
+                <Button
+                  onClick={() => {
+                    setCuinSector("")
+                    setCuinSubsector("")
+                    setCuinTipo("")
+                    setCuinSupraRegion("")
+                    setCuinNivelTerritorial("")
+                    setShowCuinModal(true)
+                  }}
+                  className="bg-primary hover:bg-primary/90 whitespace-nowrap"
+                >
+                  <Search size={16} className="mr-2" />
+                  Abrir filtros CUIN
+                </Button>
               </div>
+              {erroresCuin.codigoCuin && <p className="text-red-500 text-xs mt-1">{erroresCuin.codigoCuin}</p>}
+            </div>
+
+            {/* Consolidar con */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Consolidar con *</label>
+              <select
+                value={consolidarCon}
+                onChange={(e) => setConsolidarCon(e.target.value)}
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
+                  erroresCuin.consolidarCon ? "border-red-500" : "border-input"
+                }`}
+              >
+                <option value="">Seleccione...</option>
+                {consolidarConOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+              {erroresCuin.consolidarCon && <p className="text-red-500 text-xs mt-1">{erroresCuin.consolidarCon}</p>}
+            </div>
+
+            {/* Marco Normativo */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Marco Normativo *</label>
+              <select
+                value={marcoNormativo}
+                onChange={(e) => setMarcoNormativo(e.target.value)}
+                className={`w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
+                  erroresCuin.marcoNormativo ? "border-red-500" : "border-input"
+                }`}
+              >
+                <option value="">Seleccione...</option>
+                {marcoNormativoOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {erroresCuin.marcoNormativo && <p className="text-red-500 text-xs mt-1">{erroresCuin.marcoNormativo}</p>}
+            </div>
+
+            {/* Descripcion (readonly, depends on Marco Normativo) */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Descripcion</label>
+              <textarea
+                value={marcoNormativo ? (descripcionByMarcoNormativo[marcoNormativo] || "") : ""}
+                disabled
+                rows={3}
+                placeholder="Se diligencia automaticamente segun el Marco Normativo seleccionado"
+                className="w-full px-4 py-2 border border-input rounded-md bg-muted text-foreground cursor-not-allowed resize-none"
+              />
             </div>
           </div>
 
           {/* Botones */}
-          <div className="flex gap-4 justify-end">
+          <div className="flex gap-4 justify-end mt-8">
             <Button
               onClick={() => setActiveTab("composicion")}
               variant="outline"
@@ -2518,13 +2897,159 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
             >
               Volver
             </Button>
-            <Button onClick={onBack} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleSaveCuin} className="bg-primary hover:bg-primary/90">
               <Check size={18} className="mr-2" />
-              Finalizar
+              Guardar CUIN
             </Button>
+            {cuinGuardado && (
+              <Button onClick={onBack} className="bg-green-600 hover:bg-green-700">
+                <Check size={18} className="mr-2" />
+                Finalizar
+              </Button>
+            )}
           </div>
         </div>
       )}
+
+      {/* Dialog filtros CUIN */}
+      <Dialog open={showCuinModal} onOpenChange={setShowCuinModal}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Filtros CUIN</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground mb-4">
+            Seleccione los filtros en orden para generar el codigo CUIN. Cada campo depende del anterior.
+          </p>
+
+          <div className="space-y-4">
+            {/* Sector */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Sector</label>
+              <select
+                value={cuinSector}
+                onChange={(e) => {
+                  setCuinSector(e.target.value)
+                  setCuinSubsector("")
+                  setCuinTipo("")
+                  setCuinSupraRegion("")
+                  setCuinNivelTerritorial("")
+                }}
+                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Seleccione sector...</option>
+                {cuinSectorOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Sub sector */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Sub Sector</label>
+              <select
+                value={cuinSubsector}
+                onChange={(e) => {
+                  setCuinSubsector(e.target.value)
+                  setCuinTipo("")
+                  setCuinSupraRegion("")
+                  setCuinNivelTerritorial("")
+                }}
+                disabled={!cuinSector}
+                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
+              >
+                <option value="">Seleccione sub sector...</option>
+                {cuinSector && cuinSubsectorBySector[cuinSector]?.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tipo */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Tipo</label>
+              <select
+                value={cuinTipo}
+                onChange={(e) => {
+                  setCuinTipo(e.target.value)
+                  setCuinSupraRegion("")
+                  setCuinNivelTerritorial("")
+                }}
+                disabled={!cuinSubsector}
+                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
+              >
+                <option value="">Seleccione tipo...</option>
+                {cuinSubsector && cuinTipoBySubsector[cuinSubsector]?.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Supra Region */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Supra Region</label>
+              <select
+                value={cuinSupraRegion}
+                onChange={(e) => {
+                  setCuinSupraRegion(e.target.value)
+                  setCuinNivelTerritorial("")
+                }}
+                disabled={!cuinTipo}
+                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
+              >
+                <option value="">Seleccione supra region...</option>
+                {cuinTipo && cuinSupraRegionByTipo[cuinTipo]?.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Nivel territorial */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Nivel Territorial</label>
+              <select
+                value={cuinNivelTerritorial}
+                onChange={(e) => setCuinNivelTerritorial(e.target.value)}
+                disabled={!cuinSupraRegion}
+                className="w-full px-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed"
+              >
+                <option value="">Seleccione nivel territorial...</option>
+                {cuinSupraRegion && cuinNivelBySupraRegion[cuinSupraRegion]?.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Preview del codigo */}
+            {cuinNivelTerritorial && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-blue-800">Vista previa del codigo CUIN:</p>
+                <p className="text-lg font-mono text-blue-900 mt-1">
+                  {cuinNivelTerritorial.replace(/:/g, "")}{getDivipolaCode(formInfo.departamento, formInfo.municipio)}XXXXX
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Codigo = Clasificacion ({cuinNivelTerritorial.replace(/:/g, "")}) + DIVIPOLA ({getDivipolaCode(formInfo.departamento, formInfo.municipio)}) + Aleatorio (5 digitos)
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowCuinModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAceptarCuin}
+              disabled={!cuinNivelTerritorial}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Aceptar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog para agregar entidad referenciada */}
       <Dialog open={showFormReferenciada} onOpenChange={setShowFormReferenciada}>
