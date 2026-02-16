@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 
 interface CrearEntidadViewProps {
   onBack: () => void
+  modoCreacion?: boolean
 }
 
 interface CategoriaAmbito {
@@ -40,7 +41,7 @@ interface ClasificadorAsignado {
   codigoNodo: string
 }
 
-export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
+export default function CrearEntidadView({ onBack, modoCreacion = false }: CrearEntidadViewProps) {
   const [activeTab, setActiveTab] = useState<
     "info" | "estado" | "ambito" | "responsables" | "clasificadores" | "composicion" | "cuin"
   >("info")
@@ -676,9 +677,14 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
     setInfoGuardada(true)
     setValidationMessage("Información general guardada. Ahora puedes configurar los cambios de estado.")
     setShowValidationModal(true)
-    // Mover al siguiente tab después de cerrar el modal
+    // Si es modo creación, redireccionar a búsqueda después de guardar
+    // Si no, mover al siguiente tab
     setTimeout(() => {
-      setActiveTab("estado")
+      if (modoCreacion) {
+        onBack() // Vuelve a la vista de búsqueda
+      } else {
+        setActiveTab("estado")
+      }
     }, 100)
   }
 
@@ -1106,14 +1112,17 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-foreground">Crear Nueva Entidad</h1>
-            <p className="text-muted-foreground mt-1">Completa el formulario en los diferentes tabs</p>
+            <p className="text-muted-foreground mt-1">
+              {modoCreacion ? "Completa la información general de la entidad" : "Completa el formulario en los diferentes tabs"}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Tabs de navegación */}
-      <div className="mb-6">
-        <div className="flex border-b border-border overflow-x-auto">
+      {/* Tabs de navegación - Solo mostrar en modo edición */}
+      {!modoCreacion && (
+        <div className="mb-6">
+          <div className="flex border-b border-border overflow-x-auto">
           <button
             onClick={() => setActiveTab("info")}
             className={`py-3 px-4 font-medium transition-all border-b-2 ${
@@ -1260,9 +1269,10 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
           </button>
         </div>
       </div>
+      )}
 
       {/* TAB 1: INFORMACIÓN GENERAL */}
-      {activeTab === "info" && (
+      {(activeTab === "info" || modoCreacion) && (
         <div className="bg-card border border-border rounded-lg p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {/* NIT */}
@@ -1674,7 +1684,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
       )}
 
       {/* TAB 2: CAMBIO ESTADO */}
-      {activeTab === "estado" && (
+      {!modoCreacion && activeTab === "estado" && (
         <div className="bg-card border border-border rounded-lg p-8">
           {/* Información de la entidad */}
           <div className="bg-muted rounded-lg p-4 mb-6">
@@ -1828,7 +1838,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
       )}
 
       {/* TAB 3: ÁMBITO */}
-      {activeTab === "ambito" && (
+      {!modoCreacion && activeTab === "ambito" && (
         <div className="bg-card border border-border rounded-lg p-8">
           {/* Información de la entidad */}
           <div className="bg-muted rounded-lg p-4 mb-6">
@@ -2009,7 +2019,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
       )}
 
       {/* TAB 4: RESPONSABLES */}
-      {activeTab === "responsables" && (
+      {!modoCreacion && activeTab === "responsables" && (
         <div className="bg-card border border-border rounded-lg p-8">
           {/* Información de la entidad */}
           <div className="bg-muted rounded-lg p-4 mb-6">
@@ -2435,7 +2445,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
         </div>
       )}
 
-      {activeTab === "composicion" && (
+      {!modoCreacion && activeTab === "composicion" && (
         <div className="bg-card border border-border rounded-lg p-8">
           {/* Información de la entidad */}
           <div className="bg-muted rounded-lg p-4 mb-6">
@@ -2738,7 +2748,7 @@ export default function CrearEntidadView({ onBack }: CrearEntidadViewProps) {
         </div>
       )}
 
-      {activeTab === "cuin" && (
+      {!modoCreacion && activeTab === "cuin" && (
         <div className="bg-card border border-border rounded-lg p-8">
           <h3 className="text-xl font-bold text-foreground mb-4">Configuracion CUIN</h3>
           <p className="text-muted-foreground mb-6">

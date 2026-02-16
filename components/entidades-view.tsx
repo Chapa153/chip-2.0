@@ -175,7 +175,7 @@ export default function EntidadesView({ onBack }: EntidadesViewProps) {
   }
 
   if (showCrearEntidad) {
-    return <CrearEntidadView onBack={() => setShowCrearEntidad(false)} />
+    return <CrearEntidadView onBack={() => setShowCrearEntidad(false)} modoCreacion={true} />
   }
 
   if (showEditView && editingId) {
