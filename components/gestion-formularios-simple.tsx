@@ -161,15 +161,50 @@ export default function GestionFormulariosSimple({
 
   // Lista de entidades disponibles (datos de ejemplo - en produccion vendria de API)
   const entidadesDisponibles = useMemo(() => {
-    const base = [
-      { id: "ENT-001", nombre: "Contaduría General de la Nación", nit: "800.000.001-5" },
-      { id: "ENT-002", nombre: "Ministerio de Hacienda y Crédito Público", nit: "800.000.002-3" },
-      { id: "ENT-003", nombre: "Contraloría General de la República", nit: "800.000.003-1" },
-      { id: "ENT-004", nombre: "Departamento Nacional de Planeación", nit: "800.000.004-9" },
-      { id: "ENT-005", nombre: "Banco de la República", nit: "800.000.005-7" },
-      { id: "ENT-006", nombre: "Superintendencia Financiera de Colombia", nit: "800.000.006-5" },
+    const nombresBase = [
+      "Alcaldía Municipal de", "Gobernación de", "Hospital Regional de",
+      "Instituto de Desarrollo de", "Corporación Autónoma de", "Universidad Pública de",
+      "E.S.E. Centro de Salud de", "Empresa de Servicios Públicos de",
+      "Corporación para el Desarrollo de", "Fondo de Vivienda de",
+      "Secretaría de Educación de", "Instituto de Cultura de",
+      "Empresa de Acueducto de", "Cámara de Comercio de", "Personería Municipal de",
     ]
-    return base
+    const municipios = [
+      "Bogotá", "Medellín", "Cali", "Barranquilla", "Cartagena", "Cúcuta",
+      "Bucaramanga", "Pereira", "Santa Marta", "Ibagué", "Manizales", "Pasto",
+      "Neiva", "Villavicencio", "Armenia", "Valledupar", "Montería", "Sincelejo",
+      "Popayán", "Tunja", "Florencia", "Riohacha", "Quibdó", "Yopal",
+      "Mocoa", "San Andrés", "Leticia", "Mitú", "Puerto Carreño", "Inírida",
+      "Arauca", "San José del Guaviare", "Zipaquirá", "Facatativá", "Fusagasugá",
+      "Girardot", "Soacha", "Chía", "Cajicá", "Mosquera", "Madrid", "Funza",
+      "Tocancipá", "Sopó", "La Calera", "Tabio", "Tenjo", "Cota", "Gachancipá",
+      "Chocontá", "Ubaté", "Pacho", "Villeta", "Guaduas", "La Mesa",
+      "Anapoima", "Anolaima", "Cachipay", "El Colegio", "Viotá", "San Juan de Rioseco",
+      "Beltrán", "Guataquí", "Pulí", "Jerusalén", "Nariño", "Tocaima", "Agua de Dios",
+      "Ricaurte", "Nilo", "Apulo", "Quipile", "San Antonio del Tequendama",
+      "Tena", "El Rosal", "Subachoque", "Supatá", "San Francisco",
+      "La Vega", "Sasaima", "Albán", "Nimaima", "Nocaima", "Vergara",
+      "Quebradanegra", "Útica", "Caparrapí", "Puerto Salgar", "Yacopí",
+      "Topaipí", "El Peñón", "La Palma", "Simijaca", "Susa", "Fúquene",
+      "Guachetá", "Lenguazaque", "Cucunubá", "Sutatausa", "Tausa",
+    ]
+
+    const entidades: { id: string; nombre: string; nit: string }[] = []
+    let idx = 1
+    for (const nombre of nombresBase) {
+      for (const municipio of municipios) {
+        const paddedIdx = String(idx).padStart(4, "0")
+        const nitNum = String(800000000 + idx)
+        const dv = idx % 10
+        entidades.push({
+          id: `ENT-${paddedIdx}`,
+          nombre: `${nombre} ${municipio}`,
+          nit: `${nitNum.slice(0, 3)}.${nitNum.slice(3, 6)}.${nitNum.slice(6)}-${dv}`,
+        })
+        idx++
+      }
+    }
+    return entidades // ~1500 entidades
   }, [])
 
   const filteredEntidades = useMemo(() => {
