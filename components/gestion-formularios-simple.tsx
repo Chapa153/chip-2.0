@@ -147,6 +147,38 @@ export default function GestionFormulariosSimple({
 
   const [activeTab, setActiveTab] = useState("gestion")
   const [showEntidadesModal, setShowEntidadesModal] = useState(false)
+  const [entidadesBusqueda, setEntidadesBusqueda] = useState("")
+  const [selectedEntidades, setSelectedEntidades] = useState<string[]>([])
+
+  // Lista de entidades disponibles (datos de ejemplo)
+  const entidadesDisponibles = [
+    { id: "ENT-001", nombre: "Contaduría General de la Nación", nit: "800.000.001-5" },
+    { id: "ENT-002", nombre: "Ministerio de Hacienda y Crédito Público", nit: "800.000.002-3" },
+    { id: "ENT-003", nombre: "Contraloría General de la República", nit: "800.000.003-1" },
+    { id: "ENT-004", nombre: "Departamento Nacional de Planeación", nit: "800.000.004-9" },
+    { id: "ENT-005", nombre: "Banco de la República", nit: "800.000.005-7" },
+    { id: "ENT-006", nombre: "Superintendencia Financiera de Colombia", nit: "800.000.006-5" },
+  ]
+
+  const filteredEntidades = entidadesDisponibles.filter(
+    (e) =>
+      e.nombre.toLowerCase().includes(entidadesBusqueda.toLowerCase()) ||
+      e.nit.includes(entidadesBusqueda)
+  )
+
+  const toggleEntidad = (id: string) => {
+    setSelectedEntidades((prev) =>
+      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]
+    )
+  }
+
+  const toggleAllEntidades = () => {
+    if (selectedEntidades.length === filteredEntidades.length) {
+      setSelectedEntidades([])
+    } else {
+      setSelectedEntidades(filteredEntidades.map((e) => e.id))
+    }
+  }
   const [showReenvioDialog, setShowReenvioDialog] = useState(false)
   const [reenvioMotivo, setReenvioMotivo] = useState("")
   const [reenvioJustificacion, setReenvioJustificacion] = useState("")
@@ -2290,7 +2322,10 @@ export default function GestionFormulariosSimple({
         </Dialog>
 
         {/* Modal de Entidades Agregadas */}
-        <Dialog open={showEntidadesModal} onOpenChange={setShowEntidadesModal}>
+        <Dialog open={showEntidadesModal} onOpenChange={(open) => {
+          setShowEntidadesModal(open)
+          if (!open) setEntidadesBusqueda("")
+        }}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -2298,37 +2333,75 @@ export default function GestionFormulariosSimple({
                 Entidades Agregadas
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-3 py-4">
+            <div className="space-y-3 py-2">
               <p className="text-sm text-gray-600">
-                Lista de entidades asociadas a la categoría <span className="font-semibold">{categoria}</span>
+                Seleccione las entidades a asignar para la categoría <span className="font-semibold">{categoria}</span>
               </p>
+
+              {/* Buscador de entidades */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar por nombre o NIT..."
+                  value={entidadesBusqueda}
+                  onChange={(e) => setEntidadesBusqueda(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Seleccionar todos */}
+              <div className="flex items-center justify-between px-1">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                  <Checkbox
+                    checked={filteredEntidades.length > 0 && selectedEntidades.length === filteredEntidades.length}
+                    onCheckedChange={toggleAllEntidades}
+                  />
+                  Seleccionar todas
+                </label>
+                <span className="text-xs text-gray-500">
+                  {selectedEntidades.length} de {entidadesDisponibles.length} seleccionadas
+                </span>
+              </div>
+
+              {/* Lista de entidades con checkbox */}
               <div className="border rounded-md divide-y max-h-64 overflow-y-auto">
-                <div className="px-4 py-3 flex items-center gap-3 hover:bg-gray-50">
-                  <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Contaduría General de la Nación</p>
-                    <p className="text-xs text-gray-500">NIT: 800.000.001-5</p>
+                {filteredEntidades.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-gray-500">
+                    No se encontraron entidades
                   </div>
-                </div>
-                <div className="px-4 py-3 flex items-center gap-3 hover:bg-gray-50">
-                  <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Ministerio de Hacienda y Crédito Público</p>
-                    <p className="text-xs text-gray-500">NIT: 800.000.002-3</p>
-                  </div>
-                </div>
-                <div className="px-4 py-3 flex items-center gap-3 hover:bg-gray-50">
-                  <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Contraloría General de la República</p>
-                    <p className="text-xs text-gray-500">NIT: 800.000.003-1</p>
-                  </div>
-                </div>
+                ) : (
+                  filteredEntidades.map((ent) => (
+                    <label
+                      key={ent.id}
+                      className="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedEntidades.includes(ent.id)}
+                        onCheckedChange={() => toggleEntidad(ent.id)}
+                      />
+                      <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{ent.nombre}</p>
+                        <p className="text-xs text-gray-500">NIT: {ent.nit}</p>
+                      </div>
+                    </label>
+                  ))
+                )}
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => setShowEntidadesModal(false)}>
-                Cerrar
+                Cancelar
+              </Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={selectedEntidades.length === 0}
+                onClick={() => {
+                  setShowEntidadesModal(false)
+                  setEntidadesBusqueda("")
+                }}
+              >
+                Asignar ({selectedEntidades.length})
               </Button>
             </DialogFooter>
           </DialogContent>
