@@ -25,6 +25,8 @@ import {
   X,
   Info,
   Building2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -99,6 +101,7 @@ export default function GestionFormulariosSimple({
   )
   const [searchTerm, setSearchTerm] = useState("")
   const [filtrosModificados, setFiltrosModificados] = useState(false)
+  const [filtrosColapsados, setFiltrosColapsados] = useState(false)
   const [selectedFormularios, setSelectedFormularios] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -344,6 +347,7 @@ export default function GestionFormulariosSimple({
     if (categoria && ano && periodo) {
       setMostrarTabla(true)
       setFiltrosModificados(false)
+      setFiltrosColapsados(true)
       onFiltrosChange?.({ categoria, ano, periodo })
     }
   }
@@ -352,6 +356,10 @@ export default function GestionFormulariosSimple({
     setter(value)
     if (mostrarTabla) {
       setFiltrosModificados(true)
+      setMostrarTabla(false)
+      setFiltrosColapsados(false)
+      setSelectedFormularios([])
+      setActiveTab("gestion")
     }
   }
 
@@ -1561,93 +1569,134 @@ export default function GestionFormulariosSimple({
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Filtros de Búsqueda */}
       <div className="p-6 space-6">
-        <div className="bg-white rounded-lg border border-border p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-5 h-5" />
-            <h3 className="font-semibold text-lg">Filtros de Búsqueda</h3>
-          </div>
+        <div className="bg-white rounded-lg border border-border shadow-sm">
+          {/* Header colapsable */}
+          <button
+            type="button"
+            onClick={() => setFiltrosColapsados(!filtrosColapsados)}
+            className="w-full flex items-center justify-between p-6 pb-4 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              <h3 className="font-semibold text-lg">Filtros de Búsqueda</h3>
+            </div>
+            {filtrosColapsados ? (
+              <ChevronDown className="w-5 h-5 text-gray-500" />
+            ) : (
+              <ChevronUp className="w-5 h-5 text-gray-500" />
+            )}
+          </button>
 
-          {filtrosModificados && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
-              Los filtros han sido modificados. Haga clic en "Aplicar Filtros" para actualizar los resultados.
+          {/* Vista informativa colapsada */}
+          {filtrosColapsados && (
+            <div className="px-6 pb-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-500 uppercase">Entidad</span>
+                  <span className="text-sm text-gray-900 font-medium truncate">{entidad}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-500 uppercase">Categoría</span>
+                  <span className="text-sm text-gray-900 font-medium truncate">{categoria}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-500 uppercase">Año</span>
+                  <span className="text-sm text-gray-900 font-medium">{ano}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-500 uppercase">Periodo</span>
+                  <span className="text-sm text-gray-900 font-medium">{periodo}</span>
+                </div>
+              </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Entidad</label>
-              <input
-                value={entidad}
-                disabled
-                className="w-full px-3 py-2 border border-input rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
-              />
-            </div>
+          {/* Formulario de filtros expandido */}
+          {!filtrosColapsados && (
+            <div className="px-6 pb-6">
+              {filtrosModificados && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+                  Los filtros han sido modificados. Haga clic en &quot;Aplicar Filtros&quot; para actualizar los resultados.
+                </div>
+              )}
 
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Categoría <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={categoria}
-                onChange={(e) => handleFilterChange(setCategoria, e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              >
-                <option value="">Seleccione categoría</option>
-                {categorias.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Entidad</label>
+                  <input
+                    value={entidad}
+                    disabled
+                    className="w-full px-3 py-2 border border-input rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Año <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={ano}
-                onChange={(e) => handleFilterChange(setAno, e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              >
-                <option value="">Seleccione año</option>
-                {anos.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Categoría <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={categoria}
+                    onChange={(e) => handleFilterChange(setCategoria, e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  >
+                    <option value="">Seleccione categoría</option>
+                    {categorias.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Periodo <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={periodo}
-                onChange={(e) => handleFilterChange(setPeriodo, e.target.value)}
-                disabled={!categoria}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50"
-              >
-                <option value="">Seleccione periodo</option>
-                {getPeriodos().map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Año <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={ano}
+                    onChange={(e) => handleFilterChange(setAno, e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  >
+                    <option value="">Seleccione año</option>
+                    {anos.map((a) => (
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-          <div className="flex justify-end">
-            <Button
-              onClick={handleAplicarFiltros}
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={!categoria || !ano || !periodo}
-            >
-              Aplicar Filtros
-            </Button>
-          </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Periodo <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={periodo}
+                    onChange={(e) => handleFilterChange(setPeriodo, e.target.value)}
+                    disabled={!categoria}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50"
+                  >
+                    <option value="">Seleccione periodo</option>
+                    {getPeriodos().map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleAplicarFiltros}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={!categoria || !ano || !periodo}
+                >
+                  Aplicar Filtros
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Estado Vacío */}
@@ -1671,7 +1720,44 @@ export default function GestionFormulariosSimple({
 
             {/* ========== PESTAÑA 1: GESTIÓN ========== */}
             <TabsContent value="gestion" className="space-y-4">
-              {/* --- Sección 1: Enviar Categoría + Badges de validación --- */}
+              {/* --- Sección 1: Funcionalidades generales (Importar, Enviar Adjunto, Entidades Agregadas) --- */}
+              <div className="bg-white rounded-lg border border-border p-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={handleImportarClick}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Importar
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={handleEnviarAdjunto}
+                  >
+                    <FileUp className="w-4 h-4 mr-2" />
+                    Enviar Adjunto
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEntidadesModal(true)}
+                  >
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Entidades Agregadas
+                    {selectedEntidades.size > 0 && (
+                      <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-blue-600 text-white">
+                        {selectedEntidades.size}
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* --- Sección 2: Enviar Categoría + Badges de validación --- */}
               <div className="bg-white rounded-lg border border-border p-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -1719,43 +1805,6 @@ export default function GestionFormulariosSimple({
                       No validados: {formulariosState.filter((f) => f.estado !== "Validado" && f.estado !== "Aceptado").length}
                     </span>
                   </div>
-                </div>
-              </div>
-
-              {/* --- Sección 2: Funcionalidades generales (Importar, Enviar Adjunto, Entidades Agregadas) --- */}
-              <div className="bg-white rounded-lg border border-border p-4 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
-                    onClick={handleImportarClick}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Importar
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={handleEnviarAdjunto}
-                  >
-                    <FileUp className="w-4 h-4 mr-2" />
-                    Enviar Adjunto
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowEntidadesModal(true)}
-                  >
-                    <Building2 className="w-4 h-4 mr-2" />
-                    Entidades Agregadas
-                    {selectedEntidades.size > 0 && (
-                      <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-blue-600 text-white">
-                        {selectedEntidades.size}
-                      </span>
-                    )}
-                  </Button>
                 </div>
               </div>
 
@@ -2010,6 +2059,7 @@ export default function GestionFormulariosSimple({
               <div className="bg-white rounded-lg border border-border shadow-sm p-4">
                 <HistoricoEnviosUnificado
                   savedFilters={{ entidad, categoria, ano, periodo }}
+                  hideFilters
                 />
               </div>
             </TabsContent>

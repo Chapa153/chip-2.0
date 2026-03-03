@@ -7,12 +7,14 @@ interface HistoricoEnviosUnificadoProps {
   onVerDetalle?: (data: any, filters?: any) => void
   onVerDetalleFormulario?: (data: any, filters?: any) => void
   savedFilters?: any
+  hideFilters?: boolean
 }
 
 export default function HistoricoEnviosUnificado({ 
   onVerDetalle, 
   onVerDetalleFormulario,
-  savedFilters 
+  savedFilters,
+  hideFilters 
 }: HistoricoEnviosUnificadoProps) {
   return (
     <TransmitidosPage
@@ -20,6 +22,7 @@ export default function HistoricoEnviosUnificado({
       initialFilters={savedFilters}
       onVerDetalle={onVerDetalleFormulario || (() => {})}
       onVerPdf={onVerDetalle}
+      hideFilters={hideFilters}
     />
   )
 }
