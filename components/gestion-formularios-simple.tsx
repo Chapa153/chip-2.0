@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef } from "react" // Import useRef
+import { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import type React from "react"
 
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,10 @@ import {
   AlertCircle,
   Plus,
   X,
+  Info,
+  Building2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -40,6 +44,8 @@ import { toast } from "@/components/ui/use-toast" // Corregido import de toast d
 import DataTable from "@/components/data-table" // Assuming DataTable is imported here
 import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog" // Import Dialog components
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import HistoricoEnviosUnificado from "./historico-envios-unificado"
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -95,6 +101,7 @@ export default function GestionFormulariosSimple({
   )
   const [searchTerm, setSearchTerm] = useState("")
   const [filtrosModificados, setFiltrosModificados] = useState(false)
+  const [filtrosColapsados, setFiltrosColapsados] = useState(false)
   const [selectedFormularios, setSelectedFormularios] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -141,6 +148,121 @@ export default function GestionFormulariosSimple({
   const [replaceContext, setReplaceContext] = useState<"mensaje" | "enviar" | null>(null)
   // </CHANGE>
 
+  const [activeTab, setActiveTab] = useState("gestion")
+  const [showEntidadesModal, setShowEntidadesModal] = useState(false)
+  const [entidadesBusqueda, setEntidadesBusqueda] = useState("")
+  const [debouncedBusqueda, setDebouncedBusqueda] = useState("")
+  const [selectedEntidades, setSelectedEntidades] = useState<Set<string>>(new Set())
+  const entidadesScrollRef = useRef<HTMLDivElement>(null)
+  const [entidadesScrollTop, setEntidadesScrollTop] = useState(0)
+
+  // Debounce de busqueda para no filtrar 4500 items en cada keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedBusqueda(entidadesBusqueda), 200)
+    return () => clearTimeout(timer)
+  }, [entidadesBusqueda])
+
+  // Lista de entidades disponibles (datos de ejemplo - en produccion vendria de API)
+  const entidadesDisponibles = useMemo(() => {
+    const nombresBase = [
+      "Alcaldía Municipal de", "Gobernación de", "Hospital Regional de",
+      "Instituto de Desarrollo de", "Corporación Autónoma de", "Universidad Pública de",
+      "E.S.E. Centro de Salud de", "Empresa de Servicios Públicos de",
+      "Corporación para el Desarrollo de", "Fondo de Vivienda de",
+      "Secretaría de Educación de", "Instituto de Cultura de",
+      "Empresa de Acueducto de", "Cámara de Comercio de", "Personería Municipal de",
+    ]
+    const municipios = [
+      "Bogotá", "Medellín", "Cali", "Barranquilla", "Cartagena", "Cúcuta",
+      "Bucaramanga", "Pereira", "Santa Marta", "Ibagué", "Manizales", "Pasto",
+      "Neiva", "Villavicencio", "Armenia", "Valledupar", "Montería", "Sincelejo",
+      "Popayán", "Tunja", "Florencia", "Riohacha", "Quibdó", "Yopal",
+      "Mocoa", "San Andrés", "Leticia", "Mitú", "Puerto Carreño", "Inírida",
+      "Arauca", "San José del Guaviare", "Zipaquirá", "Facatativá", "Fusagasugá",
+      "Girardot", "Soacha", "Chía", "Cajicá", "Mosquera", "Madrid", "Funza",
+      "Tocancipá", "Sopó", "La Calera", "Tabio", "Tenjo", "Cota", "Gachancipá",
+      "Chocontá", "Ubaté", "Pacho", "Villeta", "Guaduas", "La Mesa",
+      "Anapoima", "Anolaima", "Cachipay", "El Colegio", "Viotá", "San Juan de Rioseco",
+      "Beltrán", "Guataquí", "Pulí", "Jerusalén", "Nariño", "Tocaima", "Agua de Dios",
+      "Ricaurte", "Nilo", "Apulo", "Quipile", "San Antonio del Tequendama",
+      "Tena", "El Rosal", "Subachoque", "Supatá", "San Francisco",
+      "La Vega", "Sasaima", "Albán", "Nimaima", "Nocaima", "Vergara",
+      "Quebradanegra", "Útica", "Caparrapí", "Puerto Salgar", "Yacopí",
+      "Topaipí", "El Peñón", "La Palma", "Simijaca", "Susa", "Fúquene",
+      "Guachetá", "Lenguazaque", "Cucunubá", "Sutatausa", "Tausa",
+    ]
+
+    const entidades: { id: string; nombre: string; nit: string }[] = []
+    let idx = 1
+    for (const nombre of nombresBase) {
+      for (const municipio of municipios) {
+        const paddedIdx = String(idx).padStart(4, "0")
+        const nitNum = String(800000000 + idx)
+        const dv = idx % 10
+        entidades.push({
+          id: `ENT-${paddedIdx}`,
+          nombre: `${nombre} ${municipio}`,
+          nit: `${nitNum.slice(0, 3)}.${nitNum.slice(3, 6)}.${nitNum.slice(6)}-${dv}`,
+        })
+        idx++
+      }
+    }
+    return entidades // ~1500 entidades
+  }, [])
+
+  const filteredEntidades = useMemo(() => {
+    if (!debouncedBusqueda) return entidadesDisponibles
+    const term = debouncedBusqueda.toLowerCase()
+    return entidadesDisponibles.filter(
+      (e) => e.nombre.toLowerCase().includes(term) || e.nit.includes(debouncedBusqueda)
+    )
+  }, [entidadesDisponibles, debouncedBusqueda])
+
+  // Virtualización: solo renderizar items visibles
+  const ITEM_HEIGHT = 56 // px por fila
+  const VISIBLE_HEIGHT = 320 // px alto del contenedor
+  const OVERSCAN = 5 // items extra arriba/abajo
+
+  const virtualEntidades = useMemo(() => {
+    const totalItems = filteredEntidades.length
+    const startIdx = Math.max(0, Math.floor(entidadesScrollTop / ITEM_HEIGHT) - OVERSCAN)
+    const endIdx = Math.min(totalItems, Math.ceil((entidadesScrollTop + VISIBLE_HEIGHT) / ITEM_HEIGHT) + OVERSCAN)
+    return {
+      items: filteredEntidades.slice(startIdx, endIdx),
+      startIdx,
+      totalHeight: totalItems * ITEM_HEIGHT,
+      offsetTop: startIdx * ITEM_HEIGHT,
+    }
+  }, [filteredEntidades, entidadesScrollTop])
+
+  const handleEntidadesScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setEntidadesScrollTop(e.currentTarget.scrollTop)
+  }, [])
+
+  const toggleEntidad = useCallback((id: string) => {
+    setSelectedEntidades((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleAllEntidades = useCallback(() => {
+    setSelectedEntidades((prev) => {
+      const allFilteredIds = filteredEntidades.map((e) => e.id)
+      const allSelected = allFilteredIds.every((id) => prev.has(id))
+      if (allSelected) {
+        const next = new Set(prev)
+        allFilteredIds.forEach((id) => next.delete(id))
+        return next
+      } else {
+        const next = new Set(prev)
+        allFilteredIds.forEach((id) => next.add(id))
+        return next
+      }
+    })
+  }, [filteredEntidades])
   const [showReenvioDialog, setShowReenvioDialog] = useState(false)
   const [reenvioMotivo, setReenvioMotivo] = useState("")
   const [reenvioJustificacion, setReenvioJustificacion] = useState("")
@@ -225,6 +347,7 @@ export default function GestionFormulariosSimple({
     if (categoria && ano && periodo) {
       setMostrarTabla(true)
       setFiltrosModificados(false)
+      setFiltrosColapsados(true)
       onFiltrosChange?.({ categoria, ano, periodo })
     }
   }
@@ -233,6 +356,10 @@ export default function GestionFormulariosSimple({
     setter(value)
     if (mostrarTabla) {
       setFiltrosModificados(true)
+      setMostrarTabla(false)
+      setFiltrosColapsados(false)
+      setSelectedFormularios([])
+      setActiveTab("gestion")
     }
   }
 
@@ -1442,93 +1569,134 @@ export default function GestionFormulariosSimple({
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Filtros de Búsqueda */}
       <div className="p-6 space-6">
-        <div className="bg-white rounded-lg border border-border p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-5 h-5" />
-            <h3 className="font-semibold text-lg">Filtros de Búsqueda</h3>
-          </div>
+        <div className="bg-white rounded-lg border border-border shadow-sm">
+          {/* Header colapsable */}
+          <button
+            type="button"
+            onClick={() => setFiltrosColapsados(!filtrosColapsados)}
+            className="w-full flex items-center justify-between p-6 pb-4 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              <h3 className="font-semibold text-lg">Filtros de Búsqueda</h3>
+            </div>
+            {filtrosColapsados ? (
+              <ChevronDown className="w-5 h-5 text-gray-500" />
+            ) : (
+              <ChevronUp className="w-5 h-5 text-gray-500" />
+            )}
+          </button>
 
-          {filtrosModificados && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
-              Los filtros han sido modificados. Haga clic en "Aplicar Filtros" para actualizar los resultados.
+          {/* Vista informativa colapsada */}
+          {filtrosColapsados && (
+            <div className="px-6 pb-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-500 uppercase">Entidad</span>
+                  <span className="text-sm text-gray-900 font-medium truncate">{entidad}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-500 uppercase">Categoría</span>
+                  <span className="text-sm text-gray-900 font-medium truncate">{categoria}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-500 uppercase">Año</span>
+                  <span className="text-sm text-gray-900 font-medium">{ano}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-500 uppercase">Periodo</span>
+                  <span className="text-sm text-gray-900 font-medium">{periodo}</span>
+                </div>
+              </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Entidad</label>
-              <input
-                value={entidad}
-                disabled
-                className="w-full px-3 py-2 border border-input rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
-              />
-            </div>
+          {/* Formulario de filtros expandido */}
+          {!filtrosColapsados && (
+            <div className="px-6 pb-6">
+              {filtrosModificados && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+                  Los filtros han sido modificados. Haga clic en &quot;Aplicar Filtros&quot; para actualizar los resultados.
+                </div>
+              )}
 
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Categoría <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={categoria}
-                onChange={(e) => handleFilterChange(setCategoria, e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              >
-                <option value="">Seleccione categoría</option>
-                {categorias.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Entidad</label>
+                  <input
+                    value={entidad}
+                    disabled
+                    className="w-full px-3 py-2 border border-input rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Año <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={ano}
-                onChange={(e) => handleFilterChange(setAno, e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background"
-              >
-                <option value="">Seleccione año</option>
-                {anos.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Categoría <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={categoria}
+                    onChange={(e) => handleFilterChange(setCategoria, e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  >
+                    <option value="">Seleccione categoría</option>
+                    {categorias.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Periodo <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={periodo}
-                onChange={(e) => handleFilterChange(setPeriodo, e.target.value)}
-                disabled={!categoria}
-                className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50"
-              >
-                <option value="">Seleccione periodo</option>
-                {getPeriodos().map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Año <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={ano}
+                    onChange={(e) => handleFilterChange(setAno, e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  >
+                    <option value="">Seleccione año</option>
+                    {anos.map((a) => (
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-          <div className="flex justify-end">
-            <Button
-              onClick={handleAplicarFiltros}
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={!categoria || !ano || !periodo}
-            >
-              Aplicar Filtros
-            </Button>
-          </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Periodo <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={periodo}
+                    onChange={(e) => handleFilterChange(setPeriodo, e.target.value)}
+                    disabled={!categoria}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background disabled:opacity-50"
+                  >
+                    <option value="">Seleccione periodo</option>
+                    {getPeriodos().map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleAplicarFiltros}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={!categoria || !ano || !periodo}
+                >
+                  Aplicar Filtros
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Estado Vacío */}
@@ -1542,297 +1710,360 @@ export default function GestionFormulariosSimple({
           </div>
         )}
 
-        {/* Tabla de Formularios */}
+        {/* Pestañas: Gestión / Consultar Envíos */}
         {mostrarTabla && (
-          <div className="bg-white rounded-lg border border-border shadow-sm">
-            {/* Barra de Acciones */}
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700"
-                  onClick={handleImportarClick}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Importar
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={handleEnviarAdjunto}
-                  // </CHANGE> Eliminando condición disabled del botón Enviar adjunto para que esté siempre habilitado
-                >
-                  <FileUp className="w-4 h-4 mr-2" />
-                  Enviar Adjunto
-                </Button>
-                <Button variant="outline" size="sm">
-                  <FileDown className="w-4 h-4 mr-2" />
-                  Consultar Envíos
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleValidarSeleccionados}
-                  // Usar la nueva función canValidateSelectedFormularios para habilitar el botón
-                  disabled={!canValidateSelectedFormularios() || isSubmitting}
-                  // </CHANGE>
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Validando...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Validar
-                    </>
-                  )}
-                  {/* </CHANGE> */}
-                </Button>
-                <Button
-                  onClick={handleSendData} // Usar la nueva función handleSendData
-                  disabled={!canSendSelectedFormularios() || isSubmitting}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-md shadow-sm transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Enviar
-                    </>
-                  )}
-                </Button>
-                {/* </CHANGE> */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2 bg-transparent">
-                      <Download className="w-4 h-4" />
-                      Exportar
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64">
-                    <TooltipProvider>
-                      <Tooltip delayDuration={0}>
-                        <TooltipTrigger asChild>
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("csv")}>
-                            <FileSpreadsheet className="w-4 h-4 mr-2" />
-                            CSV - Valores separados por comas
-                          </DropdownMenuItem>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-xs">
-                          <div className="text-xs space-y-1">
-                            <p className="font-semibold">CSV - Sin límite de filas</p>
-                            <ul className="list-disc pl-4 space-y-0.5">
-                              <li>Encoding UTF-8</li>
-                              <li>Encabezados incluidos</li>
-                            </ul>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="gestion">Gestión</TabsTrigger>
+              <TabsTrigger value="consultar-envios">Consultar Envíos</TabsTrigger>
+            </TabsList>
 
-                    <TooltipProvider>
-                      <Tooltip delayDuration={0}>
-                        <TooltipTrigger asChild>
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("excel")}>
-                            <FileSpreadsheet className="w-4 h-4 mr-2" />
-                            Excel (XLSX)
-                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                          </DropdownMenuItem>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-xs">
-                          <div className="text-xs space-y-1">
-                            <p className="font-semibold">Excel (XLSX)</p>
-                            <ul className="list-disc pl-4 space-y-0.5">
-                              <li>Máximo 50 MB por archivo</li>
-                              <li>Hasta 1.048.576 filas por hoja</li>
-                              <li>Múltiples hojas permitidas</li>
-                            </ul>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip delayDuration={0}>
-                        <TooltipTrigger asChild>
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("pdf")}>
-                            <FileText className="w-4 h-4 mr-2" />
-                            PDF
-                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                          </DropdownMenuItem>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-xs">
-                          <div className="text-xs space-y-1">
-                            <p className="font-semibold">PDF</p>
-                            <ul className="list-disc pl-4 space-y-0.5">
-                              <li>Máximo 10.000 líneas por archivo</li>
-                              <li>División automática si excede límite</li>
-                            </ul>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip delayDuration={0}>
-                        <TooltipTrigger asChild>
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
-                            <FileText className="w-4 h-4 mr-2" />
-                            TXT
-                            <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
-                          </DropdownMenuItem>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-xs">
-                          <div className="text-xs space-y-1">
-                            <p className="font-semibold">TXT - Sin límite de filas</p>
-                            <ul className="list-disc pl-4 space-y-0.5">
-                              <li>Encoding UTF-8</li>
-                              <li>Formato de texto plano</li>
-                            </ul>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+            {/* ========== PESTAÑA 1: GESTIÓN ========== */}
+            <TabsContent value="gestion" className="space-y-4">
+              {/* --- Sección 1: Funcionalidades generales (Importar, Enviar Adjunto, Entidades Agregadas) --- */}
+              <div className="bg-white rounded-lg border border-border p-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={handleImportarClick}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Importar
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={handleEnviarAdjunto}
+                  >
+                    <FileUp className="w-4 h-4 mr-2" />
+                    Enviar Adjunto
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEntidadesModal(true)}
+                  >
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Entidades Agregadas
+                    {selectedEntidades.size > 0 && (
+                      <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-blue-600 text-white">
+                        {selectedEntidades.size}
+                      </span>
+                    )}
+                  </Button>
+                </div>
               </div>
 
-              {/* Barra de Búsqueda */}
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por código o nombre..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+              {/* --- Sección 2: Enviar Categoría + Badges de validación --- */}
+              <div className="bg-white rounded-lg border border-border p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={handleEnviar}
+                            disabled={!canSendSelectedFormularios() || isSubmitting}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-md shadow-sm transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500"
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="mr-2 h-4 w-4" />
+                                Enviar Categoría
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs">
+                          <div className="text-xs space-y-1">
+                            <p className="font-semibold">Estado de formularios</p>
+                            <p>
+                              {formulariosState.filter((f) => f.estado !== "Aceptado").length} formulario(s) pendientes de quedar en estado Aceptado
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Info className="w-4 h-4 text-gray-400" />
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border bg-green-100 text-green-800 border-green-200">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Validados: {formulariosState.filter((f) => f.estado === "Validado" || f.estado === "Aceptado").length}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border bg-yellow-100 text-yellow-800 border-yellow-200">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      No validados: {formulariosState.filter((f) => f.estado !== "Validado" && f.estado !== "Aceptado").length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* --- Sección 3: DataTable con Validar, Exportar y Buscador --- */}
+              <div className="bg-white rounded-lg border border-border shadow-sm">
+                {/* Sub-barra de acciones de tabla */}
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleValidarSeleccionados}
+                      disabled={!canValidateSelectedFormularios() || isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Validando...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          Validar
+                        </>
+                      )}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="flex items-center gap-2 bg-transparent">
+                          <Download className="w-4 h-4" />
+                          Exportar
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        <TooltipProvider>
+                          <Tooltip delayDuration={0}>
+                            <TooltipTrigger asChild>
+                              <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("csv")}>
+                                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                CSV - Valores separados por comas
+                              </DropdownMenuItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-xs">
+                              <div className="text-xs space-y-1">
+                                <p className="font-semibold">CSV - Sin límite de filas</p>
+                                <ul className="list-disc pl-4 space-y-0.5">
+                                  <li>Encoding UTF-8</li>
+                                  <li>Encabezados incluidos</li>
+                                </ul>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip delayDuration={0}>
+                            <TooltipTrigger asChild>
+                              <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("excel")}>
+                                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                Excel (XLSX)
+                                <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                              </DropdownMenuItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-xs">
+                              <div className="text-xs space-y-1">
+                                <p className="font-semibold">Excel (XLSX)</p>
+                                <ul className="list-disc pl-4 space-y-0.5">
+                                  <li>Máximo 50 MB por archivo</li>
+                                  <li>Hasta 1.048.576 filas por hoja</li>
+                                  <li>Múltiples hojas permitidas</li>
+                                </ul>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip delayDuration={0}>
+                            <TooltipTrigger asChild>
+                              <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("pdf")}>
+                                <FileText className="w-4 h-4 mr-2" />
+                                PDF
+                                <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                              </DropdownMenuItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-xs">
+                              <div className="text-xs space-y-1">
+                                <p className="font-semibold">PDF</p>
+                                <ul className="list-disc pl-4 space-y-0.5">
+                                  <li>Máximo 10.000 líneas por archivo</li>
+                                  <li>División automática si excede límite</li>
+                                </ul>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip delayDuration={0}>
+                            <TooltipTrigger asChild>
+                              <DropdownMenuItem className="cursor-pointer" onClick={() => handleExportErrors("txt")}>
+                                <FileText className="w-4 h-4 mr-2" />
+                                TXT
+                                <HelpCircle className="w-3 h-3 ml-auto text-gray-400" />
+                              </DropdownMenuItem>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-xs">
+                              <div className="text-xs space-y-1">
+                                <p className="font-semibold">TXT - Sin límite de filas</p>
+                                <ul className="list-disc pl-4 space-y-0.5">
+                                  <li>Encoding UTF-8</li>
+                                  <li>Formato de texto plano</li>
+                                </ul>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Barra de Búsqueda */}
+                  <div className="relative w-64">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Buscar por código o nombre..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                {/* Tabla */}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-border">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                          <input
+                            type="checkbox"
+                            className="rounded"
+                            checked={
+                              selectedFormularios.length === 0
+                                ? false
+                                : selectedFormularios.length === filteredFormularios.length
+                            }
+                            onChange={toggleSelectAll}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          CÓDIGO ↕
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          NOMBRE DEL FORMULARIO ↕
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          TIPO ↕
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          ESTADO DE VALIDACIÓN ↕
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          ÚLTIMA MODIFICACIÓN ↕
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          ACCIONES
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-border">
+                      {filteredFormularios.map((form) => (
+                        <tr key={form.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <Checkbox
+                              checked={selectedFormularios.includes(form.id)}
+                              onCheckedChange={() => {
+                                handleToggleSelectFormulario(form.id)
+                              }}
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
+                            >
+                              {form.estado}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
+                          <td className="px-4 py-3">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" disabled={form.tipo === "Categoría"}>
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleRegistroManualClick(form.id, form.nombre)}>
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Registro manual
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                  Generar protocolo importación
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Paginación */}
+                <div className="p-4 border-t border-border flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Registros por página:</span>
+                    <select className="px-2 py-1 border border-input rounded-md text-sm">
+                      <option>10</option>
+                      <option>25</option>
+                      <option>50</option>
+                    </select>
+                    <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled>
+                      Primera
+                    </Button>
+                    <Button variant="outline" size="sm" disabled>
+                      Anterior
+                    </Button>
+                    <Button variant="default" size="sm">
+                      Página 1 de 1
+                    </Button>
+                    <Button variant="outline" size="sm" disabled>
+                      Siguiente
+                    </Button>
+                    <Button variant="outline" size="sm" disabled>
+                      Última
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* ========== PESTAÑA 2: CONSULTAR ENVÍOS ========== */}
+            <TabsContent value="consultar-envios">
+              <div className="bg-white rounded-lg border border-border shadow-sm p-4">
+                <HistoricoEnviosUnificado
+                  savedFilters={{ entidad, categoria, ano, periodo }}
+                  hideFilters
                 />
               </div>
-            </div>
-
-            {/* Tabla */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-border">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                      <input
-                        type="checkbox"
-                        className="rounded"
-                        checked={
-                          selectedFormularios.length === 0
-                            ? false
-                            : selectedFormularios.length === filteredFormularios.length
-                        }
-                        onChange={toggleSelectAll}
-                      />
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      CÓDIGO ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      NOMBRE DEL FORMULARIO ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      TIPO ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ESTADO DE VALIDACIÓN ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ÚLTIMA MODIFICACIÓN ↕
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ACCIONES
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-border">
-                  {filteredFormularios.map((form) => (
-                    <tr key={form.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <Checkbox
-                          checked={selectedFormularios.includes(form.id)}
-                          onCheckedChange={() => {
-                            handleToggleSelectFormulario(form.id)
-                            // </CHANGE> Eliminada la lógica que mostraba DataTable al seleccionar checkbox
-                          }}
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-blue-600">{form.id}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{form.nombre}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{form.tipo}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoBadgeClass(form.estadoColor)}`}
-                        >
-                          {form.estado}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{form.fecha}</td>
-                      <td className="px-4 py-3">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" disabled={form.tipo === "Categoría"}>
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleRegistroManualClick(form.id, form.nombre)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Registro manual
-                            </DropdownMenuItem>
-                            {/* </CHANGE> */}
-                            <DropdownMenuItem>
-                              <FileSpreadsheet className="w-4 h-4 mr-2" />
-                              Generar protocolo importación
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Paginación */}
-            <div className="p-4 border-t border-border flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Registros por página:</span>
-                <select className="px-2 py-1 border border-input rounded-md text-sm">
-                  <option>10</option>
-                  <option>25</option>
-                  <option>50</option>
-                </select>
-                <span className="text-sm text-gray-600 ml-4">Mostrando 1 a 5 de 5 resultados</span>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  Primera
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Anterior
-                </Button>
-                <Button variant="default" size="sm">
-                  Página 1 de 1
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Siguiente
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Última
-                </Button>
-              </div>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         )}
 
         {!showErrorsView && currentView === "dataTable" && selectedFormulario && (
@@ -2223,6 +2454,111 @@ export default function GestionFormulariosSimple({
                 </Button>
               )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Entidades Agregadas */}
+        <Dialog open={showEntidadesModal} onOpenChange={(open) => {
+          setShowEntidadesModal(open)
+          if (!open) {
+            setEntidadesBusqueda("")
+            setDebouncedBusqueda("")
+            setEntidadesScrollTop(0)
+          }
+        }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-blue-600" />
+                Entidades Agregadas
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <p className="text-sm text-gray-600">
+                Seleccione las entidades a asignar para la categoría <span className="font-semibold">{categoria}</span>
+              </p>
+
+              {/* Buscador de entidades */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar por nombre o NIT..."
+                  value={entidadesBusqueda}
+                  onChange={(e) => {
+                    setEntidadesBusqueda(e.target.value)
+                    setEntidadesScrollTop(0)
+                    if (entidadesScrollRef.current) entidadesScrollRef.current.scrollTop = 0
+                  }}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Seleccionar todos + contador */}
+              <div className="flex items-center justify-between px-1">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                  <Checkbox
+                    checked={filteredEntidades.length > 0 && filteredEntidades.every((e) => selectedEntidades.has(e.id))}
+                    onCheckedChange={toggleAllEntidades}
+                  />
+                  Seleccionar todas ({filteredEntidades.length})
+                </label>
+                <span className="text-xs text-gray-500">
+                  {selectedEntidades.size} de {entidadesDisponibles.length} seleccionadas
+                </span>
+              </div>
+
+              {/* Lista virtualizada de entidades con checkbox */}
+              <div
+                ref={entidadesScrollRef}
+                onScroll={handleEntidadesScroll}
+                className="border rounded-md overflow-y-auto"
+                style={{ height: VISIBLE_HEIGHT }}
+              >
+                {filteredEntidades.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-gray-500">
+                    No se encontraron entidades
+                  </div>
+                ) : (
+                  <div style={{ height: virtualEntidades.totalHeight, position: "relative" }}>
+                    <div style={{ position: "absolute", top: virtualEntidades.offsetTop, left: 0, right: 0 }}>
+                      {virtualEntidades.items.map((ent) => (
+                        <label
+                          key={ent.id}
+                          className="px-4 flex items-center gap-3 hover:bg-gray-50 cursor-pointer border-b border-border"
+                          style={{ height: ITEM_HEIGHT }}
+                        >
+                          <Checkbox
+                            checked={selectedEntidades.has(ent.id)}
+                            onCheckedChange={() => toggleEntidad(ent.id)}
+                          />
+                          <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{ent.nombre}</p>
+                            <p className="text-xs text-gray-500">NIT: {ent.nit}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setShowEntidadesModal(false)}>
+                Cancelar
+              </Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={selectedEntidades.size === 0}
+                onClick={() => {
+                  setShowEntidadesModal(false)
+                  setEntidadesBusqueda("")
+                  setDebouncedBusqueda("")
+                }}
+              >
+                Asignar ({selectedEntidades.size})
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

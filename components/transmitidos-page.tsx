@@ -97,9 +97,10 @@ interface TransmitidosPageProps {
     formulario: string
   }) => void
   onBack: () => void
+  hideFilters?: boolean
 }
 
-export default function TransmitidosPage({ initialFilters, onVerDetalle, onVerPdf, onBack }: TransmitidosPageProps) {
+export default function TransmitidosPage({ initialFilters, onVerDetalle, onVerPdf, onBack, hideFilters }: TransmitidosPageProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -206,46 +207,48 @@ export default function TransmitidosPage({ initialFilters, onVerDetalle, onVerPd
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
-          <div className="grid grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Entidad</label>
-              <input
-                type="text"
-                value={entidad}
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Categoría</label>
-              <input
-                type="text"
-                value={categoria}
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Año</label>
-              <input
-                type="text"
-                value={ano}
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Período</label>
-              <input
-                type="text"
-                value={periodo}
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
-              />
+        {!hideFilters && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+            <div className="grid grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Entidad</label>
+                <input
+                  type="text"
+                  value={entidad}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Categoría</label>
+                <input
+                  type="text"
+                  value={categoria}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Año</label>
+                <input
+                  type="text"
+                  value={ano}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Período</label>
+                <input
+                  type="text"
+                  value={periodo}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-4 border-b border-gray-200">
