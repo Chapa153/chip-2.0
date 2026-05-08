@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Edit2, Trash2, Check, Search, Filter, ChevronUp, ChevronDown, User, FileText } from "lucide-react"
+import { Plus, Edit2, Trash2, Check, Filter, ChevronUp, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import DirectorioEntidadesModal from "./directorio-entidades-modal"
 
@@ -60,19 +60,15 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
   const [showFilters, setShowFilters] = useState(true)
   const [showEntidadModal, setShowEntidadModal] = useState(false)
   const [selectedEntidad, setSelectedEntidad] = useState<Entidad | null>(null)
   
-  // Advanced filters
-  const [advancedFilters, setAdvancedFilters] = useState({
-    codigoUsuario: "",
-    documentoUsuario: "",
-    nombreUsuario: "",
-    tipoUsuario: "",
-    rol: "",
-    estado: "activo",
+  // Filters matching the design: Entidad, Categoría, Año, Periodo
+  const [filters, setFilters] = useState({
+    categoria: "",
+    año: "",
+    periodo: "",
   })
 
   const [formData, setFormData] = useState({
@@ -84,42 +80,11 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
   })
 
   const filteredUsuarios = usuarios.filter((u) => {
-    const matchSearch =
-      u.usuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.correo.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchCodigo =
-      advancedFilters.codigoUsuario === "" ||
-      u.usuario.toLowerCase().includes(advancedFilters.codigoUsuario.toLowerCase())
-    
-    const matchDocumento =
-      advancedFilters.documentoUsuario === "" ||
-      (u.documento && u.documento.toLowerCase().includes(advancedFilters.documentoUsuario.toLowerCase()))
-    
-    const matchNombre =
-      advancedFilters.nombreUsuario === "" ||
-      u.nombre.toLowerCase().includes(advancedFilters.nombreUsuario.toLowerCase())
-    
-    const matchTipo =
-      advancedFilters.tipoUsuario === "" ||
-      advancedFilters.tipoUsuario === "Todos" ||
-      u.tipoUsuario === advancedFilters.tipoUsuario
-    
-    const matchRol =
-      advancedFilters.rol === "" ||
-      advancedFilters.rol === "Todos" ||
-      u.rol === advancedFilters.rol
-    
-    const matchEstado =
-      advancedFilters.estado === "" ||
-      u.estado === advancedFilters.estado
-    
     const matchEntidad =
       !selectedEntidad ||
       u.entidad === selectedEntidad.razonSocial
 
-    return matchSearch && matchCodigo && matchDocumento && matchNombre && matchTipo && matchRol && matchEstado && matchEntidad
+    return matchEntidad
   })
 
   const handleAdd = () => {
@@ -163,16 +128,12 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
   }
 
   const handleClearFilters = () => {
-    setAdvancedFilters({
-      codigoUsuario: "",
-      documentoUsuario: "",
-      nombreUsuario: "",
-      tipoUsuario: "",
-      rol: "",
-      estado: "activo",
+    setFilters({
+      categoria: "",
+      año: "",
+      periodo: "",
     })
     setSelectedEntidad(null)
-    setSearchTerm("")
   }
 
   const handleEntidadSelect = (entidad: Entidad | null) => {
@@ -194,145 +155,99 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
         <div className="p-6">
           {!showForm ? (
             <>
-              {/* Collapsible Filters Panel */}
-              <div className="border border-border rounded-lg mb-6 bg-card">
+              {/* Collapsible Filters Panel - Matching Design */}
+              <div className="border border-border rounded-lg mb-6 bg-card shadow-sm">
                 {/* Filter Header - Collapsible */}
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition rounded-t-lg"
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition"
                 >
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    Filtros
+                    <Filter size={16} />
+                    Filtros de Busqueda
                   </div>
+                  {showFilters ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
                 </button>
 
-                {/* Filter Content */}
+                {/* Filter Content - Single Row Layout */}
                 {showFilters && (
                   <div className="px-4 pb-4 border-t border-border pt-4">
-                    {/* Row 1: Codigo Usuario, Documento Usuario, Nombre Usuario */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                          Codigo Usuario
-                        </label>
-                        <div className="relative">
-                          <User size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                          <input
-                            type="text"
-                            value={advancedFilters.codigoUsuario}
-                            onChange={(e) => setAdvancedFilters({ ...advancedFilters, codigoUsuario: e.target.value })}
-                            placeholder="Buscar por codigo..."
-                            className="w-full pl-9 pr-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                          Documento de Usuario
-                        </label>
-                        <div className="relative">
-                          <FileText size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                          <input
-                            type="text"
-                            value={advancedFilters.documentoUsuario}
-                            onChange={(e) => setAdvancedFilters({ ...advancedFilters, documentoUsuario: e.target.value })}
-                            placeholder="Buscar por documento..."
-                            className="w-full pl-9 pr-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                          Nombre de Usuario
-                        </label>
-                        <input
-                          type="text"
-                          value={advancedFilters.nombreUsuario}
-                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, nombreUsuario: e.target.value })}
-                          placeholder="Buscar por nombre..."
-                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Row 2: Entidad, Tipo de Usuario, Rol */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                    <div className="flex flex-wrap items-end gap-4">
+                      {/* Entidad */}
+                      <div className="flex-1 min-w-[180px]">
+                        <label className="block text-xs font-semibold text-primary mb-1">
                           Entidad
                         </label>
                         <input
                           type="text"
                           readOnly
                           onClick={() => setShowEntidadModal(true)}
-                          value={selectedEntidad ? selectedEntidad.razonSocial : "Todas"}
-                          placeholder="Todas"
+                          value={selectedEntidad ? selectedEntidad.razonSocial : ""}
+                          placeholder="Seleccione entidad"
                           className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder-muted-foreground cursor-pointer hover:bg-muted/30 transition focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                          Tipo de Usuario
-                        </label>
-                        <select
-                          value={advancedFilters.tipoUsuario}
-                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, tipoUsuario: e.target.value })}
-                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
-                          <option value="">Todos</option>
-                          <option value="Interno">Interno</option>
-                          <option value="Externo">Externo</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                          Rol
-                        </label>
-                        <select
-                          value={advancedFilters.rol}
-                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, rol: e.target.value })}
-                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
-                          <option value="">Todos</option>
-                          <option value="Administrador">Administrador</option>
-                          <option value="Usuario">Usuario</option>
-                          <option value="Auditor">Auditor</option>
-                        </select>
-                      </div>
-                    </div>
 
-                    {/* Row 3: Estado + Action Buttons */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
+                      {/* Categoria */}
+                      <div className="flex-1 min-w-[180px]">
                         <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                          Estado
+                          Categoria <span className="text-destructive">*</span>
                         </label>
                         <select
-                          value={advancedFilters.estado}
-                          onChange={(e) => setAdvancedFilters({ ...advancedFilters, estado: e.target.value })}
+                          value={filters.categoria}
+                          onChange={(e) => setFilters({ ...filters, categoria: e.target.value })}
                           className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                         >
-                          <option value="activo">Activo</option>
-                          <option value="inactivo">Inactivo</option>
-                          <option value="">Todos</option>
+                          <option value="">Seleccione categoria</option>
+                          <option value="categoria1">Categoria 1</option>
+                          <option value="categoria2">Categoria 2</option>
+                          <option value="categoria3">Categoria 3</option>
                         </select>
                       </div>
-                      <div className="md:col-span-2 flex items-end justify-end gap-3">
-                        <Button
-                          variant="outline"
-                          onClick={handleClearFilters}
-                          className="text-sm border-border hover:bg-muted"
+
+                      {/* Ano */}
+                      <div className="flex-1 min-w-[140px]">
+                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                          Ano <span className="text-destructive">*</span>
+                        </label>
+                        <select
+                          value={filters.año}
+                          onChange={(e) => setFilters({ ...filters, año: e.target.value })}
+                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                         >
-                          <Filter size={16} className="mr-1" />
-                          Limpiar
-                        </Button>
+                          <option value="">Seleccione ano</option>
+                          <option value="2024">2024</option>
+                          <option value="2023">2023</option>
+                          <option value="2022">2022</option>
+                          <option value="2021">2021</option>
+                        </select>
+                      </div>
+
+                      {/* Periodo */}
+                      <div className="flex-1 min-w-[160px]">
+                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                          Periodo <span className="text-destructive">*</span>
+                        </label>
+                        <select
+                          value={filters.periodo}
+                          onChange={(e) => setFilters({ ...filters, periodo: e.target.value })}
+                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">Seleccione periodo</option>
+                          <option value="trimestre1">Trimestre 1</option>
+                          <option value="trimestre2">Trimestre 2</option>
+                          <option value="trimestre3">Trimestre 3</option>
+                          <option value="trimestre4">Trimestre 4</option>
+                        </select>
+                      </div>
+
+                      {/* Apply Filters Button */}
+                      <div className="flex-shrink-0">
                         <Button
                           onClick={() => {}}
                           className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm"
                         >
-                          <Search size={16} className="mr-1" />
-                          Buscar
+                          Aplicar Filtros
                         </Button>
                       </div>
                     </div>
