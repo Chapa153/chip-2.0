@@ -1631,6 +1631,7 @@ export default function GestionFormulariosSimple({
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                {/* 1. Entidad */}
                 <div>
                   <label className="block text-sm font-medium mb-2 text-blue-600">Entidad</label>
                   <input
@@ -1643,24 +1644,7 @@ export default function GestionFormulariosSimple({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Categoría <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={categoria}
-                    onChange={(e) => handleFilterChange(setCategoria, e.target.value)}
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                  >
-                    <option value="">Seleccione categoría</option>
-                    {categorias.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
+                {/* 2. Año */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Año <span className="text-red-500">*</span>
@@ -1679,6 +1663,26 @@ export default function GestionFormulariosSimple({
                   </select>
                 </div>
 
+                {/* 3. Categoría */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Categoría <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={categoria}
+                    onChange={(e) => handleFilterChange(setCategoria, e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  >
+                    <option value="">Seleccione categoría</option>
+                    {categorias.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 4. Periodo */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Periodo <span className="text-red-500">*</span>
