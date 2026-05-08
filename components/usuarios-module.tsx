@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Edit2, Trash2, Check, Search, Filter, ChevronUp, ChevronDown, User, FileText, Building2 } from "lucide-react"
+import { Plus, Edit2, Trash2, Check, Search, Filter, ChevronUp, ChevronDown, User, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import DirectorioEntidadesModal from "./directorio-entidades-modal"
 
@@ -262,15 +262,14 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
                         <label className="block text-xs font-semibold text-muted-foreground mb-1">
                           Entidad
                         </label>
-                        <button
+                        <input
+                          type="text"
+                          readOnly
                           onClick={() => setShowEntidadModal(true)}
-                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-left flex items-center justify-between hover:bg-muted/30 transition focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
-                          <span className={selectedEntidad ? "text-foreground" : "text-muted-foreground"}>
-                            {selectedEntidad ? selectedEntidad.razonSocial : "Todas"}
-                          </span>
-                          <Building2 size={16} className="text-muted-foreground" />
-                        </button>
+                          value={selectedEntidad ? selectedEntidad.razonSocial : "Todas"}
+                          placeholder="Todas"
+                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder-muted-foreground cursor-pointer hover:bg-muted/30 transition focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-muted-foreground mb-1">
