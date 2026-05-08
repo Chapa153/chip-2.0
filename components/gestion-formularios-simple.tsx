@@ -93,7 +93,7 @@ export default function GestionFormulariosSimple({
   onFiltrosChange,
   onBack,
 }: GestionFormulariosSimpleProps) {
-  const [entidad, setEntidad] = useState(filtrosPrevios?.entidad || "Contaduría General de la Nación")
+  const [entidad, setEntidad] = useState(filtrosPrevios?.entidad || "")
   const [showEntidadModal, setShowEntidadModal] = useState(false)
   const [selectedEntidadData, setSelectedEntidadData] = useState<{
     id: string
@@ -2719,10 +2719,10 @@ export default function GestionFormulariosSimple({
           onOpenChange={setShowEntidadModal}
           onSelect={(entidadData) => {
             if (entidadData) {
-              setEntidad(entidadData.razonSocial)
+              setEntidad(`${entidadData.codigo} - ${entidadData.razonSocial}`)
               setSelectedEntidadData(entidadData)
             } else {
-              setEntidad("Contaduría General de la Nación")
+              setEntidad("")
               setSelectedEntidadData(null)
             }
           }}
