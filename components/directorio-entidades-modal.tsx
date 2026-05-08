@@ -1,15 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Search, Filter, Check, ArrowUpDown, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
+import { Search, Filter, ArrowUpDown, X, Check } from "lucide-react"
 import { getDepartamentos, getMunicipios } from "@/lib/colombia-data"
 
 interface Entidad {
@@ -157,43 +149,54 @@ export default function DirectorioEntidadesModal({
 
   const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <th
-      className="text-left py-3 px-4 font-semibold text-foreground cursor-pointer hover:bg-muted/50 transition select-none"
+      className="text-left py-3 px-3 font-medium text-gray-600 text-sm cursor-pointer hover:bg-gray-100 transition select-none whitespace-nowrap"
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-1">
         {children}
-        <ArrowUpDown size={14} className={`text-muted-foreground ${sortField === field ? "text-primary" : ""}`} />
+        <ArrowUpDown size={12} className={`${sortField === field ? "text-blue-600" : "text-gray-400"}`} />
       </div>
     </th>
   )
 
+  if (!open) return null
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" showCloseButton={false}>
-        <DialogHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
-          <DialogTitle className="text-xl font-bold text-foreground">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/50" 
+        onClick={handleCancel}
+      />
+      
+      {/* Modal */}
+      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
             Directorio de Entidades
-          </DialogTitle>
+          </h2>
           <button
             onClick={handleCancel}
-            className="p-1 hover:bg-muted rounded-md transition text-muted-foreground hover:text-foreground"
+            className="p-1.5 hover:bg-gray-100 rounded-md transition text-gray-500 hover:text-gray-700"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
-        </DialogHeader>
+        </div>
 
-        <div className="flex-1 overflow-auto">
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6">
           {/* Filters Section */}
-          <div className="bg-muted/30 border border-border rounded-lg p-4 mb-4">
-            <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-muted-foreground uppercase">
-              <Filter size={16} />
+          <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50/50">
+            <div className="flex items-center gap-2 mb-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <Filter size={14} />
               Filtros de Busqueda
             </div>
 
             {/* Row 1: Codigo, NIT, Razon Social */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-3 mb-3">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">
                   Codigo
                 </label>
                 <input
@@ -201,11 +204,11 @@ export default function DirectorioEntidadesModal({
                   value={filters.codigo}
                   onChange={(e) => setFilters({ ...filters, codigo: e.target.value })}
                   placeholder="Buscar..."
-                  className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">
                   NIT
                 </label>
                 <input
@@ -213,11 +216,11 @@ export default function DirectorioEntidadesModal({
                   value={filters.nit}
                   onChange={(e) => setFilters({ ...filters, nit: e.target.value })}
                   placeholder="Buscar..."
-                  className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">
                   Razon Social
                 </label>
                 <input
@@ -225,15 +228,15 @@ export default function DirectorioEntidadesModal({
                   value={filters.razonSocial}
                   onChange={(e) => setFilters({ ...filters, razonSocial: e.target.value })}
                   placeholder="Buscar..."
-                  className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
 
-            {/* Row 2: Departamento, Municipio */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+            {/* Row 2: Departamento, Municipio, Buttons */}
+            <div className="flex items-end gap-3">
+              <div className="w-40">
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">
                   Departamento
                 </label>
                 <select
@@ -245,7 +248,7 @@ export default function DirectorioEntidadesModal({
                       municipio: "",
                     })
                   }
-                  className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Todos</option>
                   {departamentos.map((dept) => (
@@ -255,15 +258,15 @@ export default function DirectorioEntidadesModal({
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+              <div className="w-32">
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">
                   Municipio
                 </label>
                 <select
                   value={filters.municipio}
                   onChange={(e) => setFilters({ ...filters, municipio: e.target.value })}
                   disabled={!filters.departamento}
-                  className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
                 >
                   <option value="">Todos</option>
                   {municipios.map((mun) => (
@@ -273,44 +276,41 @@ export default function DirectorioEntidadesModal({
                   ))}
                 </select>
               </div>
-              <div className="flex items-end justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleClear}
-                  className="text-sm border-border hover:bg-muted"
-                >
-                  <Filter size={16} className="mr-1" />
-                  Limpiar
-                </Button>
-                <Button
-                  onClick={handleSearch}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm"
-                >
-                  <Search size={16} className="mr-1" />
-                  Consultar
-                </Button>
-              </div>
+              <button
+                onClick={handleClear}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition"
+              >
+                <Filter size={14} />
+                Limpiar
+              </button>
+              <button
+                onClick={handleSearch}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition font-medium"
+              >
+                <Search size={14} />
+                Consultar
+              </button>
             </div>
           </div>
 
           {/* Results Section */}
-          <div className="border border-border rounded-lg overflow-hidden">
-            <div className="px-4 py-2 bg-muted/30 border-b border-border">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="font-semibold">RESULTADOS</span>
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-semibold text-gray-700">RESULTADOS</span>
                 {hasSearched && (
-                  <span className="text-xs">
+                  <span className="text-gray-500 text-xs">
                     ({filteredEntidades.length} entidad{filteredEntidades.length !== 1 ? "es" : ""} encontrada{filteredEntidades.length !== 1 ? "s" : ""})
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="max-h-[280px] overflow-auto">
+            <div className="max-h-[240px] overflow-auto">
               <table className="w-full">
-                <thead className="bg-muted/20 sticky top-0">
-                  <tr className="border-b border-border">
-                    <th className="w-12 py-3 px-4"></th>
+                <thead className="bg-white sticky top-0 border-b border-gray-200">
+                  <tr>
+                    <th className="w-10 py-3 px-3"></th>
                     <SortableHeader field="codigo">Codigo</SortableHeader>
                     <SortableHeader field="nit">NIT</SortableHeader>
                     <SortableHeader field="razonSocial">Razon Social</SortableHeader>
@@ -318,51 +318,51 @@ export default function DirectorioEntidadesModal({
                     <SortableHeader field="municipio">Municipio</SortableHeader>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-100">
                   {hasSearched ? (
                     filteredEntidades.length > 0 ? (
                       filteredEntidades.map((entidad) => (
                         <tr
                           key={entidad.id}
                           onClick={() => setSelectedEntity(entidad)}
-                          className={`border-b border-border cursor-pointer transition ${
+                          className={`cursor-pointer transition ${
                             selectedEntity?.id === entidad.id
-                              ? "bg-primary/10"
-                              : "hover:bg-muted/30"
+                              ? "bg-blue-50"
+                              : "hover:bg-gray-50"
                           }`}
                         >
-                          <td className="py-3 px-4">
+                          <td className="py-3 px-3">
                             <div
-                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                                 selectedEntity?.id === entidad.id
-                                  ? "border-primary bg-primary"
-                                  : "border-muted-foreground"
+                                  ? "border-blue-600 bg-blue-600"
+                                  : "border-gray-300"
                               }`}
                             >
                               {selectedEntity?.id === entidad.id && (
-                                <div className="w-2 h-2 bg-primary-foreground rounded-full" />
+                                <div className="w-1.5 h-1.5 bg-white rounded-full" />
                               )}
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-foreground font-medium text-sm">
+                          <td className="py-3 px-3 text-gray-900 text-sm">
                             {entidad.codigo}
                           </td>
-                          <td className="py-3 px-4 text-foreground text-sm">{entidad.nit}</td>
-                          <td className="py-3 px-4 text-foreground text-sm">{entidad.razonSocial}</td>
-                          <td className="py-3 px-4 text-primary text-sm">{entidad.departamento}</td>
-                          <td className="py-3 px-4 text-foreground text-sm">{entidad.municipio}</td>
+                          <td className="py-3 px-3 text-gray-700 text-sm">{entidad.nit}</td>
+                          <td className="py-3 px-3 text-gray-700 text-sm">{entidad.razonSocial}</td>
+                          <td className="py-3 px-3 text-blue-600 text-sm">{entidad.departamento}</td>
+                          <td className="py-3 px-3 text-gray-700 text-sm">{entidad.municipio}</td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                        <td colSpan={6} className="py-8 text-center text-gray-500 text-sm">
                           No se encontraron entidades con los criterios de busqueda.
                         </td>
                       </tr>
                     )
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                      <td colSpan={6} className="py-8 text-center text-gray-500 text-sm">
                         Utilice los filtros para buscar entidades.
                       </td>
                     </tr>
@@ -374,34 +374,34 @@ export default function DirectorioEntidadesModal({
 
           {/* Selected Entity Indicator */}
           {selectedEntity && (
-            <div className="mt-4 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-              <Check size={18} />
+            <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
+              <Check size={16} className="text-green-500" />
               <span>
-                <span className="font-semibold">Seleccionado:</span> {selectedEntity.codigo} - {selectedEntity.razonSocial}
+                <span className="font-medium">Seleccionado:</span> {selectedEntity.codigo} - {selectedEntity.razonSocial}
               </span>
             </div>
           )}
         </div>
 
-        <DialogFooter className="border-t border-border pt-4 mt-4">
-          <Button
-            variant="outline"
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <button
             onClick={handleCancel}
-            className="border-border hover:bg-muted"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition font-medium"
           >
-            <X size={16} className="mr-1" />
+            <X size={14} />
             Cancelar
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={handleAccept}
             disabled={!selectedEntity}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded-md transition font-medium"
           >
-            <Check size={16} className="mr-1" />
+            <Check size={14} />
             Aceptar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
