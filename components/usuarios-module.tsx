@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Edit2, Trash2, Check, Search } from "lucide-react"
+import { Plus, Edit2, Trash2, Check, Filter, ChevronUp, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import DirectorioEntidadesModal from "./directorio-entidades-modal"
 
 interface Usuario {
   id: string
@@ -11,6 +12,18 @@ interface Usuario {
   correo: string
   rol: string
   estado: "activo" | "inactivo"
+  entidad?: string
+  documento?: string
+  tipoUsuario?: string
+}
+
+interface Entidad {
+  id: string
+  codigo: string
+  nit: string
+  razonSocial: string
+  departamento: string
+  municipio: string
 }
 
 interface UsuariosModuleProps {
@@ -47,7 +60,17 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [showFilters, setShowFilters] = useState(true)
+  const [showEntidadModal, setShowEntidadModal] = useState(false)
+  const [selectedEntidad, setSelectedEntidad] = useState<Entidad | null>(null)
+  
+  // Filters matching the design: Entidad, Categoría, Año, Periodo
+  const [filters, setFilters] = useState({
+    categoria: "",
+    año: "",
+    periodo: "",
+  })
+
   const [formData, setFormData] = useState({
     usuario: "",
     nombre: "",
@@ -56,12 +79,13 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
     estado: "activo" as const,
   })
 
-  const filteredUsuarios = usuarios.filter(
-    (u) =>
-      u.usuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.correo.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const filteredUsuarios = usuarios.filter((u) => {
+    const matchEntidad =
+      !selectedEntidad ||
+      u.entidad === selectedEntidad.razonSocial
+
+    return matchEntidad
+  })
 
   const handleAdd = () => {
     setEditingId(null)
@@ -103,6 +127,19 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
     }
   }
 
+  const handleClearFilters = () => {
+    setFilters({
+      categoria: "",
+      año: "",
+      periodo: "",
+    })
+    setSelectedEntidad(null)
+  }
+
+  const handleEntidadSelect = (entidad: Entidad | null) => {
+    setSelectedEntidad(entidad)
+  }
+
   return (
     <div className="w-full">
       <div className="bg-card rounded-lg shadow-lg border border-border">
@@ -118,21 +155,108 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
         <div className="p-6">
           {!showForm ? (
             <>
-              {/* Búsqueda y botón agregar */}
-              <div className="flex gap-4 mb-6">
-                <div className="flex-1 relative">
-                  <Search
-                    size={18}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Buscar por usuario, nombre o correo..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-input rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
+              {/* Collapsible Filters Panel - Matching Design */}
+              <div className="border border-border rounded-lg mb-6 bg-card shadow-sm">
+                {/* Filter Header - Collapsible */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition"
+                >
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Filter size={16} />
+                    Filtros de Busqueda
+                  </div>
+                  {showFilters ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                </button>
+
+                {/* Filter Content - Single Row Layout */}
+                {showFilters && (
+                  <div className="px-4 pb-4 border-t border-border pt-4">
+                    <div className="flex flex-wrap items-end gap-4">
+                      {/* Entidad */}
+                      <div className="flex-1 min-w-[180px]">
+                        <label className="block text-xs font-semibold text-primary mb-1">
+                          Entidad
+                        </label>
+                        <input
+                          type="text"
+                          readOnly
+                          onClick={() => setShowEntidadModal(true)}
+                          value={selectedEntidad ? selectedEntidad.razonSocial : ""}
+                          placeholder="Seleccione entidad"
+                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground placeholder-muted-foreground cursor-pointer hover:bg-muted/30 transition focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+
+                      {/* Categoria */}
+                      <div className="flex-1 min-w-[180px]">
+                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                          Categoria <span className="text-destructive">*</span>
+                        </label>
+                        <select
+                          value={filters.categoria}
+                          onChange={(e) => setFilters({ ...filters, categoria: e.target.value })}
+                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">Seleccione categoria</option>
+                          <option value="categoria1">Categoria 1</option>
+                          <option value="categoria2">Categoria 2</option>
+                          <option value="categoria3">Categoria 3</option>
+                        </select>
+                      </div>
+
+                      {/* Ano */}
+                      <div className="flex-1 min-w-[140px]">
+                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                          Ano <span className="text-destructive">*</span>
+                        </label>
+                        <select
+                          value={filters.año}
+                          onChange={(e) => setFilters({ ...filters, año: e.target.value })}
+                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">Seleccione ano</option>
+                          <option value="2024">2024</option>
+                          <option value="2023">2023</option>
+                          <option value="2022">2022</option>
+                          <option value="2021">2021</option>
+                        </select>
+                      </div>
+
+                      {/* Periodo */}
+                      <div className="flex-1 min-w-[160px]">
+                        <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                          Periodo <span className="text-destructive">*</span>
+                        </label>
+                        <select
+                          value={filters.periodo}
+                          onChange={(e) => setFilters({ ...filters, periodo: e.target.value })}
+                          className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">Seleccione periodo</option>
+                          <option value="trimestre1">Trimestre 1</option>
+                          <option value="trimestre2">Trimestre 2</option>
+                          <option value="trimestre3">Trimestre 3</option>
+                          <option value="trimestre4">Trimestre 4</option>
+                        </select>
+                      </div>
+
+                      {/* Apply Filters Button */}
+                      <div className="flex-shrink-0">
+                        <Button
+                          onClick={() => {}}
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm"
+                        >
+                          Aplicar Filtros
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Add User Button */}
+              <div className="flex justify-end mb-4">
                 <Button
                   onClick={handleAdd}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
@@ -292,6 +416,14 @@ export default function UsuariosModule({ onClose }: UsuariosModuleProps) {
           )}
         </div>
       </div>
+
+      {/* Entity Selection Modal */}
+      <DirectorioEntidadesModal
+        open={showEntidadModal}
+        onOpenChange={setShowEntidadModal}
+        onSelect={handleEntidadSelect}
+        selectedEntidad={selectedEntidad}
+      />
     </div>
   )
 }

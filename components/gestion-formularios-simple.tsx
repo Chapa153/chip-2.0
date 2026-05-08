@@ -46,6 +46,7 @@ import { Checkbox } from "@/components/ui/checkbox" // Import Checkbox
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog" // Import Dialog components
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import HistoricoEnviosUnificado from "./historico-envios-unificado"
+import DirectorioEntidadesModal from "./directorio-entidades-modal"
 
 interface GestionFormulariosSimpleProps {
   onEditForm?: (formId: string, formName: string) => void
@@ -92,7 +93,16 @@ export default function GestionFormulariosSimple({
   onFiltrosChange,
   onBack,
 }: GestionFormulariosSimpleProps) {
-  const [entidad] = useState(filtrosPrevios?.entidad || "Contaduría General de la Nación")
+  const [entidad, setEntidad] = useState(filtrosPrevios?.entidad || "")
+  const [showEntidadModal, setShowEntidadModal] = useState(false)
+  const [selectedEntidadData, setSelectedEntidadData] = useState<{
+    id: string
+    codigo: string
+    nit: string
+    razonSocial: string
+    departamento: string
+    municipio: string
+  } | null>(null)
   const [categoria, setCategoria] = useState(filtrosPrevios?.categoria || "")
   const [ano, setAno] = useState(filtrosPrevios?.ano || "")
   const [periodo, setPeriodo] = useState(filtrosPrevios?.periodo || "")
@@ -1622,11 +1632,14 @@ export default function GestionFormulariosSimple({
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Entidad</label>
+                  <label className="block text-sm font-medium mb-2 text-blue-600">Entidad</label>
                   <input
+                    type="text"
+                    readOnly
+                    onClick={() => setShowEntidadModal(true)}
                     value={entidad}
-                    disabled
-                    className="w-full px-3 py-2 border border-input rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
+                    placeholder="Seleccione entidad"
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground cursor-pointer hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
 
@@ -2699,6 +2712,22 @@ export default function GestionFormulariosSimple({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Modal de Directorio de Entidades */}
+        <DirectorioEntidadesModal
+          open={showEntidadModal}
+          onOpenChange={setShowEntidadModal}
+          onSelect={(entidadData) => {
+            if (entidadData) {
+              setEntidad(`${entidadData.codigo} - ${entidadData.razonSocial}`)
+              setSelectedEntidadData(entidadData)
+            } else {
+              setEntidad("")
+              setSelectedEntidadData(null)
+            }
+          }}
+          selectedEntidad={selectedEntidadData}
+        />
       </div>
     </div>
   )
